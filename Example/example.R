@@ -10,13 +10,13 @@
 rm(list=ls(all=TRUE))
 
 # Go to PhysioFit directory
-setwd("D:/PhysioFit/PhysioFit_1.0")
+setwd("D:/GIT/PhysioFit")
 
 # Load the main script and its dependencies
 source("physio_fit.R")
 
 # Go to the working directory
-setwd("D:/Data_to_process")
+setwd("D:/GIT/PhysioFit/Example")
 
 # Run calculation: a simple example here, please refers to PhysioFit documentation for details
 

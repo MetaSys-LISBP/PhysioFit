@@ -2,7 +2,7 @@
 ### PhysioFit    ###
 ####################
 #
-# version 1.0
+# version 1.0.1
 #
 # This R script allows to i) quantify exchange (production and consumption) fluxes and ii) cell growth
 # rate during (batch) cultivations from time-course measurements of extracellular metabolites and biomass
@@ -32,7 +32,7 @@
 # Author: pierre.millard@insa-toulouse.fr
 #         MetaSys team, LISBP, Toulouse, France
 #
-# Copyright 2016, INRA, France
+# Copyright 2016-2018, INRA, France
 # License: GPL v2
 #
 #
@@ -145,6 +145,9 @@
 ### Changes log  ###
 ####################
 #
+#   2018-10-18 version 1.0.1
+#       - check names of degradation constants before calculations
+#
 #   2018-04-30 version 1.0
 #       - new features:
 #          . non-enzymatic degradation of some compounds can be taken into account (assuming a 1st order
@@ -231,6 +234,9 @@ result = tryCatch({source("nlsic.R")},
 # create the default color palette function
 fun_col <- colorRampPalette(rev(brewer.pal(9, "Set1")))
 
+# 'not in' function
+"%ni%" <- Negate("%in%")
+
 
 ################################################
 ### Load functions                           ###
@@ -247,6 +253,24 @@ createSys <- function(data, vini=0.1, sd_X=0.002, sd_M=0.5, upcf=50, locf=-50, u
     # extract metabolites (substrates and products) and fluxes
     metab <- nconc[nconc != "X"]
     nflux <- c("mu", paste("q", metab, sep=""))
+    # check names of 'deg'
+    if (!is.null(deg)){
+        ndeg <- names(deg)
+        # if no names are provided for degradation constants
+        if (is.null(ndeg)){
+            stop("degradation constants should be provided as a *named* vector\n", sep="")
+        }
+        # if some degradation constants are not named
+        unnamed <- ndeg[ndeg == ""]
+        if (length(unnamed)){
+            stop("names should be provided for *all* degradation constants\n", sep="")
+        }
+        # if some degradation constants are not in metab
+        not_in <- setdiff(names(deg), metab)
+        if (length(not_in)){
+            warning("a degradation constant is provided for metabolite(s) [", paste(not_in, collapse=","), "], but no measurements found in the datafile\n", sep="")
+        }
+    }
     # parameters
     to_est <- c(nconc, nflux)
     params <- rep(vini, length(to_est))

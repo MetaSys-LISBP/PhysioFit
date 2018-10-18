@@ -1,0 +1,17 @@
+Best solution
+
+DHA	16.5346304055297
+X2	16.5346304055339
+kDHA	0.00828124006439609
+kX2	0.00828124006440843
+
+
+Goodness of fit (khi2 test)
+
+khi2 value	2.64946866131649
+data points	14
+fitted parameters	4
+degrees of freedom	10
+khi2 reduced value	0.264946866131649
+p-value, i.e. P(X^2<=value)	0.0114859909640344
+conclusion	At level of 95% confidence, the model fits the data good enough with respect to the provided measurement SD.
