@@ -47,7 +47,7 @@
 #    install.packages("numDeriv")
 #    install.packages("RColorBrewer")
 #
-# The nlsic.R script is required for optimization and must be included in the physio_fit.R directory.
+# Scripts nlsic.R and tools_ssg.R are required for optimization and must be included in the physio_fit.R directory.
 # 
 #
 ####################
@@ -145,6 +145,10 @@
 ### Changes log  ###
 ####################
 #
+#   2019-06-28 version 1.0.2
+#       - update of nlsic algorithm (see influx_s documentation for details)
+#       - lower bound constraint on growth rate changed from 0 to 1e-6 to ensure numerical stability
+#
 #   2018-10-18 version 1.0.1
 #       - check names of degradation constants before calculations
 #
@@ -231,6 +235,12 @@ result = tryCatch({source("nlsic.R")},
                   error = function(e) {stop("NLSIC cannot be loaded, please check that 'nlsic.R' is in the PhysioFit directory", sep="")},
                   finally = {cat('', sep="")})
 
+# load tools_ssg
+result = tryCatch({source("tools_ssg.R")},
+                  warning = function(w) {stop("tools_ssg cannot be loaded, please check that 'tools_ssg.R' is in the PhysioFit directory", sep="")},
+                  error = function(e) {stop("tools_ssg cannot be loaded, please check that 'tools_ssg.R' is in the PhysioFit directory", sep="")},
+                  finally = {cat('', sep="")})
+
 # create the default color palette function
 fun_col <- colorRampPalette(rev(brewer.pal(9, "Set1")))
 
@@ -314,7 +324,7 @@ createSys <- function(data, vini=0.1, sd_X=0.002, sd_M=0.5, upcf=50, locf=-50, u
         te_upc <- c(te_upc, max(data[,"time"])-1e-6)
     }
     names(te_upc) <- to_est
-    te_loc <- c(rep(locc, length(nconc)), 0, rep(locf, length(nflux)-1))
+    te_loc <- c(rep(locc, length(nconc)), 1e-6, rep(locf, length(nflux)-1))
     if (lag){
         te_loc <- c(te_loc, 1e-6)
     }
