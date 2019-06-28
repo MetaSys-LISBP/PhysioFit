@@ -24,7 +24,7 @@ setwd("D:/GIT/PhysioFit/Example")
 res_deg <- estimate_k("example_blk")
 
 # estimate fluxes
-res <- physio_fit(datfile="example", mc=TRUE, it=100, vini=0.04, weight = c("DHA"=1, "X"=0.001), deg=res_deg$deg_cst)
+res <- physio_fit(datfile="example", mc=TRUE, it=100, vini=0.04, weight = c("DHA"=1, "X"=0.001), deg=res_deg$deg_cst["DHA"])
 
 
 # # Run in batch mode
