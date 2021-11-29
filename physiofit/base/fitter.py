@@ -4,6 +4,7 @@ PhysioFit software main module
 from pathlib import Path
 
 import numpy as np
+import matplotlib.pyplot as plt
 from pandas import read_csv, DataFrame
 from scipy.optimize import minimize
 
@@ -67,6 +68,7 @@ class PhysioFitter:
         """
 
         self.data = PhysioFitter._read_data(path_to_data)
+        self.data = self.data.sort_values("time", ignore_index=True)
         self.vini = vini
         self.mc = mc
         self.iterations = iterations
@@ -199,14 +201,21 @@ class PhysioFitter:
 
     def _initialize_bounds(self):
 
-        # TODO: Repare bounds
-
-        self.bounds = (
+        # We set the bounds for x0 and mu
+        bounds = [
             (self.low_conc_bound, self.up_conc_bound),  # X_0
-            (1e-6, self.up_flux_bound),  # mu
-            (self.low_conc_bound, self.up_conc_bound),  # M_0
-            (self.low_flux_bound, self.up_flux_bound)  # q_0
-        )
+            (1e-6, self.up_flux_bound)  # mu
+        ]
+        # We get the number of times that we must add the m0 and q0 bounds (once per metabolite)
+        ids_range = int((len(self.ids) - 2) / 2)  # We force int so that Python does not think it could be float
+        for _ in range(ids_range):
+            bounds.append(
+                (self.low_flux_bound, self.up_flux_bound)  # q_0
+            )
+            bounds.append(
+                (self.low_conc_bound, self.up_conc_bound)  # M_0
+            )
+        self.bounds = tuple(bounds)
 
     def _read_weight_file(self):
         pass
@@ -239,6 +248,46 @@ class PhysioFitter:
 
         self.optimize_results = PhysioFitter._run_optimization(self.params, self.exp_data_matrix,
                                                                self.time_vector, self.weight, self.bounds)
+        self.final_simulated_matrix = PhysioFitter._simple_sim(self.optimize_results.x, self.exp_data_matrix,
+                                                               self.time_vector)
+
+    def test_plot(self):
+
+        fig, (ax1, ax2, ax3) = plt.subplots(3)
+        x = self.time_vector
+        exp_biomass = self.exp_data_matrix[:, 0]
+        exp_glc = self.exp_data_matrix[:, 1]
+        exp_ace = self.exp_data_matrix[:, 2]
+        sim_biomass = self.final_simulated_matrix[:, 0]
+        sim_glc = self.final_simulated_matrix[:, 1]
+        sim_ace = self.final_simulated_matrix[:, 2]
+
+        # Work on biomass ax
+        exp_biomass_line, = ax1.scatter(x, exp_biomass, marker='o')
+        exp_biomass_line.set_label("Exp Biomass")
+        sim_biomass_line, = ax1.plot(x, sim_biomass, linestyle='--', marker='o')
+        sim_biomass_line.set_label("Sim Biomass")
+        ax1.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
+        ax1.legend()
+        ax1.set_title("Sim/Exp comparison")
+
+        # Work on glucose axe
+        exp_glucose_line, = ax2.scatter(x, exp_glc, marker='o')
+        exp_glucose_line.set_label("Exp Glucose")
+        exp_glucose_line, = ax2.plot(x, sim_glc,linestyle='--', marker='o')
+        exp_glucose_line.set_label("Sim Glucose")
+        ax2.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
+        ax2.legend()
+
+        #Work on acetate axe
+        exp_Ace_line, = ax3.scatter(x, exp_ace, marker='o')
+        exp_Ace_line.set_label("Exp Acetate")
+        exp_Ace_line, = ax3.plot(x, sim_ace, linestyle='--', marker='o')
+        exp_Ace_line.set_label("Sim Acetate")
+        ax3.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
+        ax3.legend()
+
+        plt.show()
 
     @staticmethod
     def _simple_sim(params, exp_data_matrix, time_vector):
@@ -258,31 +307,22 @@ class PhysioFitter:
     def _calculate_cost(params, exp_data_matrix, time_vector, weight_matrix):
 
         simulated_matrix = PhysioFitter._simple_sim(params, exp_data_matrix, time_vector)
-        residuum = np.sum(np.square((simulated_matrix - exp_data_matrix) / weight_matrix))
+        cost_val = np.square((simulated_matrix - exp_data_matrix) / weight_matrix)
+        residuum = np.nansum(cost_val)
         return residuum
 
     @staticmethod
     def _run_optimization(params, exp_data_matrix, time_vector, weight_matrix, bounds):
 
-        print(bounds)
         optimize_results = minimize(PhysioFitter._calculate_cost, x0=params, args=(
-            exp_data_matrix, time_vector, weight_matrix), method="L-BFGS-B", bounds=bounds,
-            options={'eps' : 1e-6})
+            exp_data_matrix, time_vector, weight_matrix), method="L-BFGS-B", bounds=bounds)
         return optimize_results
 
 
 if __name__ == "__main__":
-    test = PhysioFitter(r"C:\Users\legregam\Documents\Projets\Physiofit\test_data\example.csv", vini=0.1,
-                        weight=[[0.01, 0.5],
-                                [0.01, 0.5],
-                                [0.01, 0.5],
-                                [0.01, 0.5],
-                                [0.01, 0.5]])
-    test.simulate()
-    print(test.simulated_matrix)
+    test = PhysioFitter(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_1.tsv",
+                        vini=1, weight=[0.02, 0.46, 0.1])
     test.optimize()
-    print(test.exp_data_matrix)
-    print(test.optimize_results)
+    test.test_plot()
 
 # TODO: Build plotting function for testing
-# TODO: Change test data to Keyo data
