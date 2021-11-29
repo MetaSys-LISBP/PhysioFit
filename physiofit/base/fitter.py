@@ -1,22 +1,25 @@
 """
 PhysioFit software main module
 """
+
 from pathlib import Path
+import logging
 
 import numpy as np
 import matplotlib.pyplot as plt
 from pandas import read_csv, DataFrame
 from scipy.optimize import minimize
 
+from physiofit.logger import initialize_fitter_logger
 
-# from typing import Union
+mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
 
 class PhysioFitter:
 
     def __init__(self, path_to_data, vini=0.04, mc=True, iterations=50, pos=True, up_flux_bound=50, low_flux_bound=-50,
                  up_conc_bound=50, low_conc_bound=1.e-6, weight=None, sd_X=0.002, sd_M=0.5, save=True,
-                 summary=False):
+                 summary=False, debug_mode=True):
 
         """
         The PhysioFitter class is responsible for most of Physiofit's heavy lifting. Features included are:
@@ -82,6 +85,8 @@ class PhysioFitter:
         self.sd_M = sd_M
         self.save = save
         self.summary = summary
+        self.debug_mode = debug_mode
+        self.logger = initialize_fitter_logger(self.debug_mode)
 
         self.simulated_matrix = None
         self.optimize_results = None
@@ -89,9 +94,19 @@ class PhysioFitter:
         self.ids = None
         self.bounds = None
 
+        self.logger.info("Initializing vectors...\n")
         self._initialize_vectors()
+        self.logger.debug(f"Time vector: {self.time_vector}\n"
+                          f"Name vector: {self.name_vector}\n"
+                          f"Experimental Data: \n{self.data}\n"
+                          f"Parameters: {self.ids}\n"
+                          f"Parameter vector: {self.params}\n")
+        self.logger.info("Initializing Weight matrix...\n")
         self._initialize_weight_matrix()
+        self.logger.debug(f"Weight matrix: {self.weight}")
+        self.logger.info("Initializing bounds...")
         self._initialize_bounds()
+        self.logger.debug(f"Bounds: {self.bounds}")
 
     @staticmethod
     def _read_data(path_to_data: str) -> DataFrame:
@@ -246,10 +261,15 @@ class PhysioFitter:
 
     def optimize(self):
 
+        self.logger.info("\nRunning optimization...")
         self.optimize_results = PhysioFitter._run_optimization(self.params, self.exp_data_matrix,
                                                                self.time_vector, self.weight, self.bounds)
-        self.final_simulated_matrix = PhysioFitter._simple_sim(self.optimize_results.x, self.exp_data_matrix,
-                                                               self.time_vector)
+        test.logger.info(f"Optimization results: \n{test.optimize_results}")
+        for i, param in zip(self.ids, self.optimize_results.x):
+            self.logger.info(f"\n{i} = {param}")
+        self.simulated_matrix = PhysioFitter._simple_sim(self.optimize_results.x, self.exp_data_matrix,
+                                                         self.time_vector)
+        self.logger.info(f"Final Simulated Matrix: \n{self.simulated_matrix}")
 
     def test_plot(self):
 
@@ -258,32 +278,32 @@ class PhysioFitter:
         exp_biomass = self.exp_data_matrix[:, 0]
         exp_glc = self.exp_data_matrix[:, 1]
         exp_ace = self.exp_data_matrix[:, 2]
-        sim_biomass = self.final_simulated_matrix[:, 0]
-        sim_glc = self.final_simulated_matrix[:, 1]
-        sim_ace = self.final_simulated_matrix[:, 2]
+        sim_biomass = self.simulated_matrix[:, 0]
+        sim_glc = self.simulated_matrix[:, 1]
+        sim_ace = self.simulated_matrix[:, 2]
 
         # Work on biomass ax
-        exp_biomass_line, = ax1.scatter(x, exp_biomass, marker='o')
-        exp_biomass_line.set_label("Exp Biomass")
-        sim_biomass_line, = ax1.plot(x, sim_biomass, linestyle='--', marker='o')
+        exp_biomass = ax1.scatter(x, exp_biomass, marker='o', color="orange")
+        exp_biomass.set_label("Exp Biomass")
+        sim_biomass_line, = ax1.plot(x, sim_biomass, linestyle='--')
         sim_biomass_line.set_label("Sim Biomass")
         ax1.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
         ax1.legend()
         ax1.set_title("Sim/Exp comparison")
 
-        # Work on glucose axe
-        exp_glucose_line, = ax2.scatter(x, exp_glc, marker='o')
-        exp_glucose_line.set_label("Exp Glucose")
-        exp_glucose_line, = ax2.plot(x, sim_glc,linestyle='--', marker='o')
-        exp_glucose_line.set_label("Sim Glucose")
+        # Work on glucose ax
+        exp_glucose = ax2.scatter(x, exp_glc, marker='o', color="orange")
+        exp_glucose.set_label("Exp Glucose")
+        sim_glucose_line, = ax2.plot(x, sim_glc, linestyle='--')
+        sim_glucose_line.set_label("Sim Glucose")
         ax2.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
         ax2.legend()
 
-        #Work on acetate axe
-        exp_Ace_line, = ax3.scatter(x, exp_ace, marker='o')
-        exp_Ace_line.set_label("Exp Acetate")
-        exp_Ace_line, = ax3.plot(x, sim_ace, linestyle='--', marker='o')
-        exp_Ace_line.set_label("Sim Acetate")
+        # Work on acetate ax
+        exp_ace = ax3.scatter(x, exp_ace, marker='o', color="orange")
+        exp_ace.set_label("Exp Acetate")
+        sim_ace_line, = ax3.plot(x, sim_ace, linestyle='--')
+        sim_ace_line.set_label("Sim Acetate")
         ax3.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
         ax3.legend()
 
@@ -320,8 +340,8 @@ class PhysioFitter:
 
 
 if __name__ == "__main__":
-    test = PhysioFitter(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_1.tsv",
-                        vini=1, weight=[0.02, 0.46, 0.1])
+    test = PhysioFitter(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv",
+                        vini=0.9, weight=[0.02, 0.46, 0.1])
     test.optimize()
     test.test_plot()
 
