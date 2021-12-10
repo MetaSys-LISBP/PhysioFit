@@ -2,13 +2,13 @@
 
 import logging
 
-#Setup base logger
+# Setup base logger
 
-logger = logging.getLogger("PhysioFit_Logger")
-logger.setLevel(logging.DEBUG)
+mod_logger = logging.getLogger("PhysioFit_Logger")
+mod_logger.setLevel(logging.DEBUG)
+
 
 def initialize_fitter_logger(verbose):
-
     logger = logging.getLogger(f"PhysioFit_Logger.base.fitter.PhysioFitter")
     # fh = logging.FileHandler(f"{self.run_name}.log")
     handler = logging.StreamHandler()

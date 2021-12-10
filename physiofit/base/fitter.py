@@ -17,9 +17,9 @@ mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
 class PhysioFitter:
 
-    def __init__(self, path_to_data, vini=0.04, mc=True, iterations=50, pos=True, up_flux_bound=50, low_flux_bound=-50,
-                 up_conc_bound=50, low_conc_bound=1.e-6, weight=None, sd_X=0.002, sd_M=0.5, save=True,
-                 summary=False, debug_mode=True):
+    def __init__(self, path_to_data, vini=0.04, mc=True, iterations=50, pos=True, conc_biom_bounds=(1e-2, 50),
+                 flux_biom_bounds=(0.01, 50), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
+                 sd_X=0.002, sd_M=0.5, save=True, summary=False, debug_mode=True):
 
         """
         The PhysioFitter class is responsible for most of Physiofit's heavy lifting. Features included are:
@@ -45,14 +45,14 @@ class PhysioFitter:
         :param pos: Negative concentrations of noisy datasets generated during Monte-Carlo iterations are set to 0 if
                     True (default=True)
         :type pos: Boolean
-        :param up_flux_bound: Upper constraints on initial fluxes (default = 50)
-        :type up_flux_bound: int or float
-        :param low_flux_bound: Lower constraints on initial fluxes (default = -50)
-        :type low_flux_bound: int or float
-        :param up_conc_bound: Upper constraints on initial concentrations (default = 50)
-        :type up_conc_bound: int or float
-        :param low_conc_bound: Lower contratints on initial concentrations (default = 1e-6)
-        :type low_conc_bound: in or float
+        :param conc_biom_bounds: lower and upper bounds for biomass concentration (X0)
+        :type conc_biom_bounds: tuple of ints/floats (lower, upper)
+        :param flux_biom_bounds: lower and upper bounds for biomass rate of change (mu)
+        :type flux_biom_bounds: tuple of ints/floats (lower, upper)
+        :param conc_met_bounds: lower and upper bounds for metabolite concentration (mi0)
+        :type conc_met_bounds: tuple of ints/floats (lower, upper)
+        :param flux_met_bounds: lower and upper bounds for metabolite rate of change (qi)
+        :type flux_met_bounds: tuple of ints/floats (lower, upper)
         :param weight: weight matrix used for residuum calculations. Can be:
                        * a matrix with the same dimensions as the measurements matrix (but without the time column)
                        * a named vector containing weights for all the metabolites provided in the input file
@@ -76,10 +76,10 @@ class PhysioFitter:
         self.mc = mc
         self.iterations = iterations
         self.pos = pos
-        self.up_flux_bound = up_flux_bound
-        self.low_flux_bound = low_flux_bound
-        self.up_conc_bound = up_conc_bound
-        self.low_conc_bound = low_conc_bound
+        self.conc_biom_bounds = conc_biom_bounds
+        self.flux_biom_bounds = flux_biom_bounds
+        self.conc_met_bounds = conc_met_bounds
+        self.flux_met_bounds = flux_met_bounds
         self.weight = weight
         self.sd_X = sd_X
         self.sd_M = sd_M
@@ -218,17 +218,17 @@ class PhysioFitter:
 
         # We set the bounds for x0 and mu
         bounds = [
-            (self.low_conc_bound, self.up_conc_bound),  # X_0
-            (1e-6, self.up_flux_bound)  # mu
+            self.conc_biom_bounds,
+            self.flux_biom_bounds
         ]
         # We get the number of times that we must add the m0 and q0 bounds (once per metabolite)
         ids_range = int((len(self.ids) - 2) / 2)  # We force int so that Python does not think it could be float
         for _ in range(ids_range):
             bounds.append(
-                (self.low_flux_bound, self.up_flux_bound)  # q_0
+                self.flux_met_bounds  # q_0
             )
             bounds.append(
-                (self.low_conc_bound, self.up_conc_bound)  # M_0
+                self.conc_met_bounds  # M_0
             )
         self.bounds = tuple(bounds)
 
@@ -264,7 +264,7 @@ class PhysioFitter:
         self.logger.info("\nRunning optimization...")
         self.optimize_results = PhysioFitter._run_optimization(self.params, self.exp_data_matrix,
                                                                self.time_vector, self.weight, self.bounds)
-        test.logger.info(f"Optimization results: \n{test.optimize_results}")
+        self.logger.info(f"Optimization results: \n{self.optimize_results}")
         for i, param in zip(self.ids, self.optimize_results.x):
             self.logger.info(f"\n{i} = {param}")
         self.simulated_matrix = PhysioFitter._simple_sim(self.optimize_results.x, self.exp_data_matrix,
@@ -274,6 +274,7 @@ class PhysioFitter:
     def test_plot(self):
 
         fig, (ax1, ax2, ax3) = plt.subplots(3)
+        fig.set_size_inches(18.5, 10.5)
         x = self.time_vector
         exp_biomass = self.exp_data_matrix[:, 0]
         exp_glc = self.exp_data_matrix[:, 1]
@@ -338,11 +339,68 @@ class PhysioFitter:
             exp_data_matrix, time_vector, weight_matrix), method="L-BFGS-B", bounds=bounds)
         return optimize_results
 
+    def monte_carlo_analysis(self):
+        if not self.optimize_results:
+            raise RuntimeError("Running Monte Carlo simulation without having run the optimization is impossible "
+                               "as best fit results are needed to generate the simulated matrix")
+
+        opt_res = self.optimize_results
+        opt_params = []
+        matrices = []
+        for _ in range(self.iterations):
+            new_matrix = self._apply_noise()
+            opt_res = PhysioFitter._run_optimization(opt_res.x, new_matrix, self.time_vector,
+                                                     self.weight, self.bounds)
+            matrices.append(PhysioFitter._simple_sim(opt_res.x, new_matrix, self.time_vector))
+            opt_params.append(opt_res.x)
+        opt_params = np.array(opt_params)
+        matrices = np.array(matrices)
+        print(f"optimized parameters:\n {np.std(opt_params, 0)}")
+        print(f"new matrices:\n {np.std(matrices, 0)}")
+        return
+
+    @staticmethod
+    def _add_noise(array, sd):
+        """
+        Add random noise to a given array using input standard deviations
+
+        :param array: input array on which to apply noise
+        :type array: class: numpy.ndarray
+        :param sd: standard deviation to apply to the input array
+        :type sd: class: numpy.ndarray
+        :return: noisy ndarray
+        """
+
+        output = np.random.normal(loc=array, scale=sd, size=array.size)
+        return output
+
+    def _apply_noise(self):
+        """
+        Apply noise to the simulated matrix obtained using optimized parameters. SDs are obtained from the weight
+        matrix
+        """
+
+        new_matrix = np.array([
+            PhysioFitter._add_noise(self.simulated_matrix[:, idx], sd)
+            for idx, sd in enumerate(self.weight[0, :])
+        ])
+
+        return new_matrix.transpose()
+
 
 if __name__ == "__main__":
     test = PhysioFitter(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv",
-                        vini=0.9, weight=[0.02, 0.46, 0.1])
+                        vini=0.05, weight=[0.02, 0.46, 0.1])
     test.optimize()
-    test.test_plot()
-
-# TODO: Build plotting function for testing
+    # test.test_plot()
+    print(test.simulated_matrix)
+    print(test.optimize_results)
+    test.monte_carlo_analysis()
+    # out = PhysioFitter._add_noise(test.simulated_matrix[:, 1], 0.46)
+    # print(out)
+    # out = test.monte_carlo_analysis()
+    # print(out)
+    # print(out.shape)
+    # print(out.ndim)
+    # print(f"Simulated Matrix:\n {test.simulated_matrix}\n"
+    #       f"STD results: \n {test.monte_carlo_analysis()}")
