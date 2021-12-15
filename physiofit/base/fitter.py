@@ -2,12 +2,10 @@
 PhysioFit software main module
 """
 
-from pathlib import Path
 import logging
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pandas import read_csv, DataFrame
 from scipy.optimize import minimize
 
 from physiofit.logger import initialize_fitter_logger
@@ -17,7 +15,7 @@ mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
 class PhysioFitter:
 
-    def __init__(self, path_to_data, vini=0.04, mc=True, iterations=50, pos=True, conc_biom_bounds=(1e-2, 50),
+    def __init__(self, data, vini=0.04, mc=True, iterations=100, pos=True, conc_biom_bounds=(1e-2, 50),
                  flux_biom_bounds=(0.01, 50), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
                  sd_X=0.002, sd_M=0.5, save=True, summary=False, debug_mode=True):
 
@@ -35,10 +33,11 @@ class PhysioFitter:
             * calling the Stat Analyzer objet for sensitivity analysis, khi2 tests and plotting (see documentation
               relative to the component Stat Analyzer class for more details)
 
-        :param path_to_data: path to input file
-        :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
+        :param data: DataFrame containing data and passed by IOstream object
+        :param data: class: pandas.DataFrame
         :param vini: initial value for fluxes and concentrations (default=1)
         :type vini: int or float
+        :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
         :type mc: Boolean
         :param iterations: number of iterations for Monte-Carlo simulation (default=50)
         :type iterations: int
@@ -70,8 +69,7 @@ class PhysioFitter:
         :type summary: Boolean
         """
 
-        self.data = PhysioFitter._read_data(path_to_data)
-        self.data = self.data.sort_values("time", ignore_index=True)
+        self.data = data
         self.vini = vini
         self.mc = mc
         self.iterations = iterations
@@ -93,6 +91,8 @@ class PhysioFitter:
         self.params = None
         self.ids = None
         self.bounds = None
+        self.opt_params_sds = None
+        self.matrices_sds = None
 
         self.logger.info("Initializing vectors...\n")
         self._initialize_vectors()
@@ -108,48 +108,6 @@ class PhysioFitter:
         self._initialize_bounds()
         self.logger.debug(f"Bounds: {self.bounds}")
 
-    @staticmethod
-    def _read_data(path_to_data: str) -> DataFrame:
-        """
-        Read initial data file (csv or tsv)
-
-        :param path_to_data: str containing the relative or absolute path to the data
-        :return: pandas DataFrame containing the data
-        """
-
-        data_path = Path(path_to_data).resolve()
-        if data_path.suffix == ".tsv":
-            data = read_csv(data_path, sep="\t")
-        elif data_path.suffix == ".csv":
-            data = read_csv(data_path, sep=";")
-        else:
-            if not data_path.exists():
-                raise ValueError(f"{data_path} is not a valid file")
-            else:
-                raise TypeError(f"{data_path} is not a valid format. Accepted formats are .csv or .tsv")
-        PhysioFitter._verify_data(data)
-        return data
-
-    @staticmethod
-    def _verify_data(data: DataFrame):
-        """
-        Perform checks on DataFrame returned by the _read_data function
-
-        :param data: pandas DataFrame containing the data
-        :return: None
-        """
-
-        if not isinstance(data, DataFrame):
-            raise TypeError("There was an error reading the data: DataFrame has not been generated")
-        for col in ["time", "X"]:
-            if col not in data.columns:
-                raise ValueError(f"The column {col} is missing from the dataset")
-        if len(data.columns) <= 2:
-            raise ValueError(f"The data does not contain any metabolite columns")
-        for col in data.columns:
-            if data[col].dtypes != np.int64 and data[col].dtypes != np.float64:
-                raise ValueError(f"The column {col} has values that are not of numeric type")
-
     def _initialize_vectors(self):
         """
         Initialize the vectors needed for flux calculations from the input parameters
@@ -159,7 +117,7 @@ class PhysioFitter:
 
         self.time_vector = self.data.time.to_numpy()
         self.name_vector = self.data.drop("time", axis=1).columns.to_list()
-        self.exp_data_matrix = self.data.drop("time", axis=1).to_numpy()
+        self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
         metabolites = self.name_vector[1:]
         mu = self.vini
         x_0 = self.vini
@@ -204,7 +162,7 @@ class PhysioFitter:
                 raise RuntimeError(f"Unknown error: {e}")
         else:
             # If the array is not the right shape, we assume it is a vector that needs to be tiled into a matrix
-            if self.weight.shape != self.exp_data_matrix.shape:
+            if self.weight.shape != self.experimental_matrix.shape:
                 try:
                     self._build_weight_matrix()
                 except ValueError:
@@ -243,72 +201,33 @@ class PhysioFitter:
         """
 
         if isinstance(self.weight, np.ndarray):
-            if self.weight.size != self.exp_data_matrix[0].size:
+            if self.weight.size != self.experimental_matrix[0].size:
                 raise ValueError("Weight vector not of right size")
             else:
-                self.weight = np.tile(self.weight, (len(self.exp_data_matrix), 1))
+                self.weight = np.tile(self.weight, (len(self.experimental_matrix), 1))
         elif isinstance(self.weight, int) or isinstance(self.weight, float):
-            self.weight = np.full(self.exp_data_matrix.shape, self.weight)
+            self.weight = np.full(self.experimental_matrix.shape, self.weight)
         else:
             raise RuntimeError("Unknown error")
 
     def simulate(self, equation_type="simple"):
 
         if equation_type == "simple":
-            self.simulated_matrix = PhysioFitter._simple_sim(self.params, self.exp_data_matrix, self.time_vector)
+            self.simulated_matrix = PhysioFitter._simple_sim(self.params, self.experimental_matrix, self.time_vector)
         else:
             pass
 
     def optimize(self):
 
         self.logger.info("\nRunning optimization...")
-        self.optimize_results = PhysioFitter._run_optimization(self.params, self.exp_data_matrix,
+        self.optimize_results = PhysioFitter._run_optimization(self.params, self.experimental_matrix,
                                                                self.time_vector, self.weight, self.bounds)
         self.logger.info(f"Optimization results: \n{self.optimize_results}")
         for i, param in zip(self.ids, self.optimize_results.x):
             self.logger.info(f"\n{i} = {param}")
-        self.simulated_matrix = PhysioFitter._simple_sim(self.optimize_results.x, self.exp_data_matrix,
+        self.simulated_matrix = PhysioFitter._simple_sim(self.optimize_results.x, self.experimental_matrix,
                                                          self.time_vector)
         self.logger.info(f"Final Simulated Matrix: \n{self.simulated_matrix}")
-
-    def test_plot(self):
-
-        fig, (ax1, ax2, ax3) = plt.subplots(3)
-        fig.set_size_inches(18.5, 10.5)
-        x = self.time_vector
-        exp_biomass = self.exp_data_matrix[:, 0]
-        exp_glc = self.exp_data_matrix[:, 1]
-        exp_ace = self.exp_data_matrix[:, 2]
-        sim_biomass = self.simulated_matrix[:, 0]
-        sim_glc = self.simulated_matrix[:, 1]
-        sim_ace = self.simulated_matrix[:, 2]
-
-        # Work on biomass ax
-        exp_biomass = ax1.scatter(x, exp_biomass, marker='o', color="orange")
-        exp_biomass.set_label("Exp Biomass")
-        sim_biomass_line, = ax1.plot(x, sim_biomass, linestyle='--')
-        sim_biomass_line.set_label("Sim Biomass")
-        ax1.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
-        ax1.legend()
-        ax1.set_title("Sim/Exp comparison")
-
-        # Work on glucose ax
-        exp_glucose = ax2.scatter(x, exp_glc, marker='o', color="orange")
-        exp_glucose.set_label("Exp Glucose")
-        sim_glucose_line, = ax2.plot(x, sim_glc, linestyle='--')
-        sim_glucose_line.set_label("Sim Glucose")
-        ax2.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
-        ax2.legend()
-
-        # Work on acetate ax
-        exp_ace = ax3.scatter(x, exp_ace, marker='o', color="orange")
-        exp_ace.set_label("Exp Acetate")
-        sim_ace_line, = ax3.plot(x, sim_ace, linestyle='--')
-        sim_ace_line.set_label("Sim Acetate")
-        ax3.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
-        ax3.legend()
-
-        plt.show()
 
     @staticmethod
     def _simple_sim(params, exp_data_matrix, time_vector):
@@ -340,10 +259,11 @@ class PhysioFitter:
         return optimize_results
 
     def monte_carlo_analysis(self):
+
         if not self.optimize_results:
             raise RuntimeError("Running Monte Carlo simulation without having run the optimization is impossible "
-                               "as best fit results are needed to generate the simulated matrix")
-
+                               "as best fit results are needed to generate the initial simulated matrix")
+        self.logger.info(f"Running monte carlo analysis. Number of iterations: {self.iterations}")
         opt_res = self.optimize_results
         opt_params = []
         matrices = []
@@ -353,10 +273,10 @@ class PhysioFitter:
                                                      self.weight, self.bounds)
             matrices.append(PhysioFitter._simple_sim(opt_res.x, new_matrix, self.time_vector))
             opt_params.append(opt_res.x)
-        opt_params = np.array(opt_params)
-        matrices = np.array(matrices)
-        print(f"optimized parameters:\n {np.std(opt_params, 0)}")
-        print(f"new matrices:\n {np.std(matrices, 0)}")
+        self.opt_params_sds = np.std(np.array(opt_params), 0)
+        self.matrices_sds = np.std(np.array(matrices), 0)
+        self.logger.info(f"Optimized parameters standard deviations:\n {self.opt_params_sds}")
+        self.logger.info(f"Simulated matrix standard deviations:\n {self.matrices_sds}")
         return
 
     @staticmethod
@@ -389,18 +309,15 @@ class PhysioFitter:
 
 
 if __name__ == "__main__":
-    test = PhysioFitter(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv",
-                        vini=0.05, weight=[0.02, 0.46, 0.1])
+    from datetime import datetime
+    from physiofit.base.io import IoHandler
+    print(f"Time before: {datetime.now().strftime('%H:%M:%S')}")
+    iostream = IoHandler("local")
+    iostream.handle_local_data(
+        r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv"
+    )
+    test = PhysioFitter(iostream.data, vini=0.05, weight=[0.02, 0.46, 0.1])
     test.optimize()
-    # test.test_plot()
-    print(test.simulated_matrix)
-    print(test.optimize_results)
     test.monte_carlo_analysis()
-    # out = PhysioFitter._add_noise(test.simulated_matrix[:, 1], 0.46)
-    # print(out)
-    # out = test.monte_carlo_analysis()
-    # print(out)
-    # print(out.shape)
-    # print(out.ndim)
-    # print(f"Simulated Matrix:\n {test.simulated_matrix}\n"
-    #       f"STD results: \n {test.monte_carlo_analysis()}")
+    print(iostream.data)
+    print(f"Time after: {datetime.now().strftime('%H:%M:%S')}")
