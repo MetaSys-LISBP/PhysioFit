@@ -40,6 +40,7 @@ class IoHandler:
         self.home_path = None
 
     def local_in(self, data, **kwargs):
+        """Function for reading data and initializing the fitter object in local context"""
 
         if self.data:
             raise ValueError(f"It seems data is already loaded in. Data: \n{self.data}\nHome path: {self.home_path}")
@@ -55,6 +56,7 @@ class IoHandler:
         self.initialize_fitter(kwargs)
 
     def local_out(self, *args):
+        """Function for coordinating exports in local context"""
 
         for arg in args:
             if arg not in ["data", "plot", "pdf"]:
@@ -70,6 +72,11 @@ class IoHandler:
             self._output_pdf()
 
     def initialize_fitter(self, kwargs):
+        """
+        Initialize the PhysioFitter object and pass kwargs on down
+        :param kwargs: Keyword arguments for fitter initialization
+        :return: None
+        """
 
         wrong_keys = []
         self.fitter = PhysioFitter(self.data)
@@ -84,6 +91,7 @@ class IoHandler:
             raise KeyError(f"Some keyword arguments were not valid: {wrong_keys}")
 
     def _output_pdf(self):
+        """Handle the creation and output of a pdf file containing fit results in plot form"""
 
         if not self.home_path:
             raise RuntimeError("No home path detected. Was data loaded in correctly?")
@@ -97,6 +105,7 @@ class IoHandler:
             raise "Error while generating the pdf file"
 
     def _output_plots(self):
+        """Handle the creation and export of the different plots in svg format"""
 
         if not self.home_path:
             raise RuntimeError("No home path detected. Was data loaded in correctly?")
@@ -109,10 +118,15 @@ class IoHandler:
             raise RuntimeError("Unknown error while generating output")
 
     def _output_report(self):
+        """
+        Handle creation and export of the report containing stats from monte carlo analysis of optimization
+        parameters
+        """
 
         self.fitter.logger.debug(f"Parameter Stats:\n{self.fitter.parameter_stats}")
         opt_data = DataFrame.from_dict(self.fitter.parameter_stats,
                                        orient="columns")
+        # Use IDs to clarify which parameter is described on each line
         opt_data.index = self.fitter.ids
         opt_data.to_csv(fr"{self.home_path}\Optimized_parameter_statistics.csv")
 
@@ -152,6 +166,11 @@ class IoHandler:
         self._draw_plots(display)
 
     def _draw_plots(self, display):
+        """
+        Draw the plots and assign them to the _figures attribute for later acces in pdf and plot generation functions
+
+        :param display: Should plots be displayed or not on creation
+        """
 
         for element in self.names:
             fig, ax = plt.subplots()
@@ -175,6 +194,12 @@ class IoHandler:
                 plt.show()
 
     def _add_sd_area(self, element, ax):
+        """
+        Draw red area around the fitting line to show SD
+
+        :param element: Which variable is being plotted
+        :param ax: axes on which to draw the area before returning to mother function
+        """
 
         y1 = self.simulated_data[element].to_numpy() + self.simulated_data_sds[element].to_numpy()
         y2 = self.simulated_data[element].to_numpy() - self.simulated_data_sds[element].to_numpy()

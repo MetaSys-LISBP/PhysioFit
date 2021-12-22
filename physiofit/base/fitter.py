@@ -87,6 +87,9 @@ class PhysioFitter:
 
         self.simulated_matrix = None
         self.optimize_results = None
+        self.time_vector = None
+        self.name_vector = None
+        self.experimental_matrix = None
         self.params = None
         self.ids = None
         self.bounds = None
@@ -122,6 +125,7 @@ class PhysioFitter:
         x_0 = self.vini
         self.params = [x_0, mu]
         self.ids = ["X_0", "mu"]
+        # Build a list containing each metabolite's q and m0
         for met in metabolites:
             self.params.append(self.vini)
             self.params.append(self.vini)
@@ -177,6 +181,7 @@ class PhysioFitter:
                 return
 
     def initialize_bounds(self):
+        """Initialize the bounds for each parameter"""
 
         self.logger.info("Initializing bounds...")
         # We set the bounds for x0 and mu
@@ -197,6 +202,9 @@ class PhysioFitter:
         self.logger.debug(f"Bounds: {self.bounds}")
 
     def _read_weight_file(self):
+        """Initialize weights from given file containing the different SDs"""
+
+        # TODO: Write function
         pass
 
     def _build_weight_matrix(self):
@@ -206,17 +214,22 @@ class PhysioFitter:
         :return: None
         """
 
+        # First condition: the weights are in a 1D array
         if isinstance(self.weight, np.ndarray):
+            # We first check that the weight vector is as long as the experimental matrix on the row axis
             if self.weight.size != self.experimental_matrix[0].size:
                 raise ValueError("Weight vector not of right size")
             else:
+                # We duplicate the vector column-wise to build a matrix of duplicated weight vectors
                 self.weight = np.tile(self.weight, (len(self.experimental_matrix), 1))
+        # Second condition: the weight is a scalar and must be broadcast to a matrix with same shape as the data
         elif isinstance(self.weight, int) or isinstance(self.weight, float):
             self.weight = np.full(self.experimental_matrix.shape, self.weight)
         else:
             raise RuntimeError("Unknown error")
 
     def simulate(self, equation_type="simple"):
+        """Run simulation using input parameters"""
 
         # TODO: Add more simulation functions (lag, deg, lag&deg)
         if equation_type == "simple":
@@ -225,6 +238,7 @@ class PhysioFitter:
             pass
 
     def optimize(self):
+        """Run optimization and build the simulated matrix from the optimized parameters"""
 
         self.logger.info("\nRunning optimization...")
         self.optimize_results = PhysioFitter._run_optimization(self.params, self.experimental_matrix,
@@ -238,6 +252,7 @@ class PhysioFitter:
 
     @staticmethod
     def _simple_sim(params, exp_data_matrix, time_vector):
+        """Function to simulate the matrix using input parameters and the no lag & no deg analytical equation"""
 
         simulated_matrix = np.empty_like(exp_data_matrix)
         x_0 = params[0]
@@ -252,6 +267,7 @@ class PhysioFitter:
 
     @staticmethod
     def _calculate_cost(params, exp_data_matrix, time_vector, weight_matrix):
+        """Calculate the cost (residue) using the square of simulated-experimental over the SDs"""
 
         simulated_matrix = PhysioFitter._simple_sim(params, exp_data_matrix, time_vector)
         cost_val = np.square((simulated_matrix - exp_data_matrix) / weight_matrix)
@@ -260,28 +276,41 @@ class PhysioFitter:
 
     @staticmethod
     def _run_optimization(params, exp_data_matrix, time_vector, weight_matrix, bounds):
+        """
+        Run the optimization on input parameters using the cost function and Scipy minimize (L-BFGS-B method
+        that is deterministic and uses the gradient method for optimizing)
+        """
 
         optimize_results = minimize(PhysioFitter._calculate_cost, x0=params, args=(
             exp_data_matrix, time_vector, weight_matrix), method="L-BFGS-B", bounds=bounds)
         return optimize_results
 
     def monte_carlo_analysis(self):
+        """
+        Run a monte carlo analysis to calculate optimization standard deviations on parameters and simulated data points
+        """
 
         if not self.optimize_results:
             raise RuntimeError("Running Monte Carlo simulation without having run the optimization is impossible "
                                "as best fit results are needed to generate the initial simulated matrix")
         self.logger.info(f"Running monte carlo analysis. Number of iterations: {self.iterations}")
+        # Store the optimized results in variable that will be overridden on every pass
         opt_res = self.optimize_results
         opt_params_list = []
         matrices = []
         for _ in range(self.iterations):
             new_matrix = self._apply_noise()
+            # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(opt_res.x, new_matrix, self.time_vector,
                                                      self.weight, self.bounds)
+            # Store the new simulated matrix in list for later use
             matrices.append(PhysioFitter._simple_sim(opt_res.x, new_matrix, self.time_vector))
+            # Store the new optimised parameters in list for later use
             opt_params_list.append(opt_res.x)
+        # Build a 3D array from all the simulated matrices to get standard deviation on each data point
         matrices = np.array(matrices)
         self.matrices_sds = np.std(np.array(matrices), 0)
+        # Compute the statistics on the list of parameters: means, sds, medians and confidence interval
         self._compute_parameter_stats(opt_params_list)
         self.logger.info(f"Optimized parameters statistics:\n{self.parameter_stats}")
         self.logger.info(f"Simulated matrix standard deviations:\n {self.matrices_sds}\n")
@@ -289,7 +318,8 @@ class PhysioFitter:
 
     def _compute_parameter_stats(self, opt_params_list):
         """
-        Compute statistics on the optimized parameters from the monte carlo analysis
+        Compute statistics on the optimized parameters from the monte carlo analysis. Confidence interval z value
+        is equal to 1.96 (equivalent to 0.95 CI)
         :param opt_params_list: list of optimized parameter arrays generated during the monte carlo analysis
         :return: parameter stats attribute containing means, sds, medians, low and high CI
         """
