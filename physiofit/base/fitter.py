@@ -5,7 +5,6 @@ PhysioFit software main module
 import logging
 
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
 from physiofit.logger import initialize_fitter_logger
@@ -93,22 +92,22 @@ class PhysioFitter:
         self.bounds = None
         self.opt_params_sds = None
         self.matrices_sds = None
+        self.matrices_meds = None
+        self.matrices_means = None
+        self.conf_ints = None
 
         self.logger.info("Initializing vectors...\n")
-        self._initialize_vectors()
+        self.initialize_vectors()
         self.logger.debug(f"Time vector: {self.time_vector}\n"
                           f"Name vector: {self.name_vector}\n"
                           f"Experimental Data: \n{self.data}\n"
                           f"Parameters: {self.ids}\n"
                           f"Parameter vector: {self.params}\n")
-        self.logger.info("Initializing Weight matrix...\n")
-        self._initialize_weight_matrix()
-        self.logger.debug(f"Weight matrix: {self.weight}")
-        self.logger.info("Initializing bounds...")
-        self._initialize_bounds()
-        self.logger.debug(f"Bounds: {self.bounds}")
+        if weight:
+            self.initialize_weight_matrix()
+        self.initialize_bounds()
 
-    def _initialize_vectors(self):
+    def initialize_vectors(self):
         """
         Initialize the vectors needed for flux calculations from the input parameters
 
@@ -129,7 +128,7 @@ class PhysioFitter:
             self.ids.append(f"{met}_q")
             self.ids.append(f"{met}_M0")
 
-    def _initialize_weight_matrix(self):
+    def initialize_weight_matrix(self):
         """
         Initialize the weight matrix from different types of inputs: single value, vector or matrix.
 
@@ -138,13 +137,17 @@ class PhysioFitter:
 
         # TODO: This function can be optimized, if the input is a matrix we should detect it directly
 
+        self.logger.info("Initializing Weight matrix...\n")
+
         # When 0 is given as input weight, we assume the weights are given in an external file
         if self.weight is None:
             self._read_weight_file()
+            self.logger.debug(f"Weight matrix: {self.weight}")
             return
         # When weight is a single value, we build a weight matrix containing the value in all positions
         if isinstance(self.weight, int) or isinstance(self.weight, float):
             self._build_weight_matrix()
+            self.logger.debug(f"Weight matrix: {self.weight}")
             return
         if not isinstance(self.weight, np.ndarray):
             if not isinstance(self.weight, list):
@@ -170,10 +173,12 @@ class PhysioFitter:
                 except RuntimeError:
                     raise
             else:
+                self.logger.debug(f"Weight matrix: {self.weight}")
                 return
 
-    def _initialize_bounds(self):
+    def initialize_bounds(self):
 
+        self.logger.info("Initializing bounds...")
         # We set the bounds for x0 and mu
         bounds = [
             self.conc_biom_bounds,
@@ -189,6 +194,7 @@ class PhysioFitter:
                 self.conc_met_bounds  # M_0
             )
         self.bounds = tuple(bounds)
+        self.logger.debug(f"Bounds: {self.bounds}")
 
     def _read_weight_file(self):
         pass
@@ -212,6 +218,7 @@ class PhysioFitter:
 
     def simulate(self, equation_type="simple"):
 
+        # TODO: Add more simulation functions (lag, deg, lag&deg)
         if equation_type == "simple":
             self.simulated_matrix = PhysioFitter._simple_sim(self.params, self.experimental_matrix, self.time_vector)
         else:
@@ -265,33 +272,60 @@ class PhysioFitter:
                                "as best fit results are needed to generate the initial simulated matrix")
         self.logger.info(f"Running monte carlo analysis. Number of iterations: {self.iterations}")
         opt_res = self.optimize_results
-        opt_params = []
+        opt_params_list = []
         matrices = []
         for _ in range(self.iterations):
             new_matrix = self._apply_noise()
             opt_res = PhysioFitter._run_optimization(opt_res.x, new_matrix, self.time_vector,
                                                      self.weight, self.bounds)
             matrices.append(PhysioFitter._simple_sim(opt_res.x, new_matrix, self.time_vector))
-            opt_params.append(opt_res.x)
-        self.opt_params_sds = np.std(np.array(opt_params), 0)
+            opt_params_list.append(opt_res.x)
+        matrices = np.array(matrices)
         self.matrices_sds = np.std(np.array(matrices), 0)
-        self.logger.info(f"Optimized parameters standard deviations:\n {self.opt_params_sds}")
-        self.logger.info(f"Simulated matrix standard deviations:\n {self.matrices_sds}")
+        self._compute_parameter_stats(opt_params_list)
+        self.logger.info(f"Optimized parameters statistics:\n{self.parameter_stats}")
+        self.logger.info(f"Simulated matrix standard deviations:\n {self.matrices_sds}\n")
         return
 
-    @staticmethod
-    def _add_noise(array, sd):
+    def _compute_parameter_stats(self, opt_params_list):
         """
-        Add random noise to a given array using input standard deviations
+        Compute statistics on the optimized parameters from the monte carlo analysis
+        :param opt_params_list: list of optimized parameter arrays generated during the monte carlo analysis
+        :return: parameter stats attribute containing means, sds, medians, low and high CI
+        """
 
-        :param array: input array on which to apply noise
-        :type array: class: numpy.ndarray
+        opt_params_means = np.mean(np.array(opt_params_list), 0)
+        opt_params_sds = np.std(np.array(opt_params_list), 0)
+        opt_params_meds = np.median(np.array(opt_params_list), 0)
+        conf_ints = self._compute_conf_int(opt_params_sds)
+        self.parameter_stats = {
+            "mean": opt_params_means,
+            "sd": opt_params_sds,
+            "median": opt_params_meds,
+            "low_CI": conf_ints[:, 0],
+            "high_CI": conf_ints[:, 2]
+        }
+
+    def _compute_conf_int(self, opt_params_sds):
+        """Compute the confidence intervals on optimized parameters for the monte carlo analysis results"""
+
+        lower_int_conf = self.optimize_results.x - ((opt_params_sds * 1.96) / np.sqrt(self.iterations))
+        higher_int_conf = self.optimize_results.x + ((opt_params_sds * 1.96) / np.sqrt(self.iterations))
+        return np.column_stack((lower_int_conf, self.optimize_results.x, higher_int_conf))
+
+    @staticmethod
+    def _add_noise(vector, sd):
+        """
+        Add random noise to a given array using input standard deviations.
+
+        :param vector: input array on which to apply noise
+        :type vector: class: numpy.ndarray
         :param sd: standard deviation to apply to the input array
         :type sd: class: numpy.ndarray
         :return: noisy ndarray
         """
 
-        output = np.random.normal(loc=array, scale=sd, size=array.size)
+        output = np.random.default_rng().normal(loc=vector, scale=sd, size=vector.size)
         return output
 
     def _apply_noise(self):
@@ -301,23 +335,23 @@ class PhysioFitter:
         """
 
         new_matrix = np.array([
-            PhysioFitter._add_noise(self.simulated_matrix[:, idx], sd)
-            for idx, sd in enumerate(self.weight[0, :])
+            PhysioFitter._add_noise(self.simulated_matrix[idx, :], sd)
+            for idx, sd in enumerate(self.weight)
         ])
 
-        return new_matrix.transpose()
+        return new_matrix
 
 
 if __name__ == "__main__":
     from datetime import datetime
     from physiofit.base.io import IoHandler
+
     print(f"Time before: {datetime.now().strftime('%H:%M:%S')}")
     iostream = IoHandler("local")
-    iostream.handle_local_data(
+    iostream.local_in(
         r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv"
     )
-    test = PhysioFitter(iostream.data, vini=0.05, weight=[0.02, 0.46, 0.1])
-    test.optimize()
-    test.monte_carlo_analysis()
-    print(iostream.data)
+    phyfit = PhysioFitter(iostream.data, vini=0.05, weight=[0.02, 0.46, 0.1])
+    phyfit.optimize()
+    phyfit.monte_carlo_analysis()
     print(f"Time after: {datetime.now().strftime('%H:%M:%S')}")
