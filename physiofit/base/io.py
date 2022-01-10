@@ -1,5 +1,6 @@
 """Module to handle inputs and outputs for the Physiofit software"""
 from pathlib import Path
+import logging
 
 from pandas import DataFrame, read_csv
 import numpy as np
@@ -8,11 +9,11 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from physiofit.base.fitter import PhysioFitter
 
+mod_logger = logging.getLogger("PhysioFit.base.io")
 
 class IoHandler:
-
     allowed_keys = {"vini", "mc", "iterations", "pos", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds",
-                    "flux_met_bounds", "weight", "sd_X", "sd_M", "save", "summary", "debug_mode"}
+                    "flux_met_bounds", "weight", "sd_X", "sd_M", "save", "t_lag", "deg", "summary", "debug_mode"}
 
     def __init__(self, source='local'):
         """
@@ -38,14 +39,23 @@ class IoHandler:
         self.simulated_data = None
         self.experimental_data = None
         self.home_path = None
+        self.res_path = None
 
     def local_in(self, data, **kwargs):
-        """Function for reading data and initializing the fitter object in local context"""
+        """
+        Function for reading data and initializing the fitter object in local context
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
 
         if self.data:
             raise ValueError(f"It seems data is already loaded in. Data: \n{self.data}\nHome path: {self.home_path}")
         elif self.input_source == "local":
             self.home_path = Path(data).parent.resolve()
+            self.res_path = self.home_path / (self.home_path.name + "_res")
+            self.res_path.mkdir()
             if not self.home_path.exists():
                 raise KeyError(f"The input file does not exist. Path: {self.home_path}")
             self.data = IoHandler._read_data(data)
@@ -80,12 +90,16 @@ class IoHandler:
 
         wrong_keys = []
         self.fitter = PhysioFitter(self.data)
+        file_handle = logging.FileHandler(self.res_path / "log.txt")
+        file_handle.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        self.fitter.logger.addHandler(file_handle)
         self.fitter.__dict__.update((key, value) if key in IoHandler.allowed_keys else wrong_keys.append(key)
                                     for key, value in kwargs.items())
         # TODO: Think of how to implement this: should we use properties instead?
         self.fitter.initialize_vectors()
         self.fitter.initialize_weight_matrix()
         self.fitter.initialize_bounds()
+        self.fitter.initialize_equation()
         self.fitter.logger.debug(f"Fitter attribute dictionnary:\n{self.fitter.__dict__}")
         if wrong_keys:
             raise KeyError(f"Some keyword arguments were not valid: {wrong_keys}")
@@ -98,7 +112,7 @@ class IoHandler:
         if not self._figures:
             raise RuntimeError("Plots have not been created. Please launch the plot_data() function first")
         try:
-            with PdfPages(rf"{self.home_path}\plots.pdf") as pdf:
+            with PdfPages(rf"{self.res_path}\plots.pdf") as pdf:
                 for fig in self._figures:
                     pdf.savefig(fig[1])
         except Exception:
@@ -113,7 +127,7 @@ class IoHandler:
             raise RuntimeError("Plots have not been created. Please launch the plot_data() function first")
         try:
             for fig in self._figures:
-                fig[1].savefig(rf"{self.home_path}\{fig[0]}.svg")
+                fig[1].savefig(rf"{self.res_path}\{fig[0]}.svg")
         except Exception:
             raise RuntimeError("Unknown error while generating output")
 
@@ -128,7 +142,7 @@ class IoHandler:
                                        orient="columns")
         # Use IDs to clarify which parameter is described on each line
         opt_data.index = self.fitter.ids
-        opt_data.to_csv(fr"{self.home_path}\Optimized_parameter_statistics.csv")
+        opt_data.to_csv(fr"{self.res_path}\Optimized_parameter_statistics.csv")
 
     def _get_plot_data(self):
         """
@@ -148,13 +162,14 @@ class IoHandler:
             sim_mat = self.fitter.simulated_matrix
         else:
             raise ValueError("PhysioFitter simulated data does not exist yet")
-        if hasattr(self.fitter, "matrices_sds"):
-            sim_mat_sds = self.fitter.matrices_sds
+        if hasattr(self.fitter, "matrices_ci"):
+            sim_mat_ci = self.fitter.matrices_ci
         else:
             raise ValueError("PhysioFitter monte carlo analysis has not been done")
         self.experimental_data = DataFrame(columns=self.names, index=x, data=exp_mat)
         self.simulated_data = DataFrame(columns=self.names, index=x, data=sim_mat)
-        self.simulated_data_sds = DataFrame(columns=self.names, index=x, data=sim_mat_sds)
+        self.simulated_data_low_ci = DataFrame(columns=self.names, index=x, data=sim_mat_ci["lower_ci"])
+        self.simulated_data_high_ci = DataFrame(columns=self.names, index=x, data=sim_mat_ci["higher_ci"])
 
     def plot_data(self, display=True):
         """
@@ -167,14 +182,15 @@ class IoHandler:
 
     def _draw_plots(self, display):
         """
-        Draw the plots and assign them to the _figures attribute for later acces in pdf and plot generation functions
+        Draw the plots and assign them to the _figures attribute for later access in pdf and plot generation functions
 
         :param display: Should plots be displayed or not on creation
         """
 
         for element in self.names:
             fig, ax = plt.subplots()
-            fig.set_size_inches(18.5, 10.5)
+            fig.set_size_inches(9, 5)
+            # TODO: Make dots easier to see
             exp = ax.scatter(self.experimental_data.index,
                              self.experimental_data[element],
                              marker='o', color="orange")
@@ -201,8 +217,8 @@ class IoHandler:
         :param ax: axes on which to draw the area before returning to mother function
         """
 
-        y1 = self.simulated_data[element].to_numpy() + self.simulated_data_sds[element].to_numpy()
-        y2 = self.simulated_data[element].to_numpy() - self.simulated_data_sds[element].to_numpy()
+        y1 = self.simulated_data_low_ci[element].to_numpy()
+        y2 = self.simulated_data_high_ci[element].to_numpy()
         x = self.simulated_data.index
         ax.fill_between(x, y1, y2, alpha=.3, linewidth=0, color="red")
         return ax
@@ -254,9 +270,9 @@ if __name__ == "__main__":
     iostream = IoHandler()
     iostream.local_in(
         r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv",
-        iterations=50, vini=0.05, weight=[0.02, 0.46, 0.1]
+        iterations=200, vini=0.05, weight=[0.02, 0.46, 0.1]
     )
     iostream.fitter.optimize()
     iostream.fitter.monte_carlo_analysis()
     iostream.plot_data(False)
-    iostream.local_out("data", "plot", "pdf")
+    iostream.local_out("data", "pdf")
