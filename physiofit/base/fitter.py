@@ -6,6 +6,7 @@ import logging
 
 import numpy as np
 from scipy.optimize import minimize
+from scipy.stats import chi2
 
 from physiofit.logger import initialize_fitter_logger
 
@@ -105,21 +106,22 @@ class PhysioFitter:
         self.matrices_ci = None
         self.opt_conf_ints = None
 
-        self.logger.info("Initializing vectors...\n")
-        self.initialize_vectors()
-        self.logger.debug(f"Time vector: {self.time_vector}\n"
-                          f"Name vector: {self.name_vector}\n"
-                          f"Experimental Data: \n{self.data}\n"
-                          f"Parameters: {self.ids}\n"
-                          f"Parameter vector: {self.params}\n")
-        if t_lag:
-            self.logger.debug(f"Lag time detected: {t_lag}\n")
-        if deg:
-            self.logger.debug(f"Degradation constants detected: {self.deg}")
-        if weight:
-            self.initialize_weight_matrix()
-        self.initialize_bounds()
-        self.initialize_equation()
+        if __name__ == "__main__":
+            self.logger.debug(f"Time vector: {self.time_vector}\n"
+                              f"Name vector: {self.name_vector}\n"
+                              f"Experimental Data: \n{self.data}\n"
+                              f"Parameters: {self.ids}\n"
+                              f"Parameter vector: {self.params}\n")
+            if t_lag:
+                self.logger.debug(f"Lag time detected: {t_lag}\n")
+            if deg:
+                self.logger.debug(f"Degradation constants detected: {self.deg}")
+
+                if self.weight:
+                    self.logger.debug(f"Weight = {self.weight}")
+                    self.initialize_weight_matrix()
+                self.initialize_bounds()
+                self.initialize_equation()
 
     def initialize_vectors(self):
         """
@@ -143,7 +145,7 @@ class PhysioFitter:
                     raise KeyError(f"The degradation constant for {key} is missing. If no degradation for this "
                                    f"metabolite, please enter 0 in the corresponding dictionnary entry")
             self.deg_vector = [self.deg[met] for met in metabolites]
-        else:
+        elif self.deg is None:
             self.deg_vector = [0 for _ in metabolites]
         # Build a list containing each metabolite's q and m0
         for met in metabolites:
@@ -199,6 +201,7 @@ class PhysioFitter:
             else:
                 self.logger.debug(f"Weight matrix: {self.weight}")
                 return
+        self.logger.info(f"Weight Matrix:\n{self.weight}")
 
     def initialize_equation(self):
 
@@ -208,7 +211,7 @@ class PhysioFitter:
         if self.t_lag and not self.deg:
             self.logger.debug("_lag_sim function used for simulation")
             self.simulate = self._lag_sim
-        if not self.t_lag and not self.deg:
+        if not self.t_lag:
             self.logger.debug("_simple_sim function used for simulation")
             self.simulate = self._simple_sim
 
@@ -231,7 +234,7 @@ class PhysioFitter:
                 self.conc_met_bounds  # M_0
             )
         self.bounds = tuple(bounds)
-        self.logger.debug(f"Bounds: {self.bounds}")
+        self.logger.info(f"Bounds: {self.bounds}")
 
     def _read_weight_file(self):
         """Initialize weights from given file containing the different SDs"""
@@ -276,7 +279,7 @@ class PhysioFitter:
 
     @staticmethod
     def _simple_sim(params, exp_data_matrix, time_vector, t_lag, deg):
-        """Function to simulate the matrix using input parameters and the no lag & no deg analytical equation"""
+        """Function to simulate the matrix using input parameters and the no lag analytical equation"""
 
         simulated_matrix = np.empty_like(exp_data_matrix)
         x_0 = params[0]
@@ -434,6 +437,26 @@ class PhysioFitter:
             "high_CI": conf_ints[:, 2]
         }
 
+    def khi2_test(self):
+
+        number_measurements = np.count_nonzero(~np.isnan(self.experimental_matrix))
+        number_params = len(self.params)
+        dof = number_measurements - number_params - 1
+        cost = self._calculate_cost(self.optimize_results.x, self.simulate, self.experimental_matrix, self.time_vector,
+                                    self.t_lag, self.deg_vector, self.weight)
+        p_val = chi2.cdf(cost, dof)
+        self.logger.info(f"khi2 test results:\n"
+                         f"Number of measurements: {number_measurements}\n"
+                         f"Number of parameters to fit: {number_params}\n"
+                         f"Degrees of freedom: {dof}\n"
+                         f"p-value = {p_val}\n")
+        if p_val < 0.05:
+            self.logger.info(f"The fit is considered as good in a 95% confidence interval. Value: "
+                             f"{round((1-p_val)*100, 4)}%")
+        else:
+            self.logger.info(f"The fit is not considered as good in a 95% confidence interval. "
+                             f"Value: {round((1 - p_val)*100), 4}%")
+
     @staticmethod
     def _add_noise(vector, sd):
         """
@@ -472,7 +495,8 @@ if __name__ == "__main__":
     iostream.local_in(
         r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv"
     )
-    phyfit = PhysioFitter(iostream.data, vini=0.05, weight=[0.02, 0.46, 0.1], t_lag=2)
+    phyfit = PhysioFitter(iostream.data, vini=0.05, weight=[0.02, 0.46, 0.1], debug_mode=True)
     phyfit.optimize()
-    phyfit.monte_carlo_analysis()
+    print(f"khi2 test score (pval) = {phyfit.khi2_test()}")
+    # phyfit.monte_carlo_analysis()
     print(f"Time after: {datetime.now().strftime('%H:%M:%S')}")
