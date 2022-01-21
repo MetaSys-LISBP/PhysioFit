@@ -11,6 +11,7 @@ from physiofit.base.fitter import PhysioFitter
 
 mod_logger = logging.getLogger("PhysioFit.base.io")
 
+
 class IoHandler:
     allowed_keys = {"vini", "mc", "iterations", "pos", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds",
                     "flux_met_bounds", "weight", "sd_X", "sd_M", "save", "t_lag", "deg", "summary", "debug_mode"}
@@ -40,6 +41,48 @@ class IoHandler:
         self.experimental_data = None
         self.home_path = None
         self.res_path = None
+
+    @staticmethod
+    def _read_data(path_to_data: str) -> DataFrame:
+        """
+        Read initial data file (csv or tsv)
+
+        :param path_to_data: str containing the relative or absolute path to the data
+        :return: pandas DataFrame containing the data
+        """
+
+        data_path = Path(path_to_data).resolve()
+        if data_path.suffix == ".tsv":
+            data = read_csv(data_path, sep="\t")
+        elif data_path.suffix == ".csv":
+            data = read_csv(data_path, sep=";")
+        else:
+            if not data_path.exists():
+                raise ValueError(f"{data_path} is not a valid file")
+            else:
+                raise TypeError(f"{data_path} is not a valid format. Accepted formats are .csv or .tsv")
+        IoHandler._verify_data(data)
+        return data
+
+    @staticmethod
+    def _verify_data(data: DataFrame):
+        """
+        Perform checks on DataFrame returned by the _read_data function
+
+        :param data: pandas DataFrame containing the data
+        :return: None
+        """
+
+        if not isinstance(data, DataFrame):
+            raise TypeError("There was an error reading the data: DataFrame has not been generated")
+        for col in ["time", "X"]:
+            if col not in data.columns:
+                raise ValueError(f"The column {col} is missing from the dataset")
+        if len(data.columns) <= 2:
+            raise ValueError(f"The data does not contain any metabolite columns")
+        for col in data.columns:
+            if data[col].dtypes != np.int64 and data[col].dtypes != np.float64:
+                raise ValueError(f"The column {col} has values that are not of numeric type")
 
     def local_in(self, data, **kwargs):
         """
@@ -89,20 +132,24 @@ class IoHandler:
         """
 
         wrong_keys = []
-        self.fitter = PhysioFitter(self.data)
+        self.fitter = PhysioFitter(self.data, debug_mode=kwargs["debug_mode"])
         file_handle = logging.FileHandler(self.res_path / "log.txt")
-        file_handle.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        file_handle.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.fitter.logger.addHandler(file_handle)
         self.fitter.__dict__.update((key, value) if key in IoHandler.allowed_keys else wrong_keys.append(key)
                                     for key, value in kwargs.items())
-        # TODO: Think of how to implement this: should we use properties instead?
-        self.fitter.initialize_vectors()
-        self.fitter.initialize_weight_matrix()
-        self.fitter.initialize_bounds()
-        self.fitter.initialize_equation()
-        self.fitter.logger.debug(f"Fitter attribute dictionnary:\n{self.fitter.__dict__}")
+        self._initialize_fitter_vars()
+        self.fitter.logger.debug(f"Fitter attribute dictionary:\n{self.fitter.__dict__}")
         if wrong_keys:
             raise KeyError(f"Some keyword arguments were not valid: {wrong_keys}")
+
+    def _initialize_fitter_vars(self):
+
+        self.fitter.initialize_vectors()
+        if self.fitter.weight:
+            self.fitter.initialize_weight_matrix()
+        self.fitter.initialize_bounds()
+        self.fitter.initialize_equation()
 
     def _output_pdf(self):
         """Handle the creation and output of a pdf file containing fit results in plot form"""
@@ -223,56 +270,15 @@ class IoHandler:
         ax.fill_between(x, y1, y2, alpha=.3, linewidth=0, color="red")
         return ax
 
-    @staticmethod
-    def _read_data(path_to_data: str) -> DataFrame:
-        """
-        Read initial data file (csv or tsv)
-
-        :param path_to_data: str containing the relative or absolute path to the data
-        :return: pandas DataFrame containing the data
-        """
-
-        data_path = Path(path_to_data).resolve()
-        if data_path.suffix == ".tsv":
-            data = read_csv(data_path, sep="\t")
-        elif data_path.suffix == ".csv":
-            data = read_csv(data_path, sep=";")
-        else:
-            if not data_path.exists():
-                raise ValueError(f"{data_path} is not a valid file")
-            else:
-                raise TypeError(f"{data_path} is not a valid format. Accepted formats are .csv or .tsv")
-        IoHandler._verify_data(data)
-        return data
-
-    @staticmethod
-    def _verify_data(data: DataFrame):
-        """
-        Perform checks on DataFrame returned by the _read_data function
-
-        :param data: pandas DataFrame containing the data
-        :return: None
-        """
-
-        if not isinstance(data, DataFrame):
-            raise TypeError("There was an error reading the data: DataFrame has not been generated")
-        for col in ["time", "X"]:
-            if col not in data.columns:
-                raise ValueError(f"The column {col} is missing from the dataset")
-        if len(data.columns) <= 2:
-            raise ValueError(f"The data does not contain any metabolite columns")
-        for col in data.columns:
-            if data[col].dtypes != np.int64 and data[col].dtypes != np.float64:
-                raise ValueError(f"The column {col} has values that are not of numeric type")
-
 
 if __name__ == "__main__":
     iostream = IoHandler()
     iostream.local_in(
         r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv",
-        iterations=200, vini=0.05, weight=[0.02, 0.46, 0.1]
+        iterations=200, vini=0.05, weight=[0.02, 0.46, 0.1], debug_mode=True
     )
     iostream.fitter.optimize()
-    iostream.fitter.monte_carlo_analysis()
-    iostream.plot_data(False)
-    iostream.local_out("data", "pdf")
+    print(f"khi2 test score (pval) = {iostream.fitter.khi2_test()}")
+    # iostream.fitter.monte_carlo_analysis()
+    # iostream.plot_data(False)
+    # iostream.local_out("data", "pdf")
