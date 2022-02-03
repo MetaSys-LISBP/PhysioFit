@@ -1,28 +1,37 @@
 """Module to handle inputs and outputs for the Physiofit software"""
-from pathlib import Path
+import json
 import logging
+from pathlib import Path
 
-from pandas import DataFrame, read_csv
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
+from pandas import DataFrame, read_csv
 
 from physiofit.base.fitter import PhysioFitter
 
 mod_logger = logging.getLogger("PhysioFit.base.io")
 
+# REMINDER: when using Path objects, convert to string before passing it to pandas or file open,etc...
+
 
 class IoHandler:
-    allowed_keys = {"vini", "mc", "iterations", "pos", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds",
-                    "flux_met_bounds", "weight", "sd_X", "sd_M", "save", "t_lag", "deg", "summary", "debug_mode"}
+    allowed_keys = {"vini", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds", "flux_met_bounds", "weight",
+                    "t_lag", "deg", "iterations", "mc", "debug_mode"}
 
     def __init__(self, source='local'):
         """
         Input/Output class that handles the former and initializes the PhysioFitter component object. It is the
         interface for interacting with the Physiofit package.
         Usage:  iohandle = IoHandler(source)
+
+                if direct usage:
                 iohandle.local_in(data, kwargs) --> kwargs are passed on to the PhysioFitter class for initialization
-                iohandle.fitter.fitter_function()
+
+                if usage with config file:
+                iohandle.read_json_config(json_file_path)
+
+                iohandle.fitter.optimize()
                 ...
                 iohandle.local_out(*args) --> args define the type of output that should be generated
 
@@ -41,6 +50,7 @@ class IoHandler:
         self.experimental_data = None
         self.home_path = None
         self.res_path = None
+        self.has_config_been_read = False
 
     @staticmethod
     def _read_data(path_to_data: str) -> DataFrame:
@@ -53,9 +63,9 @@ class IoHandler:
 
         data_path = Path(path_to_data).resolve()
         if data_path.suffix == ".tsv":
-            data = read_csv(data_path, sep="\t")
+            data = read_csv(str(data_path), sep="\t")
         elif data_path.suffix == ".csv":
-            data = read_csv(data_path, sep=";")
+            data = read_csv(str(data_path), sep=";")
         else:
             if not data_path.exists():
                 raise ValueError(f"{data_path} is not a valid file")
@@ -84,32 +94,122 @@ class IoHandler:
             if data[col].dtypes != np.int64 and data[col].dtypes != np.float64:
                 raise ValueError(f"The column {col} has values that are not of numeric type")
 
-    def local_in(self, data, **kwargs):
+    @staticmethod
+    def generate_config_file(destination_path):
+        """
+        Generate the default configuration file
+        :param destination_path: destination to send the file
+        :return: None
+        """
+
+        config = {
+            key: ""
+            for key in IoHandler.allowed_keys
+        }
+        config["vini"] = None
+        config["mc"] = None
+        config["iterations"] = None
+        config["conc_biom_bounds"] = None
+        config["flux_biom_bounds"] = None
+        config["conc_met_bounds"] = None
+        config["flux_met_bounds"] = None
+        config["weight"] = None
+        config["deg"] = None
+        config["t_lag"] = None
+        config["debug_mode"] = False
+        config.update(
+            {"path_to_data": None}
+        )
+        dest_path = Path(destination_path) / "config_file.json"
+        with open(str(dest_path), "w") as conf:
+            json.dump(config, conf, indent=4, sort_keys=False)
+
+    def local_in(self, data_path, **kwargs):
         """
         Function for reading data and initializing the fitter object in local context
 
-        :param data:
-        :param kwargs:
-        :return:
+        :param data_path: path to data
+        :param kwargs: supplementary keyword arguments are passed on to the PhysioFitter object
+        :return: None
         """
 
-        if self.data:
+        if self.data is not None:
             raise ValueError(f"It seems data is already loaded in. Data: \n{self.data}\nHome path: {self.home_path}")
         elif self.input_source == "local":
-            self.home_path = Path(data).parent.resolve()
+            self.home_path = Path(data_path).parent.resolve()
             self.res_path = self.home_path / (self.home_path.name + "_res")
-            self.res_path.mkdir()
+            if not self.res_path.is_dir():
+                self.res_path.mkdir()
             if not self.home_path.exists():
                 raise KeyError(f"The input file does not exist. Path: {self.home_path}")
-            self.data = IoHandler._read_data(data)
+            self.data = IoHandler._read_data(data_path)
             self.data = self.data.sort_values("time", ignore_index=True)
             self.names = self.data.columns[1:].to_list()
         else:
             raise IOError(f"Wrong input source selected. Source: {self.input_source}")
         self.initialize_fitter(kwargs)
+        if not self.has_config_been_read:
+            self._generate_run_config(data_path)
+
+    def _generate_run_config(self, data_path):
+        """
+        Generate config file from the parameters of the last run
+
+        :param data_path: output path for the file
+        :return: None
+        """
+
+        to_dump = {}
+        for key, value in self.fitter.__dict__.items():
+            if key in self.allowed_keys:
+                if isinstance(value, np.ndarray):
+                    to_dump.update({key: value.tolist()})
+                else:
+                    to_dump.update({key: value})
+        to_dump.update(
+            {"path_to_data": str(data_path)}
+        )
+        with open(str(self.res_path / "config_file.json"), "w") as conf:
+            json.dump(to_dump, conf, indent=4, sort_keys=True)
+
+    def read_json_config(self, json_file_path):
+        """
+        Import json config file and parse keyword arguments
+
+        :param json_file_path: path to the json file
+        """
+
+        # Initialize pathlib Path and load config file
+        path = Path(json_file_path).resolve()
+        file = open(str(path))
+        config = json.load(file)
+        # Convert lists to tuples for the bounds
+        if type(config["conc_biom_bounds"]) == list:
+            config["conc_biom_bounds"] = tuple(config["conc_biom_bounds"])
+        if type(config["conc_met_bounds"]) == list:
+            config["conc_met_bounds"] = tuple(config["conc_met_bounds"])
+        if type(config["flux_met_bounds"]) == list:
+            config["flux_met_bounds"] = tuple(config["flux_met_bounds"])
+        if type(config["flux_biom_bounds"]) == list:
+            config["flux_biom_bounds"] = tuple(config["flux_biom_bounds"])
+        # Get the data path and remove from config dict to ensure no wrong key errors are returned during fitter
+        # initialization
+        data_path = config["path_to_data"]
+        data_path = Path(data_path).resolve()
+        del config["path_to_data"]
+        # Remove None values from config dict so that defaults are used on fitter init
+        keys_to_del = [key for key, value in config.items() if value is None]
+        for key in keys_to_del:
+            del config[key]
+        self.has_config_been_read = True
+        self.local_in(str(data_path), **config)
 
     def local_out(self, *args):
-        """Function for coordinating exports in local context"""
+        """
+        Function for coordinating exports in local context
+
+        :param args: type of output to generate (data, plot and/or pdf
+        """
 
         for arg in args:
             if arg not in ["data", "plot", "pdf"]:
@@ -126,28 +226,41 @@ class IoHandler:
 
     def initialize_fitter(self, kwargs):
         """
-        Initialize the PhysioFitter object and pass kwargs on down
+        Initialize the PhysioFitter object
+
         :param kwargs: Keyword arguments for fitter initialization
         :return: None
         """
 
         wrong_keys = []
         self.fitter = PhysioFitter(self.data, debug_mode=kwargs["debug_mode"])
-        file_handle = logging.FileHandler(self.res_path / "log.txt")
+        file_handle = logging.FileHandler(self.res_path / "log.txt", "w+")
+        if kwargs["debug_mode"]:
+            file_handle.setLevel(logging.DEBUG)
+        else:
+            file_handle.setLevel(logging.INFO)
         file_handle.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.fitter.logger.addHandler(file_handle)
-        self.fitter.__dict__.update((key, value) if key in IoHandler.allowed_keys else wrong_keys.append(key)
-                                    for key, value in kwargs.items())
+        for key, value in kwargs.items():
+            self.fitter.logger.debug(f"Key: {key}, value: {value}\n")
+            if key in IoHandler.allowed_keys:
+                self.fitter.__dict__.update({key: value})
+            else:
+                wrong_keys.append(key)
         self._initialize_fitter_vars()
         self.fitter.logger.debug(f"Fitter attribute dictionary:\n{self.fitter.__dict__}")
         if wrong_keys:
             raise KeyError(f"Some keyword arguments were not valid: {wrong_keys}")
 
     def _initialize_fitter_vars(self):
+        """
+        Initialize fitter variables
+
+        :return: None
+        """
 
         self.fitter.initialize_vectors()
-        if self.fitter.weight:
-            self.fitter.initialize_weight_matrix()
+        self.fitter.initialize_weight_matrix()
         self.fitter.initialize_bounds()
         self.fitter.initialize_equation()
 
@@ -189,38 +302,40 @@ class IoHandler:
                                        orient="columns")
         # Use IDs to clarify which parameter is described on each line
         opt_data.index = self.fitter.ids
-        opt_data.to_csv(fr"{self.res_path}\Optimized_parameter_statistics.csv")
+        opt_data.to_csv(fr"{self.res_path}\Optimized_parameter_statistics.csv", sep="\t")
 
     def _get_plot_data(self):
         """
         Prepare data for plotting
         """
 
-        if hasattr(self.fitter, "time_vector"):
+        if self.fitter.time_vector is not None:
             x = self.fitter.time_vector
         else:
             raise ValueError("PhysioFitter time_vector has not been initialized. "
                              "Have you loaded in the data correctly?")
-        if hasattr(self.fitter, "experimental_matrix"):
+        if self.fitter.experimental_matrix is not None:
             exp_mat = self.fitter.experimental_matrix
         else:
             raise ValueError("PhysioFitter object does not have experimental data loaded in")
-        if hasattr(self.fitter, "simulated_matrix"):
+        if self.fitter.simulated_matrix is not None:
             sim_mat = self.fitter.simulated_matrix
         else:
             raise ValueError("PhysioFitter simulated data does not exist yet")
-        if hasattr(self.fitter, "matrices_ci"):
+        if self.fitter.matrices_ci is not None:
             sim_mat_ci = self.fitter.matrices_ci
+            self.simulated_data_low_ci = DataFrame(columns=self.names, index=x, data=sim_mat_ci["lower_ci"])
+            self.simulated_data_high_ci = DataFrame(columns=self.names, index=x, data=sim_mat_ci["higher_ci"])
         else:
-            raise ValueError("PhysioFitter monte carlo analysis has not been done")
+            self.fitter.logger.warning(
+                "Monte Carlo analysis has not been done, confidence intervals will not be computed")
         self.experimental_data = DataFrame(columns=self.names, index=x, data=exp_mat)
         self.simulated_data = DataFrame(columns=self.names, index=x, data=sim_mat)
-        self.simulated_data_low_ci = DataFrame(columns=self.names, index=x, data=sim_mat_ci["lower_ci"])
-        self.simulated_data_high_ci = DataFrame(columns=self.names, index=x, data=sim_mat_ci["higher_ci"])
 
     def plot_data(self, display=True):
         """
         Plot the extracellular flux data
+
         :param display: should plots be displayed
         """
 
@@ -237,7 +352,6 @@ class IoHandler:
         for element in self.names:
             fig, ax = plt.subplots()
             fig.set_size_inches(9, 5)
-            # TODO: Make dots easier to see
             exp = ax.scatter(self.experimental_data.index,
                              self.experimental_data[element],
                              marker='o', color="orange")
@@ -246,7 +360,8 @@ class IoHandler:
                                 self.simulated_data[element],
                                 linestyle='--')
             sim_line.set_label(f"Sim {element}")
-            ax = self._add_sd_area(element, ax)
+            if self.fitter.matrices_ci is not None:
+                ax = self._add_sd_area(element, ax)
             ax.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
             ax.legend()
             ax.set_title(f"{element} extracellular flux")
@@ -273,12 +388,18 @@ class IoHandler:
 
 if __name__ == "__main__":
     iostream = IoHandler()
-    iostream.local_in(
-        r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv",
-        iterations=200, vini=0.05, weight=[0.02, 0.46, 0.1], debug_mode=True
-    )
+    # iostream.local_in(
+    #     r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_2.tsv",
+    #     iterations=50, vini=0.2, weight=[0.02, 0.46, 0.2], debug_mode=True
+    # )
+    # iostream.generate_config_file(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data")
+    iostream.read_json_config(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data"
+                              r"\KEIO_test_data_res\config_file.json")
     iostream.fitter.optimize()
-    print(f"khi2 test score (pval) = {iostream.fitter.khi2_test()}")
     # iostream.fitter.monte_carlo_analysis()
+    iostream.plot_data(True)
+    # iostream.local_out("data", "plot")
+    # iostream.fitter.khi2_test()
+
     # iostream.plot_data(False)
     # iostream.local_out("data", "pdf")
