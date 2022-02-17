@@ -14,6 +14,7 @@ mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
 # TODO: weights as dict
 # TODO: add estimate deg function (eq 6) with plot of best fit and measured values
+# TODO: t_lag can be estimated during fitting
 
 
 class PhysioFitter:
@@ -492,7 +493,7 @@ class PhysioFitter:
         else:
             self.logger.info(f"At level of 95% confidence, the model does not fit the data good enough with respect to "
                              f"the provided measurement SD. "
-                             f"Value: {p_val}")
+                             f"Value: {p_val}\n")
 
     @staticmethod
     def _add_noise(vector, sd):

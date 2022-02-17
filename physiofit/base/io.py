@@ -163,7 +163,7 @@ class IoHandler:
         if not self.has_config_been_read:
             self._generate_run_config(data_path)
 
-    def _generate_run_config(self, data_path: str):
+    def _generate_run_config(self):
         """
         Generate config file from the parameters of the last run
 
@@ -180,11 +180,12 @@ class IoHandler:
                     to_dump.update({key: value})
 
         to_dump.update(
-            {"path_to_data": str(data_path)}
+            {"path_to_data": str(self.home_path)}
         )
 
         with open(str(self.res_path / "config_file.json"), "w") as conf:
             json.dump(to_dump, conf, indent=4, sort_keys=True)
+        self.fitter.logger.info(f"\nConfiguration file saved in: {self.res_path / 'config_file.json'}")
 
     def launch_from_json(self, json_file: str or bytes):
         """
@@ -265,6 +266,8 @@ class IoHandler:
         if "pdf" in self._output_type:
             self._output_pdf()
 
+        self._generate_run_config()
+
     def initialize_fitter(self, kwargs: dict):
         """
         Initialize the PhysioFitter object
@@ -296,6 +299,8 @@ class IoHandler:
             else:
                 wrong_keys.append(key)
         self._initialize_fitter_vars()
+
+        # TODO: Add parameter checks for the initialization of the fitter object
 
         self.fitter.logger.debug(f"Fitter attribute dictionary:\n{self.fitter.__dict__}")
 
