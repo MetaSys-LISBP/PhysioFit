@@ -23,6 +23,7 @@ class IoHandler:
         """
         Input/Output class that handles the former and initializes the PhysioFitter component object. It is the
         interface for interacting with the Physiofit package.
+
         Usage:  iohandle = IoHandler(source)
 
                 if direct usage:
@@ -62,6 +63,7 @@ class IoHandler:
         """
 
         data_path = Path(path_to_data).resolve()
+
         if data_path.suffix == ".tsv":
             data = read_csv(str(data_path), sep="\t")
         elif data_path.suffix == ".csv":
@@ -71,6 +73,7 @@ class IoHandler:
                 raise ValueError(f"{data_path} is not a valid file")
             else:
                 raise TypeError(f"{data_path} is not a valid format. Accepted formats are .csv or .tsv")
+
         IoHandler._verify_data(data)
         return data
 
@@ -85,17 +88,20 @@ class IoHandler:
 
         if not isinstance(data, DataFrame):
             raise TypeError("There was an error reading the data: DataFrame has not been generated")
+
         for col in ["time", "X"]:
             if col not in data.columns:
                 raise ValueError(f"The column {col} is missing from the dataset")
+
         if len(data.columns) <= 2:
             raise ValueError(f"The data does not contain any metabolite columns")
+
         for col in data.columns:
             if data[col].dtypes != np.int64 and data[col].dtypes != np.float64:
                 raise ValueError(f"The column {col} has values that are not of numeric type")
 
     @staticmethod
-    def generate_config_file(destination_path):
+    def generate_config_file(destination_path: str):
         """
         Generate the default configuration file
         :param destination_path: destination to send the file
@@ -106,6 +112,7 @@ class IoHandler:
             key: ""
             for key in IoHandler.allowed_keys
         }
+
         config["vini"] = None
         config["mc"] = None
         config["iterations"] = None
@@ -120,11 +127,13 @@ class IoHandler:
         config.update(
             {"path_to_data": None}
         )
+
         dest_path = Path(destination_path) / "config_file.json"
+
         with open(str(dest_path), "w") as conf:
             json.dump(config, conf, indent=4, sort_keys=False)
 
-    def local_in(self, data_path, **kwargs):
+    def local_in(self, data_path: str, **kwargs: dict):
         """
         Function for reading data and initializing the fitter object in local context
 
@@ -133,6 +142,7 @@ class IoHandler:
         :return: None
         """
 
+        # Initialize data and set up destination directory
         if self.data is not None:
             raise ValueError(f"It seems data is already loaded in. Data: \n{self.data}\nHome path: {self.home_path}")
         elif self.input_source == "local":
@@ -147,11 +157,13 @@ class IoHandler:
             self.names = self.data.columns[1:].to_list()
         else:
             raise IOError(f"Wrong input source selected. Source: {self.input_source}")
+
         self.initialize_fitter(kwargs)
+
         if not self.has_config_been_read:
             self._generate_run_config(data_path)
 
-    def _generate_run_config(self, data_path):
+    def _generate_run_config(self, data_path: str):
         """
         Generate config file from the parameters of the last run
 
@@ -166,23 +178,53 @@ class IoHandler:
                     to_dump.update({key: value.tolist()})
                 else:
                     to_dump.update({key: value})
+
         to_dump.update(
             {"path_to_data": str(data_path)}
         )
+
         with open(str(self.res_path / "config_file.json"), "w") as conf:
             json.dump(to_dump, conf, indent=4, sort_keys=True)
 
-    def read_json_config(self, json_file_path):
+    def launch_from_json(self, json_file: str or bytes):
+        """
+        Launch the run using a json file as input
+
+        :param json_file: json file containing run parameters. Can be json string or file-like or path to file
+        :return: None
+        """
+
+        config = self.read_json_config(json_file)
+        self.has_config_been_read = True
+
+        # Get the data path and remove from config dict to ensure no wrong key errors are returned during fitter
+        # initialization
+        data_path = config["path_to_data"]
+        data_path = Path(data_path).resolve()
+        del config["path_to_data"]
+
+        self.local_in(str(data_path), **config)
+
+    @staticmethod
+    def read_json_config(json_file: str or bytes) -> dict:
         """
         Import json config file and parse keyword arguments
 
-        :param json_file_path: path to the json file
+        :param json_file: path to the json file or json file
+        :return config: Dictionnary containing arguments parsed from json file
         """
 
-        # Initialize pathlib Path and load config file
-        path = Path(json_file_path).resolve()
-        file = open(str(path))
-        config = json.load(file)
+        # Load config file
+        if type(json_file) == str:
+            try:
+                path = Path(json_file).resolve()
+                json_file = open(str(path))
+                config = json.load(json_file)
+            except OSError:
+                config = json.loads(json_file)
+        else:
+            config = json.load(json_file)
+
         # Convert lists to tuples for the bounds
         if type(config["conc_biom_bounds"]) == list:
             config["conc_biom_bounds"] = tuple(config["conc_biom_bounds"])
@@ -192,23 +234,19 @@ class IoHandler:
             config["flux_met_bounds"] = tuple(config["flux_met_bounds"])
         if type(config["flux_biom_bounds"]) == list:
             config["flux_biom_bounds"] = tuple(config["flux_biom_bounds"])
-        # Get the data path and remove from config dict to ensure no wrong key errors are returned during fitter
-        # initialization
-        data_path = config["path_to_data"]
-        data_path = Path(data_path).resolve()
-        del config["path_to_data"]
+
         # Remove None values from config dict so that defaults are used on fitter init
         keys_to_del = [key for key, value in config.items() if value is None]
         for key in keys_to_del:
             del config[key]
-        self.has_config_been_read = True
-        self.local_in(str(data_path), **config)
+
+        return config
 
     def local_out(self, *args):
         """
         Function for coordinating exports in local context
 
-        :param args: type of output to generate (data, plot and/or pdf
+        :param args: type of output to generate (data, plot and/or pdf)
         """
 
         for arg in args:
@@ -217,14 +255,17 @@ class IoHandler:
                                  f"Accepted output types are: data, plot, pdf")
             else:
                 self._output_type.append(arg)
+
         if "data" in self._output_type:
             self._output_report()
+
         if "plot" in self._output_type:
             self._output_plots()
+
         if "pdf" in self._output_type:
             self._output_pdf()
 
-    def initialize_fitter(self, kwargs):
+    def initialize_fitter(self, kwargs: dict):
         """
         Initialize the PhysioFitter object
 
@@ -233,14 +274,21 @@ class IoHandler:
         """
 
         wrong_keys = []
+
+        # Initialize fitter
         self.fitter = PhysioFitter(self.data, debug_mode=kwargs["debug_mode"])
-        file_handle = logging.FileHandler(self.res_path / "log.txt", "w+")
+
+        file_handle = logging.FileHandler(self.res_path / "log.txt", "w")
+
         if kwargs["debug_mode"]:
             file_handle.setLevel(logging.DEBUG)
         else:
             file_handle.setLevel(logging.INFO)
+
         file_handle.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.fitter.logger.addHandler(file_handle)
+
+        # Initialize fitter parameters from kwargs
         for key, value in kwargs.items():
             self.fitter.logger.debug(f"Key: {key}, value: {value}\n")
             if key in IoHandler.allowed_keys:
@@ -248,14 +296,15 @@ class IoHandler:
             else:
                 wrong_keys.append(key)
         self._initialize_fitter_vars()
+
         self.fitter.logger.debug(f"Fitter attribute dictionary:\n{self.fitter.__dict__}")
+
         if wrong_keys:
             raise KeyError(f"Some keyword arguments were not valid: {wrong_keys}")
 
     def _initialize_fitter_vars(self):
         """
         Initialize fitter variables
-
         :return: None
         """
 
@@ -271,6 +320,7 @@ class IoHandler:
             raise RuntimeError("No home path detected. Was data loaded in correctly?")
         if not self._figures:
             raise RuntimeError("Plots have not been created. Please launch the plot_data() function first")
+
         try:
             with PdfPages(rf"{self.res_path}\plots.pdf") as pdf:
                 for fig in self._figures:
@@ -285,6 +335,7 @@ class IoHandler:
             raise RuntimeError("No home path detected. Was data loaded in correctly?")
         if not self._figures:
             raise RuntimeError("Plots have not been created. Please launch the plot_data() function first")
+
         try:
             for fig in self._figures:
                 fig[1].savefig(rf"{self.res_path}\{fig[0]}.svg")
@@ -298,8 +349,11 @@ class IoHandler:
         """
 
         self.fitter.logger.debug(f"Parameter Stats:\n{self.fitter.parameter_stats}")
+
+        # Get optimization results as dataframe
         opt_data = DataFrame.from_dict(self.fitter.parameter_stats,
                                        orient="columns")
+
         # Use IDs to clarify which parameter is described on each line
         opt_data.index = self.fitter.ids
         opt_data.to_csv(fr"{self.res_path}\Optimized_parameter_statistics.csv", sep="\t")
@@ -309,6 +363,7 @@ class IoHandler:
         Prepare data for plotting
         """
 
+        # Initialize vectors and data for plotting
         if self.fitter.time_vector is not None:
             x = self.fitter.time_vector
         else:
@@ -329,6 +384,7 @@ class IoHandler:
         else:
             self.fitter.logger.warning(
                 "Monte Carlo analysis has not been done, confidence intervals will not be computed")
+
         self.experimental_data = DataFrame(columns=self.names, index=x, data=exp_mat)
         self.simulated_data = DataFrame(columns=self.names, index=x, data=sim_mat)
 
@@ -342,7 +398,7 @@ class IoHandler:
         self._get_plot_data()
         self._draw_plots(display)
 
-    def _draw_plots(self, display):
+    def _draw_plots(self, display: bool):
         """
         Draw the plots and assign them to the _figures attribute for later access in pdf and plot generation functions
 
@@ -350,28 +406,41 @@ class IoHandler:
         """
 
         for element in self.names:
+
+            # Initialize figure object
             fig, ax = plt.subplots()
             fig.set_size_inches(9, 5)
+
+            # Draw experimental points onto the Axe
             exp = ax.scatter(self.experimental_data.index,
                              self.experimental_data[element],
                              marker='o', color="orange")
             exp.set_label(f"Exp {element}")
+
+            # Draw the simulated line onto the Axe
             sim_line, = ax.plot(self.simulated_data.index,
                                 self.simulated_data[element],
                                 linestyle='--')
             sim_line.set_label(f"Sim {element}")
+
+            # If monte carlo analysis has been done add the corresponding sd to the plot as a red area
             if self.fitter.matrices_ci is not None:
                 ax = self._add_sd_area(element, ax)
+
+            # Finishing touches
             ax.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
             ax.legend()
             ax.set_title(f"{element} extracellular flux")
             fig.tight_layout()
+
+            # Add the figure with the metabolite name as index to the _figures attribute for later use
             self._figures.append((element, fig))
+
         if display:
             for _ in self._figures:
                 plt.show()
 
-    def _add_sd_area(self, element, ax):
+    def _add_sd_area(self, element: str, ax: plt.Axes):
         """
         Draw red area around the fitting line to show SD
 
@@ -393,13 +462,9 @@ if __name__ == "__main__":
     #     iterations=50, vini=0.2, weight=[0.02, 0.46, 0.2], debug_mode=True
     # )
     # iostream.generate_config_file(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data")
-    iostream.read_json_config(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data"
-                              r"\KEIO_test_data_res\config_file.json")
+    iostream.launch_from_json(r"C:\Users\legregam\Documents\Projets\PhysioFit\config_file.json")
     iostream.fitter.optimize()
-    # iostream.fitter.monte_carlo_analysis()
+    iostream.fitter.monte_carlo_analysis()
     iostream.plot_data(True)
     # iostream.local_out("data", "plot")
-    # iostream.fitter.khi2_test()
-
-    # iostream.plot_data(False)
-    # iostream.local_out("data", "pdf")
+    iostream.fitter.khi2_test()

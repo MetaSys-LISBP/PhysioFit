@@ -12,6 +12,9 @@ from physiofit.logger import initialize_fitter_logger
 
 mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
+# TODO: weights as dict
+# TODO: add estimate deg function (eq 6) with plot of best fit and measured values
+
 
 class PhysioFitter:
 
@@ -33,23 +36,33 @@ class PhysioFitter:
             * calling the Stat Analyzer objet for sensitivity analysis, khi2 tests and plotting (see documentation
               relative to the component Stat Analyzer class for more details)
 
-        :param data: DataFrame containing data and passed by IOstream object :param data: class: pandas.DataFrame
-        :param vini: initial value for fluxes and concentrations (default=1) :type vini: int or float :param mc:
-        Should Monte-Carlo sensitivity analysis be performed (default=True) :type mc: Boolean :param iterations:
-        number of iterations for Monte-Carlo simulation (default=50) :type iterations: int :param conc_biom_bounds:
-        lower and upper bounds for biomass concentration (X0) :type conc_biom_bounds: tuple of ints/floats (lower,
-        upper) :param flux_biom_bounds: lower and upper bounds for biomass rate of change (mu) :type
-        flux_biom_bounds: tuple of ints/floats (lower, upper) :param conc_met_bounds: lower and upper bounds for
-        metabolite concentration (mi0) :type conc_met_bounds: tuple of ints/floats (lower, upper) :param
-        flux_met_bounds: lower and upper bounds for metabolite rate of change (qi) :type flux_met_bounds: tuple of
-        ints/floats (lower, upper) :param weight: weight matrix used for residuum calculations. Can be: * a matrix
-        with the same dimensions as the measurements matrix (but without the time column) * a named vector containing
-        weights for all the metabolites provided in the input file * 0  in which case the matrix is automatically
-        loaded from the file xxx_sd.csv/.tsv (where xxx is the data file name) if the file exists. Otherwise,
-        weight is constructed from default values :type weight: int, float, list or ndarray :param deg: dictionary of
-        degradation constants for each metabolite :type deg: dict :param t_lag: lag phase length :type t_lag: int or
-        float
-
+        :param data: DataFrame containing data and passed by IOstream object
+        :type data: class: pandas.DataFrame
+        :param vini: initial value for fluxes and concentrations (default=1)
+        :type vini: int or float
+        :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
+        :type mc: Boolean
+        :param iterations: number of iterations for Monte-Carlo simulation (default=50)
+        :type iterations: int
+        :param conc_biom_bounds:
+        lower and upper bounds for biomass concentration (X0)
+        :type conc_biom_bounds: tuple of ints/floats (lower, upper)
+        :param flux_biom_bounds: lower and upper bounds for biomass rate of change (mu)
+        :type flux_biom_bounds: tuple of ints/floats (lower, upper)
+        :param conc_met_bounds: lower and upper bounds for metabolite concentration (mi0)
+        :type conc_met_bounds: tuple of ints/floats (lower, upper)
+        :param flux_met_bounds: lower and upper bounds for metabolite rate of change (qi)
+        :type flux_met_bounds: tuple of ints/floats (lower, upper)
+        :param weight: weight matrix used for residuum calculations. Can be:
+         * a matrix with the same dimensions as the measurements matrix (but without the time column)
+         * a named vector containing weights for all the metabolites provided in the input file
+         * 0  in which case the matrix is automatically loaded from the file xxx_sd.csv/.tsv (where xxx is the data
+         file name) if the file exists. Otherwise, weight is constructed from default values
+        :type weight: int, float, list or ndarray
+        :param deg: dictionary of degradation constants for each metabolite
+        :type deg: dict
+        :param t_lag: lag phase length
+        :type t_lag: int or float
         """
 
         self.data = data
@@ -112,15 +125,18 @@ class PhysioFitter:
         x_0 = self.vini
         self.params = [x_0, mu]
         self.ids = ["X_0", "mu"]
+
         # Handle the creation of a vector of degradation constants
         if self.deg:
-            for key in self.deg.keys():
-                if key not in metabolites:
-                    raise KeyError(f"The degradation constant for {key} is missing. If no degradation for this "
-                                   f"metabolite, please enter 0 in the corresponding dictionnary entry")
+            if type(self.deg) is dict:
+                for key in self.deg.keys():
+                    if key not in metabolites:
+                        raise KeyError(f"The degradation constant for {key} is missing. If no degradation for this "
+                                       f"metabolite, please enter 0 in the corresponding dictionnary entry")
             self.deg_vector = [self.deg[met] for met in metabolites]
-        elif self.deg is None:
+        elif self.deg == {} or self.deg is None:
             self.deg_vector = [0 for _ in metabolites]
+
         # Build a list containing each metabolite's q and m0
         for met in metabolites:
             self.params.append(self.vini)
@@ -136,7 +152,6 @@ class PhysioFitter:
         """
 
         # This function can be optimized, if the input is a matrix we should detect it directly
-
         self.logger.info("Initializing Weight matrix...\n")
 
         # When 0 is given as input weight, we assume the weights are given in an external file
@@ -159,7 +174,7 @@ class PhysioFitter:
             try:
                 self.weight = self.weight.astype(float)
             except ValueError:
-                raise ValueError(f"The weight vector/matrix contains values that are not numbers. \n"
+                raise ValueError(f"The weight vector/matrix contains values that are not numeric. \n"
                                  f"Current weight vector/matrix: \n{self.weight}")
             except Exception as e:
                 raise RuntimeError(f"Unknown error: {e}")
@@ -225,6 +240,7 @@ class PhysioFitter:
             else:
                 # We duplicate the vector column-wise to build a matrix of duplicated weight vectors
                 self.weight = np.tile(self.weight, (len(self.experimental_matrix), 1))
+
         # Second condition: the weight is a scalar and must be broadcast to a matrix with same shape as the data
         elif isinstance(self.weight, int) or isinstance(self.weight, float):
             self.weight = np.full(self.experimental_matrix.shape, self.weight)
@@ -295,15 +311,20 @@ class PhysioFitter:
         simulated_matrix = np.empty_like(exp_data_matrix)
         x_0 = params[0]
         mu = params[1]
+
         # We get indicies in time vector where time < t_lag
         idx = np.nonzero(time_vector < t_lag)
+
         # Fill at those indices with x_0
         x_t_lag = np.full((len(idx) - 1,), x_0)
+
         # The rest of the biomass points are calculated as usual
         mult_by_time = x_0 * np.exp(mu * (time_vector[len(idx) - 1:] - t_lag))
+
         # Concatenate both vectors and transfer to X_t column of the simulated matrix
         simulated_matrix[:, 0] = np.concatenate((x_t_lag, mult_by_time), axis=None)
         exp_mu_t_lag = np.exp(mu * (time_vector - t_lag)) - 1
+
         for i in range(1, int(len(params) / 2)):
             q = params[i * 2]
             m_0 = params[i * 2 + 1]
@@ -325,16 +346,23 @@ class PhysioFitter:
         :return:
         """
 
+        # Get end shape
         simulated_matrix = np.empty_like(exp_data_matrix)
+
+        # Get initial params
         x_0 = params[0]
         mu = params[1]
+
         # We get indicies in time vector where time < t_lag
         idx = np.nonzero(time_vector < t_lag)
+
         # Fill at those indices with x_0
         x_t_lag = np.full((len(idx) - 1,), x_0)
+
         # The rest of the biomass points are calculated as usual
         mult_by_time = x_0 * np.exp(mu * (time_vector[len(idx) - 1:] - t_lag))
         simulated_matrix[:, 0] = np.concatenate((x_t_lag, mult_by_time), axis=None)
+
         for i in range(1, int(len(params) / 2)):
             q = params[i * 2]
             m_0 = params[i * 2 + 1]
@@ -374,34 +402,44 @@ class PhysioFitter:
         if not self.optimize_results:
             raise RuntimeError("Running Monte Carlo simulation without having run the optimization is impossible "
                                "as best fit results are needed to generate the initial simulated matrix")
+
         self.logger.info(f"Running monte carlo analysis. Number of iterations: {self.iterations}\n")
+
         # Store the optimized results in variable that will be overridden on every pass
         opt_res = self.optimize_results
         opt_params_list = []
         matrices = []
+
         for _ in range(self.iterations):
             new_matrix = self._apply_noise()
+
             # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(opt_res.x, self.simulate, new_matrix, self.time_vector, self.t_lag,
                                                      self.deg_vector, self.weight, self.bounds)
+
             # Store the new simulated matrix in list for later use
             matrices.append(self.simulate(opt_res.x, new_matrix, self.time_vector, self.t_lag, self.deg_vector))
+
             # Store the new optimised parameters in list for later use
             opt_params_list.append(opt_res.x)
+
         # Build a 3D array from all the simulated matrices to get standard deviation on each data point
         matrices = np.array(matrices)
         self.matrices_ci = {
             "lower_ci": np.percentile(matrices, 2.5, axis=0),
             "higher_ci": np.percentile(matrices, 97.5, axis=0)
         }
+
         # Compute the statistics on the list of parameters: means, sds, medians and confidence interval
         self._compute_parameter_stats(opt_params_list)
         self.logger.info(f"Optimized parameters statistics:\n{self.parameter_stats}\n")
+
         # Apply nan mask to be coherent with the experimental matrix
         nan_lower_ci = np.copy(self.matrices_ci['lower_ci'])
         nan_higher_ci = np.copy(self.matrices_ci['higher_ci'])
         nan_lower_ci[np.isnan(self.experimental_matrix)] = np.nan
         nan_higher_ci[np.isnan(self.experimental_matrix)] = np.nan
+
         self.logger.info(f"Simulated matrix lower confidence interval:\n{nan_lower_ci}\n")
         self.logger.info(f"Simulated matrix higher confidence interval:\n{nan_higher_ci}\n")
         return
@@ -409,6 +447,7 @@ class PhysioFitter:
     def _compute_parameter_stats(self, opt_params_list):
         """
         Compute statistics on the optimized parameters from the monte carlo analysis.
+
         :param opt_params_list: list of optimized parameter arrays generated during the monte carlo analysis
         :return: parameter stats attribute containing means, sds, medians, low and high CI
         """
@@ -420,6 +459,7 @@ class PhysioFitter:
             np.percentile(opt_params_list, 2.5, 0),
             np.percentile(opt_params_list, 97.5, 0)
         ))
+
         self.parameter_stats.update({
             "mean": opt_params_means,
             "sd": opt_params_sds,
@@ -436,16 +476,19 @@ class PhysioFitter:
         cost = self._calculate_cost(self.optimize_results.x, self.simulate, self.experimental_matrix, self.time_vector,
                                     self.t_lag, self.deg_vector, self.weight)
         p_val = chi2.cdf(cost, dof)
+
         self.logger.info(f"khi2 test results:\n"
                          f"khi2 value: {cost}\n"
                          f"Number of measurements: {number_measurements}\n"
                          f"Number of parameters to fit: {number_params}\n"
                          f"Degrees of freedom: {dof}\n"
                          f"p-value = {p_val}\n")
+
         if p_val < 0.95:
             self.logger.info(f"At level of 95% confidence, the model fits the data good enough with respect to the "
                              f"provided measurement SD. Value: "
                              f"{p_val}")
+
         else:
             self.logger.info(f"At level of 95% confidence, the model does not fit the data good enough with respect to "
                              f"the provided measurement SD. "
@@ -476,7 +519,6 @@ class PhysioFitter:
             PhysioFitter._add_noise(self.simulated_matrix[idx, :], sd)
             for idx, sd in enumerate(self.weight)
         ])
-
         return new_matrix
 
 
