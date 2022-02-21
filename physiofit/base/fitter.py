@@ -15,14 +15,14 @@ mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
 # TODO: weights as dict
 # TODO: add estimate deg function (eq 6) with plot of best fit and measured values
-# TODO: t_lag can be estimated during fitting
+
 
 
 class PhysioFitter:
 
     def __init__(self, data, vini=0.04, mc=True, iterations=100, conc_biom_bounds=(1e-2, 50),
                  flux_biom_bounds=(0.01, 50), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
-                 deg=None, t_lag=None, debug_mode=False):
+                 deg=None, t_lag=False, debug_mode=False):
 
         """
         The PhysioFitter class is responsible for most of Physiofit's heavy lifting. Features included are:
@@ -63,8 +63,8 @@ class PhysioFitter:
         :type weight: int, float, list or ndarray
         :param deg: dictionary of degradation constants for each metabolite
         :type deg: dict
-        :param t_lag: lag phase length
-        :type t_lag: int or float
+        :param t_lag: Should lag phase length be estimated
+        :type t_lag: bool
         """
 
         self.data = data
@@ -98,21 +98,21 @@ class PhysioFitter:
 
         # TODO: This will not work in package mode because of import
         if __name__ == "__main__":
+            print("this happened")
+            self.initialize_vectors()
             self.logger.debug(f"Time vector: {self.time_vector}\n"
                               f"Name vector: {self.name_vector}\n"
                               f"Experimental Data: \n{self.data}\n"
                               f"Parameters: {self.ids}\n"
                               f"Parameter vector: {self.params}\n")
-            if t_lag:
-                self.logger.debug(f"Lag time detected: {t_lag}\n")
             if deg:
                 self.logger.debug(f"Degradation constants detected: {self.deg}\n")
 
-                if self.weight:
-                    self.logger.debug(f"Weight = {self.weight}\n")
-                    self.initialize_weight_matrix()
-                self.initialize_bounds()
-                self.initialize_equation()
+            if self.weight:
+                self.logger.debug(f"Weight = {self.weight}\n")
+                self.initialize_weight_matrix()
+            self.initialize_bounds()
+            self.initialize_equation()
 
     def initialize_vectors(self):
         """
@@ -127,8 +127,15 @@ class PhysioFitter:
         metabolites = self.name_vector[1:]
         mu = self.vini
         x_0 = self.vini
-        self.params = [x_0, mu]
-        self.ids = ["X_0", "mu"]
+
+        # Check if t_lag should be added to the list of parameters to estimate
+        if self.t_lag:
+            t_lag = 0.1 * self.time_vector.max()
+            self.params = [x_0, mu, t_lag]
+            self.ids = ["X_0", "mu", "t_lag"]
+        else:
+            self.params = [x_0, mu]
+            self.ids = ["X_0", "mu"]
 
         # Handle the creation of a vector of degradation constants
         if self.deg:
@@ -175,6 +182,9 @@ class PhysioFitter:
 
         if type(self.deg) is not list:
             raise TypeError(f"Degradation constants have not been well initialized.\nConstants: {self.deg}")
+
+        if type(self.t_lag) is not bool:
+            raise TypeError(f"t_lag parameter must be a boolean (True or False)")
 
     def initialize_weight_matrix(self):
         """
@@ -246,6 +256,11 @@ class PhysioFitter:
             self.conc_biom_bounds,
             self.flux_biom_bounds
         ]
+        # If lag phase time should be estimated, add default bounds
+        if self.t_lag:
+            bounds.append(
+                (0, 0.8*self.time_vector.max())
+            )
         # We get the number of times that we must add the m0 and q0 bounds (once per metabolite)
         ids_range = int((len(self.ids) - 2) / 2)  # We force int so that Python does not think it could be float
         for _ in range(ids_range):
@@ -255,6 +270,7 @@ class PhysioFitter:
             bounds.append(
                 self.conc_met_bounds  # M_0
             )
+
         self.bounds = tuple(bounds)
         self.logger.debug(f"Bounds: {self.bounds}\n")
 
@@ -299,7 +315,7 @@ class PhysioFitter:
 
         self.logger.info("\nRunning optimization...\n")
         self.optimize_results = PhysioFitter._run_optimization(self.params, self.simulate, self.experimental_matrix,
-                                                               self.time_vector, self.t_lag, self.deg_vector,
+                                                               self.time_vector, self.deg_vector,
                                                                self.weight, self.bounds)
         self.parameter_stats = {
             "optimal": self.optimize_results.x
@@ -308,13 +324,13 @@ class PhysioFitter:
         for i, param in zip(self.ids, self.optimize_results.x):
             self.logger.info(f"\n{i} = {param}\n")
         self.simulated_matrix = self.simulate(self.optimize_results.x, self.experimental_matrix,
-                                              self.time_vector, self.t_lag, self.deg_vector)
+                                              self.time_vector, self.deg_vector)
         nan_sim_mat = np.copy(self.simulated_matrix)
         nan_sim_mat[np.isnan(self.experimental_matrix)] = np.nan
         self.logger.info(f"Final Simulated Matrix: \n{nan_sim_mat}\n")
 
     @staticmethod
-    def _simple_sim(params, exp_data_matrix, time_vector, t_lag, deg):
+    def _simple_sim(params, exp_data_matrix, time_vector, deg):
         """Function to simulate the matrix using input parameters and the no lag analytical equation"""
 
         simulated_matrix = np.empty_like(exp_data_matrix)
@@ -331,21 +347,21 @@ class PhysioFitter:
         return simulated_matrix
 
     @staticmethod
-    def _lag_sim(params, exp_data_matrix, time_vector, t_lag, deg):
+    def _lag_sim(params, exp_data_matrix, time_vector, deg):
         """
         Function to simulate the matrix using input parameters and the no deg analytical equation (with lag)
         :param params:
         :param exp_data_matrix:
         :param time_vector: vector containing times
-        :param t_lag: lag time
         :return:
         """
 
         simulated_matrix = np.empty_like(exp_data_matrix)
         x_0 = params[0]
         mu = params[1]
+        t_lag = params[2]
 
-        # We get indicies in time vector where time < t_lag
+        # We get indices in time vector where time < t_lag
         idx = np.nonzero(time_vector < t_lag)
 
         # Fill at those indices with x_0
@@ -359,22 +375,21 @@ class PhysioFitter:
         exp_mu_t_lag = np.exp(mu * (time_vector - t_lag)) - 1
 
         for i in range(1, int(len(params) / 2)):
-            q = params[i * 2]
-            m_0 = params[i * 2 + 1]
+            q = params[i * 2 + 1]
+            m_0 = params[i * 2 + 2]
             m_t_lag = np.full((len(idx) - 1,), m_0)
             mult_by_time = q * (x_0 / mu) * exp_mu_t_lag + m_0
             simulated_matrix[:, i] = np.concatenate((m_t_lag, mult_by_time), axis=None)
         return simulated_matrix
 
     @staticmethod
-    def _total_sim(params, exp_data_matrix, time_vector, t_lag, deg):
+    def _total_sim(params, exp_data_matrix, time_vector, deg):
         """
         Function to simulate the matrix using input parameters and accounting for a lag phase and metabolite degradation
 
         :param params:
         :param exp_data_matrix:
         :param time_vector:
-        :param t_lag:
         :param deg:
         :return:
         """
@@ -385,8 +400,9 @@ class PhysioFitter:
         # Get initial params
         x_0 = params[0]
         mu = params[1]
+        t_lag = params[2]
 
-        # We get indicies in time vector where time < t_lag
+        # We get indices in time vector where time < t_lag
         idx = np.nonzero(time_vector < t_lag)
 
         # Fill at those indices with x_0
@@ -397,8 +413,8 @@ class PhysioFitter:
         simulated_matrix[:, 0] = np.concatenate((x_t_lag, mult_by_time), axis=None)
 
         for i in range(1, int(len(params) / 2)):
-            q = params[i * 2]
-            m_0 = params[i * 2 + 1]
+            q = params[i * 2 + 1]
+            m_0 = params[i * 2 + 2]
             k = deg[idx]
             m_t_lag = np.full((len(idx) - 1,), m_0)
             mult_by_time = q * (x_0 / (mu + k)) * (
@@ -408,23 +424,23 @@ class PhysioFitter:
         return simulated_matrix
 
     @staticmethod
-    def _calculate_cost(params, func, exp_data_matrix, time_vector, t_lag, deg, weight_matrix):
+    def _calculate_cost(params, func, exp_data_matrix, time_vector, deg, weight_matrix):
         """Calculate the cost (residue) using the square of simulated-experimental over the SDs"""
 
-        simulated_matrix = func(params, exp_data_matrix, time_vector, t_lag, deg)
+        simulated_matrix = func(params, exp_data_matrix, time_vector, deg)
         cost_val = np.square((simulated_matrix - exp_data_matrix) / weight_matrix)
         residuum = np.nansum(cost_val)
         return residuum
 
     @staticmethod
-    def _run_optimization(params, func, exp_data_matrix, time_vector, t_lag, deg, weight_matrix, bounds):
+    def _run_optimization(params, func, exp_data_matrix, time_vector, deg, weight_matrix, bounds):
         """
         Run the optimization on input parameters using the cost function and Scipy minimize (L-BFGS-B method
         that is deterministic and uses the gradient method for optimizing)
         """
 
         optimize_results = minimize(PhysioFitter._calculate_cost, x0=params, args=(
-            func, exp_data_matrix, time_vector, t_lag, deg, weight_matrix), method="L-BFGS-B", bounds=bounds)
+            func, exp_data_matrix, time_vector, deg, weight_matrix), method="L-BFGS-B", bounds=bounds)
         return optimize_results
 
     def monte_carlo_analysis(self):
@@ -447,11 +463,11 @@ class PhysioFitter:
             new_matrix = self._apply_noise()
 
             # We optimise the parameters using the noisy matrix as input
-            opt_res = PhysioFitter._run_optimization(opt_res.x, self.simulate, new_matrix, self.time_vector, self.t_lag,
+            opt_res = PhysioFitter._run_optimization(opt_res.x, self.simulate, new_matrix, self.time_vector,
                                                      self.deg_vector, self.weight, self.bounds)
 
             # Store the new simulated matrix in list for later use
-            matrices.append(self.simulate(opt_res.x, new_matrix, self.time_vector, self.t_lag, self.deg_vector))
+            matrices.append(self.simulate(opt_res.x, new_matrix, self.time_vector, self.deg_vector))
 
             # Store the new optimised parameters in list for later use
             opt_params_list.append(opt_res.x)
@@ -507,7 +523,7 @@ class PhysioFitter:
         number_params = len(self.params)
         dof = number_measurements - number_params
         cost = self._calculate_cost(self.optimize_results.x, self.simulate, self.experimental_matrix, self.time_vector,
-                                    self.t_lag, self.deg_vector, self.weight)
+                                    self.deg_vector, self.weight)
         p_val = chi2.cdf(cost, dof)
 
         self.logger.info(f"khi2 test results:\n"
@@ -556,15 +572,11 @@ class PhysioFitter:
 
 
 if __name__ == "__main__":
-    from datetime import datetime
-    from physiofit.base.io import IoHandler
-
-    print(f"Time before: {datetime.now().strftime('%H:%M:%S')}")
-    iostream = IoHandler("local")
-    iostream.launch_from_json(r"C:\Users\legregam\Documents\Projets\PhysioFit\config_file.json")
-    iostream.fitter.optimize()
-    iostream.fitter.monte_carlo_analysis()
-    iostream.fitter.khi2_test()
-    iostream.local_out("plot")
-    print(f"khi2 test score (pval) = {iostream.fitter.khi2_test()}")
-    print(f"Time after: {datetime.now().strftime('%H:%M:%S')}")
+    import pandas as pd
+    fitter = PhysioFitter(
+        pd.read_csv(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_2.tsv", sep="\t"),
+        t_lag = False, weight=[0.02, 0.46, 0.2], debug_mode=True, vini=0.6
+    )
+    fitter.optimize()
+    fitter.monte_carlo_analysis()
+    fitter.khi2_test()
