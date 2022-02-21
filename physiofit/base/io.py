@@ -30,7 +30,7 @@ class IoHandler:
                 iohandle.local_in(data, kwargs) --> kwargs are passed on to the PhysioFitter class for initialization
 
                 if usage with config file:
-                iohandle.read_json_config(json_file_path)
+                iohandle.launch_from_json(json_file_path)
 
                 iohandle.fitter.optimize()
                 ...
@@ -261,6 +261,7 @@ class IoHandler:
             self._output_report()
 
         if "plot" in self._output_type:
+            self.plot_data()
             self._output_plots()
 
         if "pdf" in self._output_type:
@@ -281,13 +282,12 @@ class IoHandler:
         # Initialize fitter
         self.fitter = PhysioFitter(self.data, debug_mode=kwargs["debug_mode"])
 
+        # Initialize fitter logger
         file_handle = logging.FileHandler(self.res_path / "log.txt", "w")
-
         if kwargs["debug_mode"]:
             file_handle.setLevel(logging.DEBUG)
         else:
             file_handle.setLevel(logging.INFO)
-
         file_handle.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.fitter.logger.addHandler(file_handle)
 
@@ -299,11 +299,8 @@ class IoHandler:
             else:
                 wrong_keys.append(key)
         self._initialize_fitter_vars()
-
-        # TODO: Add parameter checks for the initialization of the fitter object
-
+        self.fitter.verify_attrs()
         self.fitter.logger.debug(f"Fitter attribute dictionary:\n{self.fitter.__dict__}")
-
         if wrong_keys:
             raise KeyError(f"Some keyword arguments were not valid: {wrong_keys}")
 
