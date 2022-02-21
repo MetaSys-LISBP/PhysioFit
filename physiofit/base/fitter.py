@@ -180,7 +180,7 @@ class PhysioFitter:
             raise TypeError(f"Weights is not in the right format ({type(self.weight)}. "
                             f"Compatible formats are:\n{allowed_weights}")
 
-        if type(self.deg) is not list:
+        if type(self.deg_vector) is not list:
             raise TypeError(f"Degradation constants have not been well initialized.\nConstants: {self.deg}")
 
         if type(self.t_lag) is not bool:
@@ -259,7 +259,7 @@ class PhysioFitter:
         # If lag phase time should be estimated, add default bounds
         if self.t_lag:
             bounds.append(
-                (0, 0.8*self.time_vector.max())
+                (0, 0.5*self.time_vector.max())
             )
         # We get the number of times that we must add the m0 and q0 bounds (once per metabolite)
         ids_range = int((len(self.ids) - 2) / 2)  # We force int so that Python does not think it could be float
