@@ -444,7 +444,6 @@ class PhysioFitter:
         matrices = []
 
         for _ in range(self.iterations):
-
             new_matrix = self._apply_noise()
 
             # We optimise the parameters using the noisy matrix as input
@@ -554,6 +553,7 @@ class PhysioFitter:
             for idx, sd in enumerate(self.weight)
         ])
         return new_matrix
+
 
 if __name__ == "__main__":
     from datetime import datetime
