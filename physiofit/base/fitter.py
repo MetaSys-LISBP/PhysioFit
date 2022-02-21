@@ -17,7 +17,6 @@ mod_logger = logging.getLogger("PhysioFit.base.fitter")
 # TODO: add estimate deg function (eq 6) with plot of best fit and measured values
 
 
-
 class PhysioFitter:
 
     def __init__(self, data, vini=0.04, mc=True, iterations=100, conc_biom_bounds=(1e-2, 50),
@@ -96,7 +95,7 @@ class PhysioFitter:
         self.matrices_ci = None
         self.opt_conf_ints = None
 
-        # TODO: This will not work in package mode because of import
+
         if __name__ == "__main__":
             print("this happened")
             self.initialize_vectors()
@@ -186,6 +185,33 @@ class PhysioFitter:
         if type(self.t_lag) is not bool:
             raise TypeError(f"t_lag parameter must be a boolean (True or False)")
 
+    def _weight_dict_to_matrix(self):
+        """Convert weight dictionary to matrix/vector"""
+
+        # Perform checks
+        for key in self.weight.keys():
+            if key not in self.name_vector:
+                raise KeyError(f"The key {key} is not part of the data headers")
+        for name in self.name_vector:
+            if name not in self.weight.keys():
+                raise KeyError(f"The key {name} is missing from the weights dict")
+
+        # Get lengths of each weight entry
+        weight_lengths = [len(self.weight[key]) if type(self.weight[key]) not in [float, int] else 1
+                          for key in self.weight.keys()]
+
+        # Make sure that lengths are the same
+        if not all(elem == weight_lengths[0] for elem in weight_lengths):
+            raise ValueError("All weight vectors must have the same length")
+
+        # Build matrix/vector
+        if weight_lengths[0] == 1:
+            self.weight = [self.weight[name] for name in self.name_vector]
+        else:
+            columns = (self.weight[name] for name in self.name_vector)
+            matrix = np.column_stack(columns)
+            self.weight = matrix
+
     def initialize_weight_matrix(self):
         """
         Initialize the weight matrix from different types of inputs: single value, vector or matrix.
@@ -196,11 +222,8 @@ class PhysioFitter:
         # This function can be optimized, if the input is a matrix we should detect it directly
         self.logger.info("Initializing Weight matrix...\n")
 
-        # When 0 is given as input weight, we assume the weights are given in an external file
-        if self.weight is None:
-            self._get_default_weights()
-            self.logger.debug(f"Weight matrix: {self.weight}\n")
-            return
+        if type(self.weight) is dict:
+            self._weight_dict_to_matrix()
 
         # When weight is a single value, we build a weight matrix containing the value in all positions
         if isinstance(self.weight, int) or isinstance(self.weight, float):
@@ -259,7 +282,7 @@ class PhysioFitter:
         # If lag phase time should be estimated, add default bounds
         if self.t_lag:
             bounds.append(
-                (0, 0.5*self.time_vector.max())
+                (0, 0.5 * self.time_vector.max())
             )
         # We get the number of times that we must add the m0 and q0 bounds (once per metabolite)
         ids_range = int((len(self.ids) - 2) / 2)  # We force int so that Python does not think it could be float
@@ -573,9 +596,11 @@ class PhysioFitter:
 
 if __name__ == "__main__":
     import pandas as pd
+
     fitter = PhysioFitter(
-        pd.read_csv(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_2.tsv", sep="\t"),
-        t_lag = False, weight=[0.02, 0.46, 0.2], debug_mode=True, vini=0.6
+        pd.read_csv(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_2.tsv",
+                    sep="\t"),
+        t_lag=False, weight=[0.02, 0.46, 0.2], debug_mode=True, vini=0.6
     )
     fitter.optimize()
     fitter.monte_carlo_analysis()
