@@ -12,6 +12,7 @@ from physiofit.logger import initialize_fitter_logger
 
 mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
+
 # TODO: weights as dict
 # TODO: add estimate deg function (eq 6) with plot of best fit and measured values
 # TODO: t_lag can be estimated during fitting
@@ -90,10 +91,12 @@ class PhysioFitter:
         self.params = None
         self.ids = None
         self.bounds = None
+        self.parameter_stats = None
         self.opt_params_sds = None
         self.matrices_ci = None
         self.opt_conf_ints = None
 
+        # TODO: This will not work in package mode because of import
         if __name__ == "__main__":
             self.logger.debug(f"Time vector: {self.time_vector}\n"
                               f"Name vector: {self.name_vector}\n"
@@ -133,7 +136,7 @@ class PhysioFitter:
                 for key in self.deg.keys():
                     if key not in metabolites:
                         raise KeyError(f"The degradation constant for {key} is missing. If no degradation for this "
-                                       f"metabolite, please enter 0 in the corresponding dictionnary entry")
+                                       f"metabolite, please enter 0 in the corresponding dictionary entry")
             self.deg_vector = [self.deg[met] for met in metabolites]
         elif self.deg == {} or self.deg is None:
             self.deg_vector = [0 for _ in metabolites]
@@ -144,6 +147,34 @@ class PhysioFitter:
             self.params.append(self.vini)
             self.ids.append(f"{met}_q")
             self.ids.append(f"{met}_M0")
+
+    def verify_attrs(self):
+        """Check that attributes are valid"""
+
+        allowed_vinis = [int, float]
+        if type(self.vini) not in allowed_vinis:
+            raise TypeError(f"Initial value for fluxes and concentrations is not a number. Detected type:  "
+                            f"{type(self.vini)}\nValid types: {allowed_vinis}")
+
+        for bound in [self.conc_biom_bounds, self.flux_biom_bounds, self.conc_met_bounds, self.flux_met_bounds]:
+            if type(bound) is not tuple:
+                raise TypeError(f"Error reading bounds. Bounds should be ('int/float', 'int/float') tuples.\n"
+                                f"Current bounds: {bound}")
+            if self.vini < bound[0] or self.vini > bound[1]:
+                raise RuntimeError(f"Initial value for fluxes and concentrations ({self.vini}) cannot be set outside "
+                                   f"the given bounds: {bound}")
+
+        if type(self.iterations) is not int:
+            raise TypeError(f"Number of monte carlo iterations must be an integer, and not of type "
+                            f"{type(self.iterations)}")
+
+        allowed_weights = [int, float, list, np.ndarray]
+        if type(self.weight) not in allowed_weights:
+            raise TypeError(f"Weights is not in the right format ({type(self.weight)}. "
+                            f"Compatible formats are:\n{allowed_weights}")
+
+        if type(self.deg) is not list:
+            raise TypeError(f"Degradation constants have not been well initialized.\nConstants: {self.deg}")
 
     def initialize_weight_matrix(self):
         """
@@ -160,6 +191,7 @@ class PhysioFitter:
             self._get_default_weights()
             self.logger.debug(f"Weight matrix: {self.weight}\n")
             return
+
         # When weight is a single value, we build a weight matrix containing the value in all positions
         if isinstance(self.weight, int) or isinstance(self.weight, float):
             self._build_weight_matrix()
@@ -412,6 +444,7 @@ class PhysioFitter:
         matrices = []
 
         for _ in range(self.iterations):
+
             new_matrix = self._apply_noise()
 
             # We optimise the parameters using the noisy matrix as input
@@ -522,18 +555,16 @@ class PhysioFitter:
         ])
         return new_matrix
 
-
 if __name__ == "__main__":
     from datetime import datetime
     from physiofit.base.io import IoHandler
 
     print(f"Time before: {datetime.now().strftime('%H:%M:%S')}")
     iostream = IoHandler("local")
-    iostream.local_in(
-        r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_7.tsv"
-    )
-    phyfit = PhysioFitter(iostream.data, vini=0.05, weight=[0.02, 0.46, 0.1], debug_mode=True)
-    phyfit.optimize()
-    print(f"khi2 test score (pval) = {phyfit.khi2_test()}")
-    # phyfit.monte_carlo_analysis()
+    iostream.launch_from_json(r"C:\Users\legregam\Documents\Projets\PhysioFit\config_file.json")
+    iostream.fitter.optimize()
+    iostream.fitter.monte_carlo_analysis()
+    iostream.fitter.khi2_test()
+    iostream.local_out("plot")
+    print(f"khi2 test score (pval) = {iostream.fitter.khi2_test()}")
     print(f"Time after: {datetime.now().strftime('%H:%M:%S')}")
