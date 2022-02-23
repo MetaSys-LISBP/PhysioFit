@@ -1,7 +1,12 @@
 from ast import literal_eval
 import json
+import tkinter as tk
+from tkinter import filedialog
+from pathlib import Path
+from copy import copy
 
 import streamlit as st
+import pandas as pd
 
 from physiofit.base.io import IoHandler
 
@@ -14,7 +19,7 @@ class App:
         self.io_handler = None
         self.defaults = {
             "vini": 0.2,
-            "weight": "",
+            "weight": 0.2,
             "conc_met_bounds": [1e-06, 50],
             "flux_met_bounds": [0.01, 50],
             "conc_biom_bounds": [1e-06, 50],
@@ -33,6 +38,8 @@ class App:
         if self.select_menu == "Calculate extracellular fluxes":
             self.io_handler = IoHandler()
             self._build_flux_menu()
+        else:
+            st.header("Not yet implemented")
 
     def _build_flux_menu(self):
 
@@ -56,36 +63,34 @@ class App:
             raise KeyError(f"Wrong input file format. Accepted formats are tsv for the data file or json for config "
                            f"files. Detected file:{self.data_file.name}")
 
-        submitted = self._initialize_opt_menu_widgets(input_values)
+        submitted = self._initialize_opt_menu_widgets(input_values, file_extension)
 
         if submitted:
-            st.session_state.submitted = True
-            final_json = self._build_internal_json(input_values["path_to_data"])
-            self.io_handler.launch_from_json(final_json)
+            if file_extension == "tsv":
+                self.io_handler.data = pd.read_csv(self.data_file, sep="\t")
+                self.io_handler.data = self.io_handler.data.sort_values("time", ignore_index=True)
+                self.io_handler.names = self.io_handler.data.columns[1:].to_list()
+                kwargs = self._build_fitter_kwargs()
+                self.io_handler.initialize_fitter(kwargs)
+            if file_extension == "json":
+                st.session_state.submitted = True
+                final_json = self._build_internal_json(input_values["path_to_data"])
+                self.io_handler.launch_from_json(final_json)
             self.io_handler.fitter.optimize()
             if self.mc:
                 self.io_handler.fitter.monte_carlo_analysis()
             self.io_handler.fitter.khi2_test()
-            self.io_handler.plot_data()
             outputs = ["data", "plot", "pdf"]
             self.io_handler.local_out(*outputs)
             st.write(f"Run is finished. Check {self.io_handler.res_path} for the results.")
 
-    def _initialize_opt_menu_widgets(self, input_values):
-
+    def _initialize_opt_menu_widgets(self, input_values, file_extension):
 
         expand_basic_settings = st.expander("Basic settings", expanded=True)
         with expand_basic_settings:
-            self.t_lag_check = st.checkbox(
+            self.t_lag = st.checkbox(
                 "Lag",
                 key="lag_check"
-            )
-            enable_t_lag = False if self.t_lag_check else True
-            self.t_lag = st.number_input(
-                "Lag time",
-                value=input_values["t_lag"],
-                help="Estimated time of lag phase during cell cultivation",
-                disabled=enable_t_lag
             )
             self.deg_check = st.checkbox(
                 "Degradation",
@@ -110,6 +115,37 @@ class App:
                 help="How many iterations should the Monte Carlo analysis perform",
                 disabled=enable_mc
             )
+            if file_extension == "tsv":
+
+                # Set up tkinter for directory chooser
+                root = tk.Tk()
+                root.withdraw()
+
+                # Make folder picker dialog appear on top of other windows
+                root.wm_attributes('-topmost', 1)
+
+                # Initialize folder picker button and add logic
+                clicked = st.button("Select destination folder", key="clicker")
+                if clicked:
+
+                    # Initialize home path from directory selector and add to session state
+                    if not hasattr(st.session_state, "home_path"):
+                        st.session_state.home_path = Path(st.text_input(
+                            "Selected output folder:", filedialog.askdirectory(master=root)
+                        ))
+
+                elif hasattr(st.session_state, "home_path"):
+                    self.io_handler.home_path = copy(st.session_state.home_path)
+
+                    # Get rid of the home path from session state to stop this code being executed on rerun
+                    del st.session_state.home_path
+
+                    # Initialize the result export directory
+                    self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
+                    if not self.io_handler.res_path.is_dir():
+                        self.io_handler.res_path.mkdir()
+
+        # Build the form for advanced parameters
         form = st.form("Parameter_form")
         with form:
             expand_run_params = st.expander("Advanced settings")
@@ -135,8 +171,8 @@ class App:
                 self.flux_met_bounds = st.text_input(
                     "Metabolite fluxes bounds",
                     value=input_values["flux_met_bounds"],
-                    help="Give the bounds for the metabolite fluxes (q value). They will limit the range of possibilities "
-                         "during optimization. Defaults: [0.01, 50]"
+                    help="Give the bounds for the metabolite fluxes (q value). They will limit the range of "
+                         "possibilities during optimization. Defaults: [0.01, 50]"
                 )
                 self.conc_biom_bounds = st.text_input(
                     "Biomass initial concentration bounds",
@@ -147,8 +183,8 @@ class App:
                 self.flux_biom_bounds = st.text_input(
                     "Biomass fluxes bounds",
                     value=input_values["flux_biom_bounds"],
-                    help="Give the bounds for the metabolite fluxes (q value). They will limit the range of possibilities "
-                         "during optimization. Defaults: [0.01, 50]"
+                    help="Give the bounds for the metabolite fluxes (q value). They will limit the range of "
+                         "possibilities during optimization. Defaults: [0.01, 50]"
                 )
                 self.debug_mode = st.checkbox(
                     "Debug Mode",
@@ -156,6 +192,23 @@ class App:
                 )
             submitted = st.form_submit_button("Run flux calculation")
         return submitted
+
+    def _build_fitter_kwargs(self):
+
+        kwargs = {
+            "vini": float(self.vini),
+            "weight": literal_eval(self.weight),
+            "conc_met_bounds": tuple(literal_eval(self.conc_met_bounds)),
+            "flux_met_bounds": tuple(literal_eval(self.flux_met_bounds)),
+            "conc_biom_bounds": tuple(literal_eval(self.conc_biom_bounds)),
+            "flux_biom_bounds": tuple(literal_eval(self.flux_biom_bounds)),
+            "t_lag": self.t_lag,
+            "deg": literal_eval(self.deg),
+            "mc": self.mc,
+            "iterations": self.iterations,
+            "debug_mode": self.debug_mode,
+        }
+        return kwargs
 
     def _build_internal_json(self, path_to_data):
 
@@ -174,6 +227,7 @@ class App:
             "path_to_data": path_to_data
         })
         return final_json
+
 
 if __name__ == "__main__":
     my_app = App()
