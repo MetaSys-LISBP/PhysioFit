@@ -115,6 +115,7 @@ class App:
                 help="How many iterations should the Monte Carlo analysis perform",
                 disabled=enable_mc
             )
+
             if file_extension == "tsv":
 
                 # Set up tkinter for directory chooser
@@ -129,11 +130,9 @@ class App:
                 if clicked:
 
                     # Initialize home path from directory selector and add to session state
-                    if not hasattr(st.session_state, "home_path"):
                         st.session_state.home_path = Path(st.text_input(
                             "Selected output folder:", filedialog.askdirectory(master=root)
                         ))
-
                 elif hasattr(st.session_state, "home_path"):
                     self.io_handler.home_path = copy(st.session_state.home_path)
 
@@ -142,8 +141,9 @@ class App:
 
                     # Initialize the result export directory
                     self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
-                    if not self.io_handler.res_path.is_dir():
-                        self.io_handler.res_path.mkdir()
+                    if not clicked:
+                        if not self.io_handler.res_path.is_dir():
+                            self.io_handler.res_path.mkdir()
 
         # Build the form for advanced parameters
         form = st.form("Parameter_form")
