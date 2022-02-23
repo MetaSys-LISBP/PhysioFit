@@ -13,7 +13,6 @@ from physiofit.logger import initialize_fitter_logger
 mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
 
-# TODO: weights as dict
 # TODO: add estimate deg function (eq 6) with plot of best fit and measured values
 
 
@@ -59,7 +58,8 @@ class PhysioFitter:
          * a named vector containing weights for all the metabolites provided in the input file
          * 0  in which case the matrix is automatically loaded from the file xxx_sd.csv/.tsv (where xxx is the data
          file name) if the file exists. Otherwise, weight is constructed from default values
-        :type weight: int, float, list or ndarray
+         * a dictionary with the data column headers as keys and the associated value as a scalar or list
+        :type weight: int, float, list, dict or ndarray
         :param deg: dictionary of degradation constants for each metabolite
         :type deg: dict
         :param t_lag: Should lag phase length be estimated
@@ -95,23 +95,22 @@ class PhysioFitter:
         self.matrices_ci = None
         self.opt_conf_ints = None
 
-
-        if __name__ == "__main__":
-            print("this happened")
-            self.initialize_vectors()
-            self.logger.debug(f"Time vector: {self.time_vector}\n"
-                              f"Name vector: {self.name_vector}\n"
-                              f"Experimental Data: \n{self.data}\n"
-                              f"Parameters: {self.ids}\n"
-                              f"Parameter vector: {self.params}\n")
-            if deg:
-                self.logger.debug(f"Degradation constants detected: {self.deg}\n")
-
-            if self.weight:
-                self.logger.debug(f"Weight = {self.weight}\n")
-                self.initialize_weight_matrix()
-            self.initialize_bounds()
-            self.initialize_equation()
+        # if __name__ == "__main__":
+        #     print("this happened")
+        #     self.initialize_vectors()
+        #     self.logger.debug(f"Time vector: {self.time_vector}\n"
+        #                       f"Name vector: {self.name_vector}\n"
+        #                       f"Experimental Data: \n{self.data}\n"
+        #                       f"Parameters: {self.ids}\n"
+        #                       f"Parameter vector: {self.params}\n")
+        #     if deg:
+        #         self.logger.debug(f"Degradation constants detected: {self.deg}\n")
+        #
+        #     if self.weight:
+        #         self.logger.debug(f"Weight = {self.weight}\n")
+        #         self.initialize_weight_matrix()
+        #     self.initialize_bounds()
+        #     self.initialize_equation()
 
     def initialize_vectors(self):
         """
