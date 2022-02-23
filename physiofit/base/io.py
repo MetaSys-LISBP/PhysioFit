@@ -12,8 +12,6 @@ from physiofit.base.fitter import PhysioFitter
 
 mod_logger = logging.getLogger("PhysioFit.base.io")
 
-# REMINDER: when using Path objects, convert to string before passing it to pandas or file open,etc...
-
 
 class IoHandler:
     allowed_keys = {"vini", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds", "flux_met_bounds", "weight",
@@ -161,13 +159,12 @@ class IoHandler:
         self.initialize_fitter(kwargs)
 
         if not self.has_config_been_read:
-            self._generate_run_config(data_path)
+            self._generate_run_config()
 
     def _generate_run_config(self):
         """
         Generate config file from the parameters of the last run
 
-        :param data_path: output path for the file
         :return: None
         """
 
@@ -390,7 +387,7 @@ class IoHandler:
         self.experimental_data = DataFrame(columns=self.names, index=x, data=exp_mat)
         self.simulated_data = DataFrame(columns=self.names, index=x, data=sim_mat)
 
-    def plot_data(self, display=True):
+    def plot_data(self, display=False):
         """
         Plot the extracellular flux data
 
