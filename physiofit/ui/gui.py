@@ -19,11 +19,11 @@ class App:
         self.io_handler = None
         self.defaults = {
             "vini": 0.2,
-            "weight": 0.2,
+            "weight": {},
             "conc_met_bounds": [1e-06, 50],
-            "flux_met_bounds": [0.01, 50],
+            "flux_met_bounds": [-50, 50],
             "conc_biom_bounds": [1e-06, 50],
-            "flux_biom_bounds": [0.01, 50],
+            "flux_biom_bounds": [-50, 50],
             "t_lag": 0,
             "deg": {},
             "iterations": 100
@@ -32,7 +32,7 @@ class App:
     def start_app(self):
 
         self.select_menu = st.selectbox(
-            "Select between flux calculation and degradation constant calculation",
+            "Select task to execute",
             ["Calculate extracellular fluxes", "Calculate degradation constant"]
         )
         if self.select_menu == "Calculate extracellular fluxes":
@@ -62,6 +62,14 @@ class App:
         elif file_extension != "tsv":
             raise KeyError(f"Wrong input file format. Accepted formats are tsv for the data file or json for config "
                            f"files. Detected file:{self.data_file.name}")
+        else:
+            data = pd.read_csv(self.data_file, sep="\t")
+            try:
+                self.defaults["weight"].update({"X": 0.2})
+                for col in data.columns[2:]:
+                    self.defaults["weight"].update({col: 0.5})
+            except Exception:
+                raise
 
         submitted = self._initialize_opt_menu_widgets(input_values, file_extension)
 
@@ -105,7 +113,7 @@ class App:
                 disabled=enable_deg
             )
             self.mc = st.checkbox(
-                "Monte Carlo",
+                "Sensitivity analysis (Monte Carlo)",
                 help="Should Monte Carlo statistical analysis be performed"
             )
             enable_mc = False if self.mc else True
@@ -130,14 +138,20 @@ class App:
                 if clicked:
 
                     # Initialize home path from directory selector and add to session state
-                        st.session_state.home_path = Path(st.text_input(
-                            "Selected output folder:", filedialog.askdirectory(master=root)
-                        ))
-                elif hasattr(st.session_state, "home_path"):
+                    st.session_state.home_path = Path(st.text_input(
+                        "Selected output folder:", filedialog.askdirectory(master=root)
+                    ))
+                    if st.session_state.home_path == Path(".") or not st.session_state.home_path.exists():
+                        raise RuntimeError("Please input a valid file path")
                     self.io_handler.home_path = copy(st.session_state.home_path)
 
-                    # Get rid of the home path from session state to stop this code being executed on rerun
-                    del st.session_state.home_path
+                elif hasattr(st.session_state, "home_path"):
+
+                    self.io_handler.home_path = Path(st.text_input(
+                        "Selected output folder:", st.session_state.home_path
+                    ))
+                    if self.io_handler.home_path == Path(".") or not self.io_handler.home_path.exists():
+                        raise RuntimeError("Please input a valid file path")
 
                     # Initialize the result export directory
                     self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
@@ -151,25 +165,25 @@ class App:
             expand_run_params = st.expander("Advanced settings")
             with expand_run_params:
                 self.vini = st.text_input(
-                    "Initial flux value",
+                    "Initial flux values",
                     value=input_values["vini"],
                     key="vini",
                     help="Select an initial value for the parameters to estimate. Default=0.2"
                 )
                 self.weight = st.text_input(
-                    "Weights",
+                    "Weights for cost calculation & sensitivity analysis" "Weights",
                     value=input_values["weight"],
-                    help="Input weights to apply on the different variables. If None, default is 0.02 for biomass and"
+                    help="Input weights to apply on the different variables. If empty, default is 0.02 for biomass and"
                          " 0.05 for metabolites"
                 )
                 self.conc_met_bounds = st.text_input(
-                    "Metabolite initial concentration bounds",
+                    "Bounds on metabolite concentrations" ,
                     value=input_values["conc_met_bounds"],
                     help="Give the bounds for the initial concentrations of the metabolites (Mi0 value). "
                          "They will limit the range of possibilities during optimization. Defaults: [1e-06, 50]"
                 )
                 self.flux_met_bounds = st.text_input(
-                    "Metabolite fluxes bounds",
+                    "Bounds on fluxes",
                     value=input_values["flux_met_bounds"],
                     help="Give the bounds for the metabolite fluxes (q value). They will limit the range of "
                          "possibilities during optimization. Defaults: [0.01, 50]"
@@ -181,7 +195,7 @@ class App:
                          "They will limit the range of possibilities during optimization. Defaults: [1e-06, 50]"
                 )
                 self.flux_biom_bounds = st.text_input(
-                    "Biomass fluxes bounds",
+                    "Bounds on growth rate",
                     value=input_values["flux_biom_bounds"],
                     help="Give the bounds for the metabolite fluxes (q value). They will limit the range of "
                          "possibilities during optimization. Defaults: [0.01, 50]"
