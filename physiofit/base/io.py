@@ -452,18 +452,3 @@ class IoHandler:
         x = self.simulated_data.index
         ax.fill_between(x, y1, y2, alpha=.3, linewidth=0, color="red")
         return ax
-
-
-if __name__ == "__main__":
-    iostream = IoHandler()
-    # iostream.local_in(
-    #     r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_2.tsv",
-    #     iterations=50, vini=0.2, weight=[0.02, 0.46, 0.2], debug_mode=True
-    # )
-    # iostream.generate_config_file(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data")
-    iostream.launch_from_json(r"C:\Users\legregam\Documents\Projets\PhysioFit\config_file.json")
-    iostream.fitter.optimize()
-    iostream.fitter.monte_carlo_analysis()
-    iostream.plot_data(True)
-    # iostream.local_out("data", "plot")
-    iostream.fitter.khi2_test()

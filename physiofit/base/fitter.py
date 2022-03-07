@@ -591,16 +591,3 @@ class PhysioFitter:
             for idx, sd in enumerate(self.weight)
         ])
         return new_matrix
-
-
-if __name__ == "__main__":
-    import pandas as pd
-
-    fitter = PhysioFitter(
-        pd.read_csv(r"C:\Users\legregam\Documents\Projets\PhysioFit\Example\KEIO_test_data\KEIO_ROBOT6_2.tsv",
-                    sep="\t"),
-        t_lag=False, weight=[0.02, 0.46, 0.2], debug_mode=True, vini=0.6
-    )
-    fitter.optimize()
-    fitter.monte_carlo_analysis()
-    fitter.khi2_test()
