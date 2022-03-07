@@ -31,6 +31,7 @@ class App:
 
     def start_app(self):
 
+        st.title("Welcome to Physiofit 2.0")
         self.select_menu = st.selectbox(
             "Select task to execute",
             ["Calculate extracellular fluxes", "Calculate degradation constant"]
