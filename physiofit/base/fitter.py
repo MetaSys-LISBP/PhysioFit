@@ -5,6 +5,7 @@ PhysioFit software main module
 import logging
 
 import numpy as np
+from pandas import DataFrame
 from scipy.optimize import minimize
 from scipy.stats import chi2
 
@@ -17,54 +18,58 @@ mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
 
 class PhysioFitter:
+    """
+    This class is responsible for most of Physiofit's heavy lifting. Features included are:
+
+        * loading of data from **csv** or **tsv** file
+        * **equation system initialization** using the following analytical functions (in absence of lag and
+          degradation:
+
+            X(t) = X0 * exp(mu * t)
+            Mi(t) = qMi * (X0 / mu) * (exp(mu * t) - 1) + Mi0
+
+        * **simulation of data points** from given initial parameters
+        * **cost calculation** using the equation:
+
+            residuum = sum((sim - meas) / weight)²
+
+        * **optimization of the initial parameters** using `scipy.optimize.minimize ('L-BFGS-B' method) <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb>`_
+        * **sensitivity analysis, khi2 tests and plotting**
+
+    :param data: DataFrame containing data and passed by IOstream object
+    :type data: class: pandas.DataFrame
+    :param vini: initial value for fluxes and concentrations (default=1)
+    :type vini: int or float
+    :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
+    :type mc: Boolean
+    :param iterations: number of iterations for Monte-Carlo simulation (default=50)
+    :type iterations: int
+    :param conc_biom_bounds: lower and upper bounds for biomass concentration (X0)
+    :type conc_biom_bounds: tuple of ints/floats (lower, upper)
+    :param flux_biom_bounds: lower and upper bounds for biomass rate of change (mu)
+    :type flux_biom_bounds: tuple of ints/floats (lower, upper)
+    :param conc_met_bounds: lower and upper bounds for metabolite concentration (mi0)
+    :type conc_met_bounds: tuple of ints/floats (lower, upper)
+    :param flux_met_bounds: lower and upper bounds for metabolite rate of change (qi)
+    :type flux_met_bounds: tuple of ints/floats (lower, upper)
+    :param weight: weight matrix used for residuum calculations. Can be:
+
+                * a matrix with the same dimensions as the measurements matrix (but without the time column)
+                * a named vector containing weights for all the metabolites provided in the input file
+                * 0  in which case the matrix is automatically loaded from the file xxx_sd.csv/.tsv (where xxx is the data
+                  file name) if the file exists. Otherwise, weight is constructed from default values
+                * a dictionary with the data column headers as keys and the associated value as a scalar or list
+
+    :type weight: int, float, list, dict or ndarray
+    :param deg: dictionary of degradation constants for each metabolite
+    :type deg: dict
+    :param t_lag: Should lag phase length be estimated
+    :type t_lag: bool
+    """
 
     def __init__(self, data, vini=0.04, mc=True, iterations=100, conc_biom_bounds=(1e-2, 50),
                  flux_biom_bounds=(0.01, 50), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
                  deg=None, t_lag=False, debug_mode=False):
-
-        """
-        The PhysioFitter class is responsible for most of Physiofit's heavy lifting. Features included are:
-            * loading of data from csv or tsv file
-            * equation system initialization using the following analytical functions (in absence of lag and
-              degradation:
-                X(t) = X0 * exp(mu * t)
-                Mi(t) = qMi * (X0 / mu) * (exp(mu * t) - 1) + Mi0
-            * simulation of data points from given initial parameters
-            * cost calculation using the equation:
-                residuum = sum((sim - meas) / weight)²
-            * optimization of the initial parameters using scipy.optimize.minimize ('L-BFGS-B' method)
-            * calling the Stat Analyzer objet for sensitivity analysis, khi2 tests and plotting (see documentation
-              relative to the component Stat Analyzer class for more details)
-
-        :param data: DataFrame containing data and passed by IOstream object
-        :type data: class: pandas.DataFrame
-        :param vini: initial value for fluxes and concentrations (default=1)
-        :type vini: int or float
-        :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
-        :type mc: Boolean
-        :param iterations: number of iterations for Monte-Carlo simulation (default=50)
-        :type iterations: int
-        :param conc_biom_bounds:
-        lower and upper bounds for biomass concentration (X0)
-        :type conc_biom_bounds: tuple of ints/floats (lower, upper)
-        :param flux_biom_bounds: lower and upper bounds for biomass rate of change (mu)
-        :type flux_biom_bounds: tuple of ints/floats (lower, upper)
-        :param conc_met_bounds: lower and upper bounds for metabolite concentration (mi0)
-        :type conc_met_bounds: tuple of ints/floats (lower, upper)
-        :param flux_met_bounds: lower and upper bounds for metabolite rate of change (qi)
-        :type flux_met_bounds: tuple of ints/floats (lower, upper)
-        :param weight: weight matrix used for residuum calculations. Can be:
-         * a matrix with the same dimensions as the measurements matrix (but without the time column)
-         * a named vector containing weights for all the metabolites provided in the input file
-         * 0  in which case the matrix is automatically loaded from the file xxx_sd.csv/.tsv (where xxx is the data
-         file name) if the file exists. Otherwise, weight is constructed from default values
-         * a dictionary with the data column headers as keys and the associated value as a scalar or list
-        :type weight: int, float, list, dict or ndarray
-        :param deg: dictionary of degradation constants for each metabolite
-        :type deg: dict
-        :param t_lag: Should lag phase length be estimated
-        :type t_lag: bool
-        """
 
         self.data = data
         self.vini = vini
@@ -94,23 +99,6 @@ class PhysioFitter:
         self.opt_params_sds = None
         self.matrices_ci = None
         self.opt_conf_ints = None
-
-        # if __name__ == "__main__":
-        #     print("this happened")
-        #     self.initialize_vectors()
-        #     self.logger.debug(f"Time vector: {self.time_vector}\n"
-        #                       f"Name vector: {self.name_vector}\n"
-        #                       f"Experimental Data: \n{self.data}\n"
-        #                       f"Parameters: {self.ids}\n"
-        #                       f"Parameter vector: {self.params}\n")
-        #     if deg:
-        #         self.logger.debug(f"Degradation constants detected: {self.deg}\n")
-        #
-        #     if self.weight:
-        #         self.logger.debug(f"Weight = {self.weight}\n")
-        #         self.initialize_weight_matrix()
-        #     self.initialize_bounds()
-        #     self.initialize_equation()
 
     def initialize_vectors(self):
         """
@@ -221,20 +209,28 @@ class PhysioFitter:
         # This function can be optimized, if the input is a matrix we should detect it directly
         self.logger.info("Initializing Weight matrix...\n")
 
+        # If weight is None, we generate the default matrix
+        if self.weight is None:
+            try:
+                self.weight = {"X": 0.2}
+                for col in self.data.columns[2:]:
+                    self.weight.update({col: 0.5})
+            except Exception:
+                raise
+
         if type(self.weight) is dict:
             self._weight_dict_to_matrix()
-
         # When weight is a single value, we build a weight matrix containing the value in all positions
         if isinstance(self.weight, int) or isinstance(self.weight, float):
             self._build_weight_matrix()
             self.logger.debug(f"Weight matrix: {self.weight}\n")
             return
-        if not isinstance(self.weight, np.ndarray):
-            if not isinstance(self.weight, list):
-                raise TypeError(f"Cannot coerce weights to array. Please check that a list or array is given as input."
-                                f"\nCurrent input: \n{self.weight}")
-            else:
-                self.weight = np.array(self.weight)
+        if not isinstance(self.weight, np.ndarray) and not isinstance(self.weight, list):
+            raise TypeError(
+                f"Cannot coerce weights to array. Please check that a list or array is given as input."
+                f"\nCurrent input: \n{self.weight}")
+        else:
+            self.weight = np.array(self.weight)
         if not np.issubdtype(self.weight.dtype, np.number):
             try:
                 self.weight = self.weight.astype(float)
@@ -294,7 +290,7 @@ class PhysioFitter:
             )
 
         self.bounds = tuple(bounds)
-        self.logger.debug(f"Bounds: {self.bounds}\n")
+        self.logger.info(f"Bounds: {self.bounds}\n")
 
     def _build_weight_matrix(self):
         """
@@ -349,7 +345,9 @@ class PhysioFitter:
                                               self.time_vector, self.deg_vector)
         nan_sim_mat = np.copy(self.simulated_matrix)
         nan_sim_mat[np.isnan(self.experimental_matrix)] = np.nan
-        self.logger.info(f"Final Simulated Matrix: \n{nan_sim_mat}\n")
+        self.simulated_data = DataFrame(data=nan_sim_mat, index=self.time_vector, columns=self.name_vector)
+        self.simulated_data.index.name = "Time"
+        self.logger.info(f"Final Simulated Data: \n{self.simulated_data}\n")
 
     @staticmethod
     def _simple_sim(params, exp_data_matrix, time_vector, deg):
@@ -503,7 +501,9 @@ class PhysioFitter:
 
         # Compute the statistics on the list of parameters: means, sds, medians and confidence interval
         self._compute_parameter_stats(opt_params_list)
-        self.logger.info(f"Optimized parameters statistics:\n{self.parameter_stats}\n")
+        self.logger.info(f"Optimized parameters statistics:")
+        for key, value in self.parameter_stats:
+            self.logger.info(f"{key}: {value}")
 
         # Apply nan mask to be coherent with the experimental matrix
         nan_lower_ci = np.copy(self.matrices_ci['lower_ci'])
@@ -538,6 +538,8 @@ class PhysioFitter:
             "CI_2.5": conf_ints[:, 0],
             "CI_97.5": conf_ints[:, 1]
         })
+
+        # self.parameter_stats_df = DataFrame()
 
     def khi2_test(self):
 

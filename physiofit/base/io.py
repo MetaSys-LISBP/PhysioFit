@@ -14,28 +14,19 @@ mod_logger = logging.getLogger("PhysioFit.base.io")
 
 
 class IoHandler:
-    allowed_keys = {"vini", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds", "flux_met_bounds", "weight",
-                    "t_lag", "deg", "iterations", "mc", "debug_mode"}
+    """
+    Input/Output class that handles the former and initializes the PhysioFitter component object. It is the
+    interface for interacting with the Physiofit package.
+
+    :param source: Input source
+    """
+
+    allowed_keys = {
+        "vini", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds", "flux_met_bounds", "weight", "t_lag", "deg",
+        "iterations", "mc", "debug_mode"
+    }
 
     def __init__(self, source='local'):
-        """
-        Input/Output class that handles the former and initializes the PhysioFitter component object. It is the
-        interface for interacting with the Physiofit package.
-
-        Usage:  iohandle = IoHandler(source)
-
-                if direct usage:
-                iohandle.local_in(data, kwargs) --> kwargs are passed on to the PhysioFitter class for initialization
-
-                if usage with config file:
-                iohandle.launch_from_json(json_file_path)
-
-                iohandle.fitter.optimize()
-                ...
-                iohandle.local_out(*args) --> args define the type of output that should be generated
-
-        :param source: Input source
-        """
 
         self.input_source = source
         self._output_type = []
@@ -48,6 +39,7 @@ class IoHandler:
         self.simulated_data = None
         self.experimental_data = None
         self.home_path = None
+        self.data_path = None
         self.res_path = None
         self.has_config_been_read = False
 
@@ -140,6 +132,9 @@ class IoHandler:
         :return: None
         """
 
+        # Store the data path
+        self.data_path = str(Path(data_path).resolve())
+
         # Initialize data and set up destination directory
         if self.data is not None:
             raise ValueError(f"It seems data is already loaded in. Data: \n{self.data}\nHome path: {self.home_path}")
@@ -177,7 +172,7 @@ class IoHandler:
                     to_dump.update({key: value})
 
         to_dump.update(
-            {"path_to_data": str(self.home_path)}
+            {"path_to_data": str(self.data_path)}
         )
 
         with open(str(self.res_path / "config_file.json"), "w") as conf:
@@ -266,7 +261,7 @@ class IoHandler:
 
         self._generate_run_config()
 
-    def initialize_fitter(self, kwargs: dict):
+    def initialize_fitter(self, kwargs: dict = None):
         """
         Initialize the PhysioFitter object
 
@@ -277,24 +272,31 @@ class IoHandler:
         wrong_keys = []
 
         # Initialize fitter
-        self.fitter = PhysioFitter(self.data, debug_mode=kwargs["debug_mode"])
+        self.fitter = PhysioFitter(self.data)
 
         # Initialize fitter logger
         file_handle = logging.FileHandler(self.res_path / "log.txt", "w")
-        if kwargs["debug_mode"]:
-            file_handle.setLevel(logging.DEBUG)
-        else:
+        try:
+            if kwargs["debug_mode"]:
+                file_handle.setLevel(logging.DEBUG)
+            else:
+                file_handle.setLevel(logging.INFO)
+        except KeyError:
             file_handle.setLevel(logging.INFO)
+        except Exception:
+            raise "There was an error while initializing the log level"
+
         file_handle.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.fitter.logger.addHandler(file_handle)
 
-        # Initialize fitter parameters from kwargs
-        for key, value in kwargs.items():
-            self.fitter.logger.debug(f"Key: {key}, value: {value}\n")
-            if key in IoHandler.allowed_keys:
-                self.fitter.__dict__.update({key: value})
-            else:
-                wrong_keys.append(key)
+        if kwargs:
+            # Initialize fitter parameters from kwargs
+            for key, value in kwargs.items():
+                self.fitter.logger.debug(f"Key: {key}, value: {value}\n")
+                if key in IoHandler.allowed_keys:
+                    self.fitter.__dict__.update({key: value})
+                else:
+                    wrong_keys.append(key)
         self._initialize_fitter_vars()
         self.fitter.verify_attrs()
         self.fitter.logger.debug(f"Fitter attribute dictionary:\n{self.fitter.__dict__}")
