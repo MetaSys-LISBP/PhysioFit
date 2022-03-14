@@ -12,7 +12,9 @@ from physiofit.base.io import IoHandler
 
 
 class App:
-
+    """
+    Physiofit Graphical User Interface
+    """
     def __init__(self):
 
         self.select_menu = None
@@ -30,7 +32,7 @@ class App:
         }
 
     def start_app(self):
-
+        """Launch the application"""
         st.title("Welcome to Physiofit 2.0")
         self.select_menu = st.selectbox(
             "Select task to execute",
@@ -43,6 +45,7 @@ class App:
             st.header("Not yet implemented")
 
     def _build_flux_menu(self):
+        """Build the starting menu with the data upload button"""
 
         self.data_file = st.file_uploader(
             "Upload data file or json configuration file",
@@ -54,6 +57,10 @@ class App:
             self._initialize_opt_menu()
 
     def _initialize_opt_menu(self):
+        """
+        Initialize all the options. If a json file is given as input, options are parsed from it. If the input is
+        tsv, the defaults are used instead.
+        """
 
         file_extension = self.data_file.name.split(".")[1]
         input_values = self.defaults
@@ -178,7 +185,7 @@ class App:
                          " 0.05 for metabolites"
                 )
                 self.conc_met_bounds = st.text_input(
-                    "Bounds on metabolite concentrations" ,
+                    "Bounds on metabolite concentrations",
                     value=input_values["conc_met_bounds"],
                     help="Give the bounds for the initial concentrations of the metabolites (Mi0 value). "
                          "They will limit the range of possibilities during optimization. Defaults: [1e-06, 50]"
@@ -245,5 +252,5 @@ class App:
 
 
 if __name__ == "__main__":
-    my_app = App()
-    my_app.start_app()
+    physiofit = App()
+    physiofit.start_app()

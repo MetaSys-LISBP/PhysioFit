@@ -1,0 +1,4 @@
+ipykernel
+nbsphinx
+physiofit
+pandoc

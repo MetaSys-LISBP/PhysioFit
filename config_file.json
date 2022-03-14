@@ -1,0 +1,30 @@
+{
+    "conc_met_bounds": [
+        1e-06,
+        50
+    ],
+    "flux_biom_bounds": [
+        0.01,
+        50
+    ],
+    "flux_met_bounds": [
+        -50,
+        50
+    ],
+    "debug_mode": true,
+    "weight": {
+        "X": 0.02,
+        "Glc": 0.46,
+        "Ace": 0.2
+    },
+    "t_lag": true,
+    "deg": null,
+    "conc_biom_bounds": [
+        1e-06,
+        50
+    ],
+    "vini" : 0.2,
+    "mc": true,
+    "iterations": 100,
+    "path_to_data": r".\Example\KEIO_test_data\KEIO_ROBOT6_1.tsv"
+}
