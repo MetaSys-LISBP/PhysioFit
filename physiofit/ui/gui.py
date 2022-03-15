@@ -83,7 +83,7 @@ class App:
 
         if submitted:
             if file_extension == "tsv":
-                self.io_handler.data = pd.read_csv(self.data_file, sep="\t")
+                self.io_handler.data = data
                 self.io_handler.data = self.io_handler.data.sort_values("time", ignore_index=True)
                 self.io_handler.names = self.io_handler.data.columns[1:].to_list()
                 kwargs = self._build_fitter_kwargs()

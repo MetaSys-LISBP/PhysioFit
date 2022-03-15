@@ -9,9 +9,9 @@ detailed below.
 The general model, taking into accounts both degradation and lag phase, can be described using the following system of
 ordinary differential equations:
 
-        (eq.1)
+.. image:: _static/equations/eq1.png
 
-        (eq.2)
+.. image:: _static/equations/eq2.png
 
 with qMi being positive (negative) when M_i is produced (consumed). The sign of q_(M_i ) can thus be used to
 automatically identify products and substrates in high throughput workflows for automated functional analysis of
@@ -19,28 +19,31 @@ metabolic systems.
 
 Integrating equations 1-2 provides the following analytical functions:
 
-        (eq. 3)
-        (eq. 4)
+.. image:: _static/equations/eq3.png
+
+.. image:: _static/equations/eq4.png
 
 In the absence of a lag phase (i.e. t_lag=0), equations 3-4 simplifies to:
 
-        (eq. 5)
-        (eq. 6)
+.. image:: _static/equations/eq5.png
+
+.. image:: _static/equations/eq6.png
 
 In the absence of degradation (i.e. k = 0), eq. 4 simplifies to:
 
-        (eq. 7)
+.. image:: _static/equations/eq7.png
 
 In the absence of both degradation and lag (i.e. t_lag=0 and k=0), equations 3-4 simplifies to:
 
-        (eq. 8)
-        (eq. 9)
+.. image:: _static/equations/eq8.png
+
+.. image:: _static/equations/eq9.png
 
 Parameter estimation is performed using Scipy's L-BFGS-B method (see
 `scipy.optimize.minimize <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html>`_ for more
 information) by minimizing the following cost function:
 
-        (eq. 10)
+.. image:: _static/equations/eq10.png
 
 where *sim* is the simulated data, *meas* denotes measurements, and *weight* is a weighting factor (e.g., standard
 deviation on measurements).
@@ -53,4 +56,4 @@ Finally, PhysioFit includes routines to estimate the first-order degradation con
 concentrations measured in the medium without cells. In this situation, simulations are performed using the following
 equation:
 
-        (eq. 11)
+.. image:: _static/equations/eq11.png

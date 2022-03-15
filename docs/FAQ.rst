@@ -1,6 +1,4 @@
 Frequently Asked Questions (FAQ)
 ================================
 
-qsoifjzioaf
-
-qifjoazijfza
+Frequently asked questions will be completed as the beta version of the software is tested by members of the community.

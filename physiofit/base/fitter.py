@@ -502,7 +502,7 @@ class PhysioFitter:
         # Compute the statistics on the list of parameters: means, sds, medians and confidence interval
         self._compute_parameter_stats(opt_params_list)
         self.logger.info(f"Optimized parameters statistics:")
-        for key, value in self.parameter_stats:
+        for key, value in self.parameter_stats.items():
             self.logger.info(f"{key}: {value}")
 
         # Apply nan mask to be coherent with the experimental matrix
