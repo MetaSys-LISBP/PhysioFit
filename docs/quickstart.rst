@@ -4,7 +4,7 @@ Quickstart
 .. seealso:: If you have already used Physiofit and are looking for a more in-depth tutorial, check out the :doc:`usage`
              section.
 
-In this section we will explain how to launch your first job one Physiofit has been installed onto your system.
+In this section we will explain how to launch your first job once Physiofit has been installed onto your system.
 
 Launching the Graphical User Interface
 --------------------------------------
