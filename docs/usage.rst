@@ -16,15 +16,25 @@ Time   X    Met1
 etc   ...    ...
 ==== ===== ======
 
-The time and biomass(X) columns are mandatory, as is at least one metabolite column. If the biomass and metabolite
+The time and biomass (X) columns are mandatory, as is at least one metabolite column. If the biomass and metabolite
 concentrations were sampled at different moments, you can still group them together in the same table.
+
+.. warning:: Flux units depend on the units of time and concentrations (biomass and metabolites) provided in the input
+             data file. For instance, if biomass units are in gDW/L, metabolite concentrations are in mM and time is
+             in hours, the estimated fluxes will be in mmol/gDW/h. It is critical to correctly define the  units in the
+             input file. Note: to limit any numerical instabilities, use values in a range not too far from unity (e.g.
+             if a metabolite concentration is 2µM, provide the value directly in µM and not as 2.10e-6M). Each metabolite
+             concentration can be given in different units as long as one unit is provided per metabolite.
 
 The json config file
 ---------------------
 
-The json config file presents an organisation similar to a python dictionary. You can find an example of one `here <https://github.com/MetaSys-LISBP/PhysioFit/blob/dev_v2.0/config_example_file.json>`_.
+The json config file presents an organisation similar to a python dictionary. You can find an example of one `here
+<https://github.com/MetaSys-LISBP/PhysioFit/blob/dev_v2.0/config_example_file.json>`_.
 
 For a description of each parameter, check the section below.
+
+.. _physiofit parameters:
 
 PhysioFit Parameters
 --------------------
@@ -35,22 +45,38 @@ Here is a list of the different parameters that can be modified when setting up 
         - *Lag*: Should the length of the lag phase be estimated during optimization
         - *Degradation*: Should degradation constants be used during optimization (if yes then they should be given in
           dictionary format).
-        - *Sensitivity analysis (Monte Carlo)*: Should the sensitivity analysis be performed on optimized parameters (if
-          true then input the number of iterations).
+        - *Sensitivity analysis (Monte Carlo)*: Should the sensitivity analysis be performed on estimated parameters (if
+          true then input the number of iterations). A higher number of iterations will give more accurate confidence
+          intervals on the estimated parameters, but will make the run take longer to complete. The default number of
+          iterations is 100 which is sufficient in most situations.
 
     * **Advanced parameters:**
-        - *vini*: Initial value for parameters to estimate. This will be the starting point for the optimization.
-        - *Weights*: Standard deviation to apply during cost calculation (see eq. 10 in :doc:`method`)
+        - *vini*: Initial value for parameters to estimate. This will be the starting point for the optimization. An
+          initial value in a physiological range will ensure a quality fit. The default vini is 0.2
+        - *Weights*: Standard deviation to apply during cost calculation (see eq. 10 in :doc:`method`). A higher weight
+          will augment the weighted parameter's precision during the optimization, which might lower the
+          precision on other parameters. A lower weight will give weighted parameter less precision, and might
+          augment the precision on the other parameters. The default weight are: 0.2 for biomass parameters, and 0.5
+          for metabolite parameters.
         - *Metabolite concentration bounds*: Bounds to apply to the metabolite concentrations during optimization to
-          reduce the range of possibilities.
-        - *Flux bounds*: Bounds to apply on fluxes during optimization to reduce the range of possibilities
+          reduce the range of possibilities. Well-defined bounds will ensure that the values tested during the
+          optimization process are closer to physiological values, which can reduce inconsistencies in the process. The
+          default bounds are sufficient in most cases. Default: [1e-06, 50]
+        - *Flux bounds*: Bounds to apply on fluxes during optimization to reduce the range of possibilities.
         - *Biomass initial concentration bounds*: Bounds to apply on the starting concentration for biomass to reduce
-          the range of possibilities.
-        - *Growth rate bounds*: Bounds to apply on the growth rate to reduce the range of possibilities.
+          the range of possibilities. Well-defined bounds will ensure that the values tested during the optimization
+          process are closer to physiological values, which can reduce inconsistencies in the process. The default
+          bounds are sufficient in most cases. [1e-06, 50]
+        - *Growth rate bounds*: Bounds to apply on the growth rate to reduce the range of possibilities. Well-defined bounds
+          will ensure that the values tested during the optimization process are closer to physiological values, which
+          can reduce inconsistencies in the process. The default bounds are sufficient in most cases.
         - *Debug mode*: Should debug information be written in log file
 
-Result files
--------------
+.. note:: For the different bounds to apply during flux calculation, the user must remember to make sure that the input
+          data is inside them or else they run the risk of an error being thrown at them.
+
+Result files & fit quality
+---------------------------
 
 There are 3 types of files that are generated by Physiofit 2.0. They are:
 
@@ -59,3 +85,5 @@ There are 3 types of files that are generated by Physiofit 2.0. They are:
     * **log.txt:** The run log containing information on how the run went.
     * **plots.pdf:** pdf file containing plots
     * **A number of .svg files containing the plots individually**
+
+# TODO: Importance of checking quality of fit before using value: visualisation of exp and sim, etc...

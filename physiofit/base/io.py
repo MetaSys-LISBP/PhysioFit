@@ -94,6 +94,7 @@ class IoHandler:
     def generate_config_file(destination_path: str):
         """
         Generate the default configuration file
+
         :param destination_path: destination to send the file
         :return: None
         """

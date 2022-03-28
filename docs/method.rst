@@ -52,8 +52,9 @@ A global sensitivity analysis (Monte-Carlo approach) is implemented to evaluate 
 parameters, plots are generated for visual inspection of the fitting quality, and a khi2 test is performed to assess the
 statistical goodness of fit.
 
-Finally, PhysioFit includes routines to estimate the first-order degradation constants from time-course metabolite
-concentrations measured in the medium without cells. In this situation, simulations are performed using the following
-equation:
+..
+    Finally, PhysioFit includes routines to estimate the first-order degradation constants from time-course metabolite
+    concentrations measured in the medium without cells. In this situation, simulations are performed using the following
+    equation:
 
-.. image:: _static/equations/eq11.png
+    .. image:: _static/equations/eq11.png

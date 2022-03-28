@@ -1,4 +1,4 @@
-Librairy documentation
+Library documentation
 =======================
 
 .. toctree::

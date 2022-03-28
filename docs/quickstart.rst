@@ -11,6 +11,9 @@ Launching the Graphical User Interface
 
 To launch the graphical user interface or GUI, open up your preferred command-line utility and type in "physiofit". If
 you installed the package in a specific environment, make sure to navigate into it first before launching the command.
+The app should launch inside your default web browser as such:
+
+.. image:: _static/interface.jpg
 
 Launching your first job
 ------------------------

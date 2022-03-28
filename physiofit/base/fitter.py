@@ -56,8 +56,7 @@ class PhysioFitter:
 
                 * a matrix with the same dimensions as the measurements matrix (but without the time column)
                 * a named vector containing weights for all the metabolites provided in the input file
-                * 0  in which case the matrix is automatically loaded from the file xxx_sd.csv/.tsv (where xxx is the data
-                  file name) if the file exists. Otherwise, weight is constructed from default values
+                * 0  in which case the matrix is automatically constructed from default values
                 * a dictionary with the data column headers as keys and the associated value as a scalar or list
 
     :type weight: int, float, list, dict or ndarray
@@ -460,7 +459,9 @@ class PhysioFitter:
         """
 
         optimize_results = minimize(PhysioFitter._calculate_cost, x0=params, args=(
-            func, exp_data_matrix, time_vector, deg, weight_matrix), method="L-BFGS-B", bounds=bounds)
+            func, exp_data_matrix, time_vector, deg, weight_matrix), method="L-BFGS-B", bounds=bounds,
+                                    options={'maxcor': 30}
+                                    )
         return optimize_results
 
     def monte_carlo_analysis(self):
