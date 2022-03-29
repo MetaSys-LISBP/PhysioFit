@@ -25,7 +25,7 @@ class App:
             "conc_met_bounds": [1e-06, 50],
             "flux_met_bounds": [-50, 50],
             "conc_biom_bounds": [1e-06, 50],
-            "flux_biom_bounds": [-50, 50],
+            "flux_biom_bounds": [1e-6, 2],
             "t_lag": 0,
             "deg": {},
             "iterations": 100
@@ -33,7 +33,7 @@ class App:
 
     def start_app(self):
         """Launch the application"""
-        st.title("Welcome to Physiofit 2.0")
+        st.title("Welcome to PhysioFit 2.0")
         self.select_menu = st.selectbox(
             "Select task to execute",
             ["Calculate extracellular fluxes", "Calculate degradation constant"]
@@ -42,7 +42,7 @@ class App:
             self.io_handler = IoHandler()
             self._build_flux_menu()
         else:
-            st.header("Not yet implemented")
+            st.header("Not implemented yet")
 
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
@@ -69,7 +69,7 @@ class App:
             input_values.update(config)
         elif file_extension != "tsv":
             raise KeyError(f"Wrong input file format. Accepted formats are tsv for the data file or json for config "
-                           f"files. Detected file:{self.data_file.name}")
+                           f"files. Detected file: {self.data_file.name}")
         else:
             data = pd.read_csv(self.data_file, sep="\t")
             try:
@@ -116,19 +116,19 @@ class App:
             self.deg = st.text_input(
                 "Degradation constants",
                 value={},
-                help="Dictionary of the different degradation constants for each metabolite. "
+                help="Dictionary containing the (first-order) degradation constant of each metabolite. "
                      "Format: {'met1': value, 'met2': value, ... 'metn': value}",
                 disabled=enable_deg
             )
             self.mc = st.checkbox(
                 "Sensitivity analysis (Monte Carlo)",
-                help="Should Monte Carlo statistical analysis be performed"
+                help="Perform (Monte Carlo) sensitivity analysis to determine the precision on estimated fluxes"
             )
             enable_mc = False if self.mc else True
             self.iterations = st.number_input(
                 "Number of iterations",
                 value=input_values["iterations"],
-                help="How many iterations should the Monte Carlo analysis perform",
+                help="Number of iterations for the Monte Carlo analysis",
                 disabled=enable_mc
             )
 
@@ -150,7 +150,7 @@ class App:
                         "Selected output folder:", filedialog.askdirectory(master=root)
                     ))
                     if st.session_state.home_path == Path(".") or not st.session_state.home_path.exists():
-                        raise RuntimeError("Please input a valid file path")
+                        raise RuntimeError("Please provide a valid file path")
                     self.io_handler.home_path = copy(st.session_state.home_path)
 
                 elif hasattr(st.session_state, "home_path"):
@@ -159,7 +159,7 @@ class App:
                         "Selected output folder:", st.session_state.home_path
                     ))
                     if self.io_handler.home_path == Path(".") or not self.io_handler.home_path.exists():
-                        raise RuntimeError("Please input a valid file path")
+                        raise RuntimeError("Please provide a valid file path")
 
                     # Initialize the result export directory
                     self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
@@ -176,7 +176,7 @@ class App:
                     "Initial flux values",
                     value=input_values["vini"],
                     key="vini",
-                    help="Select an initial value for fluxes to estimate. Default: 0.2"
+                    help="Select an initial value of fluxes to estimate. Default: 0.2"
                 )
                 self.weight = st.text_input(
                     "Weights for cost calculation & sensitivity analysis" "Weights",
@@ -210,7 +210,7 @@ class App:
                 )
                 self.debug_mode = st.checkbox(
                     "Verbose logs",
-                    help="Should debug information be written to the log file"
+                    help="Useful in case of trouble. Join it to the issue on github."
                 )
             submitted = st.form_submit_button("Run flux calculation")
         return submitted
