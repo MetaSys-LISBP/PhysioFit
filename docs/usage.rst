@@ -73,7 +73,7 @@ Here is a list of the different parameters that can be modified when setting up 
         - *Growth rate bounds*: Bounds to apply on the growth rate to reduce the range of possibilities. Well-defined bounds
           will ensure that the values tested during the optimization process are closer to physiological values, which
           can reduce inconsistencies in the process. The default bounds are sufficient in most cases. Default: [-50, 50]
-        - *Debug mode*: Should debug information be written in log file. Default: False
+        - *Verbose logs*: Should debug information be written in log file. Useful in case of trouble (please join it to the issue on github). Default: False
 
 .. note:: For the different bounds to apply during flux calculation, the user must remember to make sure that the input
           data is inside them or else they run the risk of an error being thrown at them.
