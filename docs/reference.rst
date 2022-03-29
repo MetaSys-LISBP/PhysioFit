@@ -1,7 +1,7 @@
 API Reference
 =============
 
-This module serves as reference for the different classes and associated methods of the Physiofit 2.0 package.
+This module serves as reference for the different classes and associated methods of the PhysioFit 2.0 package.
 
 :file:`fitter.py`
 

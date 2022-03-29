@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Physiofit'
+project = 'PhysioFit'
 copyright = '2022, Loïc Le Grégam'
 author = 'Loïc Le Grégam'
 

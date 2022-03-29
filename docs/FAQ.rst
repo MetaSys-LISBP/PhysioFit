@@ -26,5 +26,5 @@ After flux calculation, my data hasn't been correctly fitted. Why?
 ------------------------------------------------------------------
 
 There are many reasons why a fit can be incorrect. In most cases, it is because the run parameters have to be tweaked to
-help Physiofit get on the right track. For more info on the run parameters and how they affect the fitting process,
+help PhysioFit get on the right track. For more info on the run parameters and how they affect the fitting process,
 please refer to the :ref:`physiofit parameters`.

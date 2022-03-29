@@ -1,4 +1,4 @@
-.. Physiofit documentation master file, created by
+.. PhysioFit documentation master file, created by
    sphinx-quickstart on Mon Mar  7 14:29:46 2022.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -7,7 +7,7 @@
    :align: left
    :scale: 36%
 
-Welcome to Physiofit's documentation!
+Welcome to PhysioFit's documentation!
 =====================================
 
 **PhysioFit 2.0 is a scientific tool designed to i) quantify exchange (production and consumption) fluxes and ii) cell growth

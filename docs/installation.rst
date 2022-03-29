@@ -1,10 +1,14 @@
 Installation
 ============
 
-Install physiofit
+Installation
 -----------------
 
-To install Physiofit 2.0 using Python's built-in installer, you can just run the following command in a terminal:
+PhysioFit requires Python 3.6 or higher and can run on most systems supporting Python3 (Windows, MacOS and Linux). If you do not have a Python environment
+configured on your computer, we recommend that you follow the instructions
+from `Anaconda <https://www.anaconda.com/download/>`_.
+
+To install PhysioFit 2.0 using Python's built-in installer, you can just run the following command in a terminal:
 
 .. code-block:: bash
 
@@ -13,11 +17,8 @@ To install Physiofit 2.0 using Python's built-in installer, you can just run the
 We recommend you create isolated environments for each python tool you install in your system using the python built-in
 `venv <https://docs.python.org/3/library/venv.html>`_ package or `Anaconda <https://www.anaconda.com/products/individual>`_.
 
-
-Requirements
--------------
-
-Physiofit is a Python3 software, and can run on most systems supporting Python3 (Windows, MacOS and linux).
+If this method does not work, you should ask your local system administrator or
+the IT department "how to install a Python 3 package from PyPi" on your computer.
 
 PhysioFit is freely available and is distributed under open-source license at http://github.com/MetaSys-LISBP/ .
 
@@ -25,7 +26,7 @@ PhysioFit is freely available and is distributed under open-source license at ht
 Alternatives & Updates
 ----------------------
 
-To install Physiofit 2.0 for the current user account only, run the following command:
+To install PhysioFit 2.0 for the current user account only, run the following command:
 
 .. code-block::
 
