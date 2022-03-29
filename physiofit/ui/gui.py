@@ -176,7 +176,7 @@ class App:
                     "Initial flux values",
                     value=input_values["vini"],
                     key="vini",
-                    help="Select an initial value for the parameters to estimate. Default=0.2"
+                    help="Select an initial value for the fluxes to estimate. Default=0.2"
                 )
                 self.weight = st.text_input(
                     "Weights for cost calculation & sensitivity analysis" "Weights",
@@ -185,7 +185,7 @@ class App:
                          " 0.05 for metabolites"
                 )
                 self.conc_met_bounds = st.text_input(
-                    "Bounds on metabolite concentrations",
+                    "Bounds on initial metabolite concentrations",
                     value=input_values["conc_met_bounds"],
                     help="Give the bounds for the initial concentrations of the metabolites (Mi0 value). "
                          "They will limit the range of possibilities during optimization. Defaults: [1e-06, 50]"
@@ -194,10 +194,10 @@ class App:
                     "Bounds on fluxes",
                     value=input_values["flux_met_bounds"],
                     help="Give the bounds for the metabolite fluxes (q value). They will limit the range of "
-                         "possibilities during optimization. Defaults: [0.01, 50]"
+                         "possibilities during optimization. Defaults: [-50, 50]"
                 )
                 self.conc_biom_bounds = st.text_input(
-                    "Biomass initial concentration bounds",
+                    "Bounds on initial biomass concentration",
                     value=input_values["conc_biom_bounds"],
                     help="Give the bounds for the initial concentrations of the metabolites (Mi0 value). "
                          "They will limit the range of possibilities during optimization. Defaults: [1e-06, 50]"
@@ -209,7 +209,7 @@ class App:
                          "possibilities during optimization. Defaults: [0.01, 50]"
                 )
                 self.debug_mode = st.checkbox(
-                    "Debug Mode",
+                    "Verbose logs",
                     help="Should debug information be written to the log file"
                 )
             submitted = st.form_submit_button("Run flux calculation")

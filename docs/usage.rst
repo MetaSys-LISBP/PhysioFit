@@ -44,9 +44,9 @@ Processing parameters
 Here is a list of the different parameters that can be modified when setting up your run:
 
     * **Basic parameters:**
-        - *Lag*: Should the length of the lag phase be estimated during optimization
-        - *Degradation*: Should degradation constants be used during optimization (if yes then they should be given in
-          dictionary format).
+        - *Lag*: consider (or not) a lag phase (i.e. without growth) during flux calculation
+        - *Degradation*: (first-order) degradation constants to be used during flux calculation (constants should be given as a
+          python dictionary).
         - *Sensitivity analysis (Monte Carlo)*: Should the sensitivity analysis be performed on estimated parameters (if
           true then input the number of iterations). A higher number of iterations will give more accurate confidence
           intervals on the estimated parameters, but will make the run take longer to complete. The default number of
