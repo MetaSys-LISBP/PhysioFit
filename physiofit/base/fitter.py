@@ -67,7 +67,7 @@ class PhysioFitter:
     """
 
     def __init__(self, data, vini=0.04, mc=True, iterations=100, conc_biom_bounds=(1e-2, 50),
-                 flux_biom_bounds=(0.01, 50), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
+                 flux_biom_bounds=(0.01, 2), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
                  deg=None, t_lag=False, debug_mode=False):
 
         self.data = data
@@ -127,7 +127,7 @@ class PhysioFitter:
             if type(self.deg) is dict:
                 for key in self.deg.keys():
                     if key not in metabolites:
-                        raise KeyError(f"The degradation constant for {key} is missing. If no degradation for this "
+                        raise KeyError(f"The degradation constant for {key} is missing. If no degradation applies to this "
                                        f"metabolite, please enter 0 in the corresponding dictionary entry")
             self.deg_vector = [self.deg[met] for met in metabolites]
         elif self.deg == {} or self.deg is None:
@@ -211,7 +211,7 @@ class PhysioFitter:
         # If weight is None, we generate the default matrix
         if self.weight is None:
             try:
-                self.weight = {"X": 0.2}
+                self.weight = {"X": 0.02}
                 for col in self.data.columns[2:]:
                     self.weight.update({col: 0.5})
             except Exception:

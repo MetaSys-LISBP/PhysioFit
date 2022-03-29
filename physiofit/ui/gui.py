@@ -176,37 +176,37 @@ class App:
                     "Initial flux values",
                     value=input_values["vini"],
                     key="vini",
-                    help="Select an initial value for the fluxes to estimate. Default=0.2"
+                    help="Select an initial value for fluxes to estimate. Default: 0.2"
                 )
                 self.weight = st.text_input(
                     "Weights for cost calculation & sensitivity analysis" "Weights",
                     value=input_values["weight"],
                     help="Input weights to apply on the different variables. If empty, default is 0.02 for biomass and"
-                         " 0.05 for metabolites"
+                         " 0.5 for metabolites"
                 )
                 self.conc_met_bounds = st.text_input(
                     "Bounds on initial metabolite concentrations",
                     value=input_values["conc_met_bounds"],
-                    help="Give the bounds for the initial concentrations of the metabolites (Mi0 value). "
+                    help="GBounds for the initial concentrations of the metabolites (Mi0). "
                          "They will limit the range of possibilities during optimization. Defaults: [1e-06, 50]"
                 )
                 self.flux_met_bounds = st.text_input(
                     "Bounds on fluxes",
                     value=input_values["flux_met_bounds"],
-                    help="Give the bounds for the metabolite fluxes (q value). They will limit the range of "
-                         "possibilities during optimization. Defaults: [-50, 50]"
+                    help="Bounds for metabolic fluxes (qM). "
+                         "These values correspond to the lowest and highest fluxes, this range should include the actual value. Defaults: [0.01, 50]"
                 )
                 self.conc_biom_bounds = st.text_input(
                     "Bounds on initial biomass concentration",
                     value=input_values["conc_biom_bounds"],
-                    help="Give the bounds for the initial concentrations of the metabolites (Mi0 value). "
-                         "They will limit the range of possibilities during optimization. Defaults: [1e-06, 50]"
+                    help="Bounds for initial concentrations of the biomass (X0). "
+                         "These values correspond to the lowest and highest (initial) biomass concentration, this range should include the actual value. Defaults: [1e-06, 50]"
                 )
                 self.flux_biom_bounds = st.text_input(
                     "Bounds on growth rate",
                     value=input_values["flux_biom_bounds"],
-                    help="Give the bounds for the metabolite fluxes (q value). They will limit the range of "
-                         "possibilities during optimization. Defaults: [0.01, 50]"
+                    help="Bounds for growth rate (µ). "
+                         "These values correspond to the lowest and highest growth rates, this range should include the actual value. Defaults: [0.01, 2]"
                 )
                 self.debug_mode = st.checkbox(
                     "Verbose logs",
