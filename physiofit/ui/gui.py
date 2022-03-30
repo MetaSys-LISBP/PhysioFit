@@ -35,20 +35,20 @@ class App:
         """Launch the application"""
         st.title("Welcome to PhysioFit")
         self.select_menu = st.selectbox(
-            "Select task to execute",
+            "Select a task to execute",
             ["Calculate extracellular fluxes", "Calculate degradation constant"]
         )
         if self.select_menu == "Calculate extracellular fluxes":
             self.io_handler = IoHandler()
             self._build_flux_menu()
         else:
-            st.header("Not implemented yet")
+            st.header("Implementation in progress...")
 
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
 
         self.data_file = st.file_uploader(
-            "Upload data file or json configuration file",
+            "Load a data file or a json configuration file",
             key="data_uploader",
             accept_multiple_files=False
         )
@@ -68,7 +68,7 @@ class App:
             config = IoHandler.read_json_config(self.data_file)
             input_values.update(config)
         elif file_extension != "tsv":
-            raise KeyError(f"Wrong input file format. Accepted formats are tsv for the data file or json for config "
+            raise KeyError(f"Wrong input file format. Accepted formats are tsv for data files or json for configuration "
                            f"files. Detected file: {self.data_file.name}")
         else:
             data = pd.read_csv(self.data_file, sep="\t")
@@ -122,13 +122,13 @@ class App:
             )
             self.mc = st.checkbox(
                 "Sensitivity analysis (Monte Carlo)",
-                help="Perform (Monte Carlo) sensitivity analysis to determine the precision on estimated fluxes"
+                help="Determine the precision on estimated fluxes by Monte Carlo sensitivity analysis."
             )
             enable_mc = False if self.mc else True
             self.iterations = st.number_input(
                 "Number of iterations",
                 value=input_values["iterations"],
-                help="Number of iterations for the Monte Carlo analysis",
+                help="Number of iterations for the Monte Carlo analysis.",
                 disabled=enable_mc
             )
 
@@ -142,24 +142,24 @@ class App:
                 root.wm_attributes('-topmost', 1)
 
                 # Initialize folder picker button and add logic
-                clicked = st.button("Select destination folder", key="clicker")
+                clicked = st.button("Select output data directory", key="clicker")
                 if clicked:
 
                     # Initialize home path from directory selector and add to session state
                     st.session_state.home_path = Path(st.text_input(
-                        "Selected output folder:", filedialog.askdirectory(master=root)
+                        "Selected output data directory:", filedialog.askdirectory(master=root)
                     ))
                     if st.session_state.home_path == Path(".") or not st.session_state.home_path.exists():
-                        raise RuntimeError("Please provide a valid file path")
+                        raise RuntimeError("Please provide a valid path")
                     self.io_handler.home_path = copy(st.session_state.home_path)
 
                 elif hasattr(st.session_state, "home_path"):
 
                     self.io_handler.home_path = Path(st.text_input(
-                        "Selected output folder:", st.session_state.home_path
+                        "Selected output data directory:", st.session_state.home_path
                     ))
                     if self.io_handler.home_path == Path(".") or not self.io_handler.home_path.exists():
-                        raise RuntimeError("Please provide a valid file path")
+                        raise RuntimeError("Please provide a valid path")
 
                     # Initialize the result export directory
                     self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
