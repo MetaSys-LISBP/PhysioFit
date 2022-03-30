@@ -66,8 +66,8 @@ class PhysioFitter:
     :type t_lag: bool
     """
 
-    def __init__(self, data, vini=0.04, mc=True, iterations=100, conc_biom_bounds=(1e-2, 50),
-                 flux_biom_bounds=(0.01, 2), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
+    def __init__(self, data, vini=0.2, mc=True, iterations=100, conc_biom_bounds=(1e-4, 50),
+                 flux_biom_bounds=(1e-3, 2), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
                  deg=None, t_lag=False, debug_mode=False):
 
         self.data = data
