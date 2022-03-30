@@ -358,7 +358,7 @@ class IoHandler:
 
         # Use IDs to clarify which parameter is described on each line
         opt_data.index = self.fitter.ids
-        opt_data.to_csv(fr"{self.res_path}\Optimized_parameter_statistics.csv", sep="\t")
+        opt_data.to_csv(fr"{self.res_path}\flux_results.csv", sep="\t")
 
     def _get_plot_data(self):
         """
