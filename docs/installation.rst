@@ -25,14 +25,13 @@ PhysioFit is freely available and is distributed under open-source license at ht
 Alternatives & Updates
 ----------------------
 
-To install PhysioFit for the current user account only, run the following command:
+If you know that you do not have permission to install software system-wide, you can install PhysioFit into your user directory using the `--user` flag:
 
 .. code-block::
 
     pip install --user physiofit
 
-This will ensure that the package and dependencies are installed to your user's home directory instead of a system
-directory, which does not require any special privileges.
+This does not require any special privileges.
 
 Once the package is installed, you can update it using the following command:
 
@@ -40,3 +39,4 @@ Once the package is installed, you can update it using the following command:
 
     pip install -U physiofit
 
+Alternatively, you can also download all sources in a tarball from `GitHub <https://github.com/MetaSys-LISBP/PhysioFit>`_, but it will be more difficult to update PhysioFit later on.

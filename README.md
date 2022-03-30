@@ -16,9 +16,9 @@ Detailed documentation can be found online at Read the Docs ([https://physiofit.
 
 ## Key features
 * **calculation of growth rate and extracellular (uptake and production) fluxes**.
-* **lag** before growth (e.g. due to adaptation to a novel environment) can be taken into account and estimated.
-* **non-enzymatic degradation** of some metabolites (e.g. DHA or glutamine) can be estimated and taken into account when calculating exchange fluxes.
-* **sensitivity analyses are performed to estimate the precision of the calculated fluxes**.
+* if cell growth has some **lag** (e.g. due to adaptation to a novel environment), lag can be taken into account and lag time estimated.
+* **non-enzymatic degradation** of some metabolites (e.g. DHA or glutamine) can be estimated and taken into account when calculating fluxes.
+* sensitivity analyses are performed to **estimate the precision of the calculated fluxes**.
 * **evaluation of the goodness of fit and visual inspection of the fitted curves**.
 * shipped as a **library** with both a **graphical** and **command line** interface,
 * open-source, free and easy to install everywhere where Python 3 and pip run,
