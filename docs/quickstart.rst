@@ -22,3 +22,8 @@ If you installed the package in a specific environment, make sure to be in this 
 PhysioFit interface will open in a new browser window. It will prompt you to select an input
 data file, which can be a .tsv file containing the data or a json configuration file containing the run parameters and
 a path towards the data (see :doc:`usage` for more details).
+
+Command Line Interface
+--------------------------------------
+
+Implementation in progress...

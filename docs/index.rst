@@ -20,10 +20,12 @@ assumption is that cells are in metabolic (pseudo) steady-state.
 
    * Calculation of growth rate and extracellular (uptake and production) fluxes.
    * Lag before growth (e.g. due to adaptation to a novel environment) can be taken into account and estimated.
-   * Non-enzymatic degradation of some carbon sources (e.g. *DHA* or *glutamine*) can be estimated and taken into account
-     when calculating fluxes.
+   * Non-enzymatic degradation of some carbon sources (e.g. DHA or glutamine) can be estimated and taken into account when calculating exchange fluxes.
    * Sensitivity analyses are performed to estimate the precision of the calculated fluxes.
    * Evaluation of the goodness of fit and visual inspection of the fitted curves.
+   * shipped as a library with both a **graphical and command line interface**,
+   * open-source, free and easy to install everywhere where Python 3 and pip run,
+   * biologist-friendly.
 
 .. toctree::
    :maxdepth: 2
@@ -40,6 +42,7 @@ assumption is that cells are in metabolic (pseudo) steady-state.
    :caption: Miscellaneous
 
    method.rst
-   FAQ.rst
+   faq.rst
+   license.rst
 
 * :ref:`search`
