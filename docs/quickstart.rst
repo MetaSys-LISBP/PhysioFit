@@ -9,13 +9,13 @@ In this section we will explain how to launch your first job once PhysioFit has 
 Graphical User Interface
 --------------------------------------
 
-To launch the graphical user interface or GUI, open up your preferred command-line utility and type:
+To launch the Graphical User Interface, type in a terminal (Windows: Anaconda Prompt):
 
 .. code-block:: bash
 
   physiofit
  
-If you installed the package in a specific environment, make sure to be in this environment before starting PhysioFit.
+If you installed the package in a specific Anaconda environment, make sure to be in this environment before starting PhysioFit.
 
 PhysioFit interface will open in a new browser window.
 
