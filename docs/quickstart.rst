@@ -11,21 +11,21 @@ In this section we will explain how to launch your first job once PhysioFit has 
 Graphical user interface
 --------------------------------------
 
-To launch the Graphical User Interface, type in a terminal (Windows: Anaconda Prompt):
+To launch the Graphical User Interface, type in a terminal (e.g. Anaconda Prompt if installed on Windows):
 
 .. code-block:: bash
 
   physiofit
  
-If you installed the package in a specific Anaconda environment, make sure to be in this environment before starting PhysioFit.
+If you installed the package in a specific environment, make sure to activate this environment before starting PhysioFit.
 
 PhysioFit interface will open in a new browser window.
 
 .. image:: _static/interface.jpg
    :scale: 85%
 
-Select an input
-data file (which can be a .tsv file containing the data or a json configuration file containing the run parameters and
+Select an input 
+file (which can be a .tsv file containing the data or a json configuration file containing the run parameters and
 a path towards the data, see :doc:`usage` for more details), modify the calculation parameters according to your experiment, 
 and click on :samp:`Run flux calculation`. PhysioFit proceeds automatically to the flux calculation and display its progress and important messages. The output of the calculations (i.e. fluxes and associated confidence intervals) will be written in a text file along a log file.
 
