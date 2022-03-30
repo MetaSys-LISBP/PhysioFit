@@ -22,7 +22,7 @@ If you installed the package in a specific Anaconda environment, make sure to be
 PhysioFit interface will open in a new browser window.
 
 .. image:: _static/interface.jpg
-   :scale: 75%
+   :scale: 85%
 
 Select an input
 data file (which can be a .tsv file containing the data or a json configuration file containing the run parameters and
