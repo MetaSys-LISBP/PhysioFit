@@ -1,5 +1,5 @@
-Usage
-=====
+Tutorial
+========
 
 Required input data file
 ------------------------
