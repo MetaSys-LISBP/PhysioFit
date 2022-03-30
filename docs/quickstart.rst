@@ -24,6 +24,18 @@ data file, which can be a .tsv file containing the data or a json configuration 
 a path towards the data (see :doc:`usage` for more details).
 
 Command Line Interface
---------------------------------------
+----------------------
 
 Implementation in progress...
+
+Library
+-------
+
+PhysioFit is also available as a library (a Python module) that you can import directly in your Python
+scripts:
+
+.. code-block:: python
+
+  import physiofit
+
+.. seealso::  Have a look at our :ref:`library showcase <Library documentation>` if you are interested into this experimental feature.

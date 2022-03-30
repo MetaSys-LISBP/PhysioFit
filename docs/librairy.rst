@@ -1,3 +1,5 @@
+.. _Library documentation:
+
 Library documentation
 =======================
 
