@@ -6,7 +6,9 @@
 
 
 ## What is PhysioFit?
-PhysioFit is a scientific tool designed to i) quantify exchange (production and consumption) fluxes and  ii) cell growth rate during (batch) cultivations of microorganisms. Fluxes are estimated from time-course measurements of extracellular metabolites and biomass concentrations. An important assumption is that cells are in metabolic (pseudo) steady-state.
+PhysioFit is a scientific tool designed to i) quantify exchange (production and consumption) fluxes and  ii) cell growth rate during (batch) cultivations of microorganisms.
+
+Fluxes are estimated from time-course measurements of extracellular metabolites and biomass concentrations. PhysioFit has been designed to calculate fluxes in batch experiments, assuming cells are in metabolic (pseudo) steady-state (i.e. fluxes are constant during the experiment).
 
 It is one of the routine tools that we use at the [MetaSys team](http://www.lisbp.fr/en/research/molecular-physiology-and-metabolism/metasys.html) and [MetaToul platform](http://www.metatoul.fr) in functional studies of metabolic systems.
 

@@ -13,8 +13,8 @@ Welcome to PhysioFit documentation!
 **PhysioFit is a scientific tool designed to i) quantify exchange (production and consumption) fluxes and ii) cell growth
 rate during (batch) cultivations of microorganisms.**
 
-Fluxes are estimated from time-course measurements of extracellular metabolites and biomass concentrations. An important
-assumption is that cells are in metabolic (pseudo) steady-state.
+Fluxes are estimated from time-course measurements of extracellular metabolites and biomass concentrations. PhysioFit has been designed to 
+calculate fluxes in batch experiments, assuming cells are in metabolic (pseudo) steady-state (i.e. fluxes are constant during the experiment).
 
 **PhysioFit includes the following features:**
 
