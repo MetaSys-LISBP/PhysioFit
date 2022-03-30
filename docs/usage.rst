@@ -46,19 +46,19 @@ For a description of all calculation parameters, check the section below.
 Flux calculation parameters
 --------------------
 
-Here is a list of the different parameters that can be modified when setting up your run:
+This section presents the different parameters that can be adapted to match your own experiments. Additional information on each parameter can be found in the :doc:`method` section.
 
     * **Basic parameters**:
-        - **Lag**: consider (or not) a lag phase (i.e. without growth) during flux calculation
+        - **Lag**: consider (or not) a lag phase (i.e. without growth) during flux calculation (see eq. 1 in :doc:`method` section).
         - **Degradation**: (first-order) degradation constants to be used during flux calculation (constants should be given as a
-          python dictionary, according to the formalism given in :doc:`method` section).
+          Python dictionary, see eq. 2 in :doc:`method` section).
         - **Sensitivity analysis (Monte Carlo)**: Estimate (or not) the precision on calculated fluxes, using a Monte Carlo sensitivity analysis. If
           selected, then provide the number of monte carlo iterations. A higher number of iterations will give more accurate confidence
           intervals on the estimated parameters, but will slow down calculations. The default number of
           iterations (100) is sufficient in most situations.
 
     * **Advanced parameters**:
-        - **Initial flux values (qM)**: Initial value for fluxes and growth rate to estimate. Default: 0.2
+        - **Initial flux values (qM and µ)**: Initial value for fluxes and growth rate to estimate (see eqs. 1 and 2 in :doc:`method` section). Default: 0.2
         - **Weights**: Weights to apply during cost calculation (see eq. 10 in :doc:`method` section). We recommand using one standard deviation on the corresponding measurement(s). A higher weight
           will augment the cost of the corresponding data during the optimization, thereby forcing an improvement of the fit accuracy for this data, but degrading the fit accuracy for the other measurements. Defaults: 0.02 for biomass, and 0.5 for metabolites.
         - **Bounds on initial metabolite concentrations (Mi0)**: Minimal and maximal values of the initial concentration of metabolites. Default: [1e-06, 50]
@@ -68,8 +68,8 @@ Here is a list of the different parameters that can be modified when setting up 
         - **Bounds on growth rate (µ)**: Minimal and maximal values of the growth rate. Default: [1e-4, 50]
         - **Verbose logs**: Should debug information be written in log file. Useful in case of trouble (please join it to the issue on github). Default: False
 
-.. note:: Initial values and bounds should be carefully chosen. Ideally, these values should be in the range of values used in the experiment. Well-defined bounds will enhance robustness and speed of the flux calculation process. The default
-          bounds are sufficient in most cases, but may still be defined by the user when needed (e.g. the higher bound on initial metabolite concentrations should be increased if the initial concentration of substrate is higher than 50, which is the default value.).
+.. note:: Initial values and bounds should be carefully chosen. Ideally, initial values should be in the range of values used in the experiment. Well-defined bounds will enhance robustness and speed of the flux calculation process. The default
+          bounds are sufficient in most cases, but may still be defined by the user when needed (e.g. the higher bound on initial metabolite concentrations should be increased if the initial concentration of substrate is higher than 50, since it is the maximal value allowed by default.).
 
 Output files
 ---------------------------
