@@ -19,26 +19,25 @@ etc   ...    ...
 The time and biomass (X) columns are mandatory, as is at least one metabolite column. If the biomass and metabolite
 concentrations were sampled at different moments, you can still group them together in the same table.
 
-.. note:: Flux units depend on the units of time and concentrations (biomass and metabolites) provided in the input
-             data file. For instance, if biomass units are in gDW/L, metabolite concentrations are in mM and time is
-             in hours, the estimated fluxes will be in mmol/gDW/h. It is critical to correctly define the  units in the
-             input file.
+.. note:: Flux units depend on the units of time and concentrations (of biomass and metabolites) provided in the input
+             data file. For instance, if biomass units are in grams of cell dry weight by liter (gDW/L), metabolite concentrations are in millimolar (mM) and time is
+             in hours (h), the estimated fluxes will be in mmol/gDW/h. Units should thus be carefully selected.
 
-.. warning:: To limit any numerical instabilities, use values in a range not too far from unity (e.g. if a metabolite
-             concentration is 2 µM, provide the value directly in µM and not as 2.10e-6 M). Each metabolite concentration can
-             be given in different units as long as one unit is provided per metabolite.
+.. warning:: To limit any numerical instabilities, provide values in a range not too far from unity (e.g. if a metabolite
+             concentration is 2 µM, provide the value directly in µM and not as 2e-6 M). The concentration of different metabolites can
+             be provided using different units, but a single unit must be used for a given metabolite.
 
-The json config file
+The json configuration file
 ---------------------
 
-The json config file presents an organisation similar to a python dictionary. You can find an example of one `here
+The json configuration file presents an organisation similar to a python dictionary. You can find an example of configuration file `here
 <https://github.com/MetaSys-LISBP/PhysioFit/blob/dev_v2.0/config_example_file.json>`_.
 
-For a description of each parameter, check the section below.
+For a description of all calculation parameters, check the section below.
 
 .. _PhysioFit parameters:
 
-Processing parameters
+Flux calculation parameters
 --------------------
 
 Here is a list of the different parameters that can be modified when setting up your run:
@@ -46,25 +45,25 @@ Here is a list of the different parameters that can be modified when setting up 
     * **Basic parameters:**
         - *Lag*: consider (or not) a lag phase (i.e. without growth) during flux calculation
         - *Degradation*: (first-order) degradation constants to be used during flux calculation (constants should be given as a
-          python dictionary).
-        - *Sensitivity analysis (Monte Carlo)*: Should the sensitivity analysis be performed on estimated parameters (if
-          true then input the number of iterations). A higher number of iterations will give more accurate confidence
-          intervals on the estimated parameters, but will make the run take longer to complete. The default number of
-          iterations is 100 which is sufficient in most situations.
+          python dictionary). A constant of 0 means no degradation.
+        - *Sensitivity analysis (Monte Carlo)*: Should the sensitivity analysis be performed to estimate the precision on calculated fluxes. If
+          selected, then provide the number of monte carlo iterations. A higher number of iterations will give more accurate confidence
+          intervals on the estimated parameters, but will slow down calculations. The default number of
+          iterations (100) is sufficient in most situations.
 
     * **Advanced parameters:**
-        - *Initial flux values (qM)*: Initial value for fluxes to estimate. Default: 0.2
+        - *Initial flux values (qM)*: Initial value for fluxes and growth rate to estimate. Default: 0.2
         - *Weights*: Standard deviation to apply during cost calculation (see eq. 10 in :doc:`method`). A higher weight
-          will augment the cost of the corresponding data during the optimization, thereby improving the fit accuracy for this data, but degrading the fit accuracy for the other measurements. Defaults: 0.2 for biomass, and 0.5 for metabolites.
+          will augment the cost of the corresponding data during the optimization, thereby forcing an improvement of the fit accuracy for this data, but degrading the fit accuracy for the other measurements. Defaults: 0.02 for biomass, and 0.5 for metabolites.
         - *Bounds on initial metabolite concentrations (Mi0)*: Bounds on initial metabolite concentrations. Default: [1e-06, 50]
         - *Flux bounds*: Bounds on fluxes. Default:
           [-50, 50]
-        - *Bounds on initial biomass concentration (X0)*: Bounds on the initial concentration of biomass. Default: [1e-06, 50]
-        - *Bounds on growth rate (µ)*: Bounds on the growth rate. Default: [-50, 50]
+        - *Bounds on initial biomass concentration (X0)*: Bounds on the initial concentration of biomass. Default: [1e-03, 2]
+        - *Bounds on growth rate (µ)*: Bounds on the growth rate. Default: [1e-4, 50]
         - *Verbose logs*: Should debug information be written in log file. Useful in case of trouble (please join it to the issue on github). Default: False
 
 .. note:: Initial values and bounds should be carefully chosen. Ideally, these values should be in the range of values used in the experiment. Well-defined bounds will enhance robustness and speed of the flux calculation process. The default
-          bounds are sufficient in most cases, but may still be defined by the user when needed (e.g. the hgher bound on initial metabolite concentrations should be increased if the initial concentration of substrate is higher than 50, which is default value.).
+          bounds are sufficient in most cases, but may still be defined by the user when needed (e.g. the higher bound on initial metabolite concentrations should be increased if the initial concentration of substrate is higher than 50, which is the default value.).
 
 Result files & fit quality
 ---------------------------
