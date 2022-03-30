@@ -288,7 +288,9 @@ class IoHandler:
             raise "There was an error while initializing the log level"
 
         file_handle.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-        self.fitter.logger.addHandler(file_handle)
+        if not self.fitter.logger.handlers:
+            self.fitter.logger.addHandler(file_handle)
+        self.fitter.logger.debug(f"Logger handlers: {self.fitter.logger.handlers}")
 
         if kwargs:
             # Initialize fitter parameters from kwargs
