@@ -59,7 +59,7 @@ This section presents the different parameters that can be adapted to match your
 
     * **Advanced parameters**:
         - **Initial flux values (qM and µ)**: Initial value for fluxes and growth rate to estimate (see eqs. 1 and 2 in :doc:`method` section). Default: 0.2
-        - **Weights**: Weights to apply during cost calculation (see eq. 10 in :doc:`method` section). We recommand using one standard deviation on the corresponding measurement(s). A higher weight
+        - **Weights**: Weights to apply during cost calculation (see eq. 10 in :doc:`method` section). We recommand using one standard deviation on the corresponding measurement(s). A smaller value
           will augment the cost of the corresponding data during the optimization, thereby forcing an improvement of the fit accuracy for this data, but degrading the fit accuracy for the other measurements. Defaults: 0.02 for biomass, and 0.5 for metabolites.
         - **Bounds on initial metabolite concentrations (Mi0)**: Minimal and maximal values of the initial concentration of metabolites. Default: [1e-06, 50]
         - **Flux bounds**: Minimal and maximal values of fluxes. Default:
