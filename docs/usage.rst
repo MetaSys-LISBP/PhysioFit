@@ -6,14 +6,14 @@ Required input data file
 
 The input data must be a tabulated file (.tsv extension) with the following structure:
 
-==== ===== ======
-Time   X    Glucose
-==== ===== ======
- 1    0.2    13
- 2    0.3    12
- 2.5  0.4    10
-etc   ...    ...
-==== ===== ======
+==== ===== ====== ======
+Time   X   Glucose  etc
+==== ===== ====== ======
+ 1    0.2    13    ...
+ 2    0.3    12    ...
+ 2.5  0.4    10    ...
+etc   ...    ...   ...
+==== ===== ====== ======
 
 Columns **time** and **X** (biomass concentration) are mandatory, as is at least one metabolite column (**Glucose** in this example). If the biomass and metabolite
 concentrations were sampled at different moments, you can still group them together in the same table (with an empty value when no data is available).
