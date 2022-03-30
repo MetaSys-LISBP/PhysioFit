@@ -1,6 +1,6 @@
 .. _Library documentation:
 
-Library documentation
+Library Documentation
 =======================
 
 .. toctree::

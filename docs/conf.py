@@ -18,8 +18,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'PhysioFit'
-copyright = '2022, Loïc Le Grégam'
-author = 'Loïc Le Grégam'
+copyright = '2022, INRAE'
+author = 'Loïc Le Grégam, Pierre Millard'
 
 # The full version, including alpha/beta/rc tags
 release = '2.0'
