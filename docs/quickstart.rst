@@ -3,10 +3,11 @@ Quickstart
 
 In this section we will explain how to launch your first job once PhysioFit has been installed onto your system.
 
-.. seealso:: If you have already used PhysioFit and are looking for a more in-depth tutorial, check out the :doc:`usage`
+.. seealso::
+   * If you have already used PhysioFit and are looking for a more in-depth tutorial, check out the :doc:`usage`
              section.
 
-.. seealso:: The mathematical formalism implemented in PhysioFit to calculate fluxes can be found in the :doc:`method`
+   * The mathematical formalism implemented in PhysioFit to calculate fluxes can be found in the :doc:`method`
              section.
 
 Graphical User Interface
