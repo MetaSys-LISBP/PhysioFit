@@ -394,7 +394,7 @@ class IoHandler:
 
     def plot_data(self, display=False):
         """
-        Plot the extracellular flux data
+        Plot the data
 
         :param display: should plots be displayed
         """
@@ -434,7 +434,7 @@ class IoHandler:
             # Finishing touches
             ax.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
             ax.legend()
-            ax.set_title(f"{element} extracellular flux")
+            ax.set_title(f"{element}")
             fig.tight_layout()
 
             # Add the figure with the metabolite name as index to the _figures attribute for later use
