@@ -34,14 +34,15 @@ assumption is that cells are in metabolic (pseudo) steady-state.
    installation.rst
    quickstart.rst
    usage.rst
-   librairy.rst
+   method.rst
+   cite.rst
 
 
 .. toctree::
    :maxdepth: 2
    :caption: Miscellaneous
 
-   method.rst
+   librairy.rst
    faq.rst
    license.rst
 
