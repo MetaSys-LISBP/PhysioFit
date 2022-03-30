@@ -82,7 +82,8 @@ class PhysioFitter:
         self.deg = deg
         self.t_lag = t_lag
         self.debug_mode = debug_mode
-        self.logger = initialize_fitter_logger(self.debug_mode)
+        if not hasattr(self, "logger"):
+            self.logger = initialize_fitter_logger(self.debug_mode)
 
         self.simulated_matrix = None
         self.optimize_results = None
