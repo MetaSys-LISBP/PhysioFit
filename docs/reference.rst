@@ -1,4 +1,4 @@
-API Reference
+API reference
 =============
 
 This module serves as reference for the different classes and associated methods of the PhysioFit package.

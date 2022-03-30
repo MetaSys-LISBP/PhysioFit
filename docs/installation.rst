@@ -22,7 +22,7 @@ the IT department "how to install a Python 3 package from PyPi" on your computer
 PhysioFit is freely available and is distributed under open-source license at http://github.com/MetaSys-LISBP/ .
 
 
-Alternatives & Updates
+Alternatives & updates
 ----------------------
 
 If you know that you do not have permission to install software system-wide, you can install PhysioFit into your user directory using the :samp:`--user` flag:

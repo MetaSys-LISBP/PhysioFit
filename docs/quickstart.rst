@@ -1,4 +1,4 @@
-Quickstart
+Quick start
 ==========
 
 In this section we will explain how to launch your first job once PhysioFit has been installed onto your system.
@@ -8,7 +8,7 @@ In this section we will explain how to launch your first job once PhysioFit has 
 
    * The mathematical formalism implemented in PhysioFit to calculate fluxes can be found in the :doc:`method` section.
 
-Graphical User Interface
+Graphical user interface
 --------------------------------------
 
 To launch the Graphical User Interface, type in a terminal (Windows: Anaconda Prompt):
@@ -29,7 +29,7 @@ data file (which can be a .tsv file containing the data or a json configuration 
 a path towards the data, see :doc:`usage` for more details), modify the calculation parameters according to your experiment, 
 and click on :samp:`Run flux calculation`. PhysioFit proceeds automatically to the flux calculation and display its progress and important messages. The output of the calculations (i.e. fluxes and associated confidence intervals) will be written in a text file along a log file.
 
-Command Line Interface
+Command line interface
 ----------------------
 
 Implementation in progress...
