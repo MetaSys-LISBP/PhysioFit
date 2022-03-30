@@ -24,8 +24,8 @@ class App:
             "weight": {},
             "conc_met_bounds": [1e-06, 50],
             "flux_met_bounds": [-50, 50],
-            "conc_biom_bounds": [1e-06, 50],
-            "flux_biom_bounds": [1e-6, 2],
+            "conc_biom_bounds": [1e-03, 50],
+            "flux_biom_bounds": [1e-4, 2],
             "t_lag": 0,
             "deg": {},
             "iterations": 100
@@ -33,7 +33,7 @@ class App:
 
     def start_app(self):
         """Launch the application"""
-        st.title("Welcome to PhysioFit 2.0")
+        st.title("Welcome to PhysioFit")
         self.select_menu = st.selectbox(
             "Select task to execute",
             ["Calculate extracellular fluxes", "Calculate degradation constant"]
