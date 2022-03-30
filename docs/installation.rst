@@ -25,7 +25,7 @@ PhysioFit is freely available and is distributed under open-source license at ht
 Alternatives & Updates
 ----------------------
 
-If you know that you do not have permission to install software system-wide, you can install PhysioFit into your user directory using the `--user` flag:
+If you know that you do not have permission to install software system-wide, you can install PhysioFit into your user directory using the :samp:`--user` flag:
 
 .. code-block::
 
