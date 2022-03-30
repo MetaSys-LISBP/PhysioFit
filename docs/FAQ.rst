@@ -4,9 +4,9 @@ Frequently Asked Questions (FAQ)
 What units should be provided?
 ------------------------------
 
-Any units can be provided to PhysioFit 2.0, as long as they are consistent within the experiment time-frame and each
-variable (metabolite or biomass concentrations). It is however recommended to use the unit that is as close to unity as
-possible (e.g. 3mM instead of 3e03 µM).
+Any units can be provided to PhysioFit 2.0. It is however recommended to use the unit that is as close to unity as
+possible (e.g. 3 mM instead of 3e3 µM). Of note, units of the extimated fluxes depend on units of time and metabolites and biomass concentrations 
+(see below).
 
 What are the flux units?
 ------------------------
