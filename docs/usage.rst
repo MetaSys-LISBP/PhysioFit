@@ -53,30 +53,18 @@ Here is a list of the different parameters that can be modified when setting up 
           iterations is 100 which is sufficient in most situations.
 
     * **Advanced parameters:**
-        - *vini*: Initial value for parameters to estimate. This will be the starting point for the optimization. An
-          initial value in a physiological range will ensure a quality fit. Default: 0.2
+        - *Initial flux values (qM)*: Initial value for fluxes to estimate. Default: 0.2
         - *Weights*: Standard deviation to apply during cost calculation (see eq. 10 in :doc:`method`). A higher weight
-          will augment the weighted parameter's precision during the optimization, which might lower the
-          precision on other parameters. A lower weight will give weighted parameter less precision, and might
-          augment the precision on the other parameters. Defaults: 0.2 for biomass parameters, and 0.5 for metabolite
-          parameters.
-        - *Metabolite concentration bounds*: Bounds to apply to the metabolite concentrations during optimization to
-          reduce the range of possibilities. Well-defined bounds will ensure that the values tested during the
-          optimization process are closer to physiological values, which can reduce inconsistencies in the process. The
-          default bounds are sufficient in most cases. Default: [1e-06, 50]
-        - *Flux bounds*: Bounds to apply on fluxes during optimization to reduce the range of possibilities. Default:
+          will augment the cost of the corresponding data during the optimization, thereby improving the fit accuracy for this data, but degrading the fit accuracy for the other measurements. Defaults: 0.2 for biomass, and 0.5 for metabolites.
+        - *Bounds on initial metabolite concentrations (Mi0)*: Bounds on initial metabolite concentrations. Default: [1e-06, 50]
+        - *Flux bounds*: Bounds on fluxes. Default:
           [-50, 50]
-        - *Biomass initial concentration bounds*: Bounds to apply on the starting concentration for biomass to reduce
-          the range of possibilities. Well-defined bounds will ensure that the values tested during the optimization
-          process are closer to physiological values, which can reduce inconsistencies in the process. The default
-          bounds are sufficient in most cases. Default: [1e-06, 50]
-        - *Growth rate bounds*: Bounds to apply on the growth rate to reduce the range of possibilities. Well-defined bounds
-          will ensure that the values tested during the optimization process are closer to physiological values, which
-          can reduce inconsistencies in the process. The default bounds are sufficient in most cases. Default: [-50, 50]
+        - *Bounds on initial biomass concentration (X0)*: Bounds on the initial concentration of biomass. Default: [1e-06, 50]
+        - *Bounds on growth rate (µ)*: Bounds on the growth rate. Default: [-50, 50]
         - *Verbose logs*: Should debug information be written in log file. Useful in case of trouble (please join it to the issue on github). Default: False
 
-.. note:: For the different bounds to apply during flux calculation, the user must remember to make sure that the input
-          data is inside them or else they run the risk of an error being thrown at them.
+.. note:: Initial values and bounds should be carefully chosen. Ideally, these values should be in the range of values used in the experiment. Well-defined bounds will enhance robustness and speed of the flux calculation process. The default
+          bounds are sufficient in most cases, but may still be defined by the user when needed (e.g. the hgher bound on initial metabolite concentrations should be increased if the initial concentration of substrate is higher than 50, which is default value.).
 
 Result files & fit quality
 ---------------------------
