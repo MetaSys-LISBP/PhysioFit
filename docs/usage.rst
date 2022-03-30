@@ -9,9 +9,9 @@ The input data must be a tabulated file (.tsv extension) with the following stru
 ==== ===== ======
 Time   X    Met1
 ==== ===== ======
- 1    0.2     x
- 2    0.3     x
- 3    0.4     x
+ 1    0.2    13
+ 2    0.3    12
+ 2.5  0.4    10
 etc   ...    ...
 ==== ===== ======
 
