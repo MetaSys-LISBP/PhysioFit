@@ -65,19 +65,19 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 latex_elements = {
-# The paper size ('letter' or 'a4').
-'papersize': 'a4',
+    # The paper size ('letter' or 'a4').
+    'papersize': 'a4',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    # #'pointsize': '10pt',
 
-# remove blank pages (between the title page and the TOC, etc.)
-'classoptions': ',openany,oneside',
-'babel' : '\\usepackage[english]{babel}',
+    # remove blank pages (between the title page and the TOC, etc.)
+    'classoptions': ',openany,oneside',
+    'babel' : '\\usepackage[english]{babel}',
 
-# Additional stuff for the LaTeX preamble.
-'preamble': r'''
-  \usepackage{hyperref}
-  \usepackage{upquote}
-'''
-}
+    # Additional stuff for the LaTeX preamble.
+    'preamble': r'''
+      \usepackage{hyperref}
+      \usepackage{upquote}
+      '''
+      }
