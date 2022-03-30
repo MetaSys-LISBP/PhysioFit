@@ -63,3 +63,21 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+latex_elements = {
+# The paper size ('letter' or 'a4').
+'papersize': 'a4',
+
+# The font size ('10pt', '11pt' or '12pt').
+#'pointsize': '10pt',
+
+# remove blank pages (between the title page and the TOC, etc.)
+'classoptions': ',openany,oneside',
+'babel' : '\\usepackage[english]{babel}',
+
+# Additional stuff for the LaTeX preamble.
+'preamble': r'''
+  \usepackage{hyperref}
+  \usepackage{upquote}
+'''
+}
