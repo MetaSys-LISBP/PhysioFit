@@ -25,7 +25,7 @@ concentrations were sampled at different moments, you can still group them toget
              input file.
 
 .. warning:: To limit any numerical instabilities, use values in a range not too far from unity (e.g. if a metabolite
-             concentration is 2 µM, provide the value directly in µM and not as 2.10:superscript:'-6' M). Each metabolite concentration can
+             concentration is 2 µM, provide the value directly in µM and not as 2.10 :superscript: '-6' M). Each metabolite concentration can
              be given in different units as long as one unit is provided per metabolite.
 
 The json config file
