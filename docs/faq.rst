@@ -22,10 +22,16 @@ section (yes, this one) to see if the error has been explained in more depth. If
 understand the error, please post it in the "issues" section on `GitHub
 <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_. We will try to respond as quickly as possible to solve your problem.
 
-After flux calculation, my data hasn't been correctly fitted. Why?
+What is a Khi2 test?
+------------------------------------------------------------------
+
+XXX
+
+My data hasn't been correctly fitted. Why?
 ------------------------------------------------------------------
 
 There are many reasons why a fit can be incorrect. In most cases, it is because the run parameters have to be tweaked to
 help PhysioFit get on the right track. For more info on the run parameters and how they affect the fitting process,
 please refer to section :ref:`physiofit parameters`.
 Importantly, a key asumption of the flux calculation method is that cells are in metabolic (pseudo) steady-state, i.e. with constant fluxes during the whole experiment. If this is not the case (e.g. cells are continuously adapting to their environment and fluxes change over time), PhysioFit will not be able to fit the data satisfactorily.
+

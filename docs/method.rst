@@ -49,7 +49,7 @@ where *sim* is the simulated data, *meas* denotes measurements, and *weight* is 
 deviation on measurements).
 
 A global sensitivity analysis (Monte-Carlo approach) is implemented to evaluate the precision of the estimated
-parameters, plots are generated for visual inspection of the fitting quality, and a khi2 test is performed to assess the
+fluxes, plots are generated for visual inspection of the fitting quality, and a khi2 test is performed to assess the
 statistical goodness of fit.
 
 ..
