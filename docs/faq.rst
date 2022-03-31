@@ -27,7 +27,7 @@ section (yes, this one) to see if the error has been explained in more depth. If
 understand the error, please post it in the "issues" section on `GitHub
 <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_. We will try to respond as quickly as possible to solve your problem.
 
-What parameters values should I use?
+What parameter values should I use?
 ------------------------------------------------------------------
 
 TO BE IMPLEMENTED
@@ -40,9 +40,14 @@ TO BE IMPLEMENTED
 What is a χ² test?
 ------------------------------------------------------------------
 
-Pearson's χ² test is a measure of goodness of fit. It is calculated as the sum of differences between measured and simulated values, each squared and divided by the simulated value. The resulting value can then be compared with a khi2 distribution to determine the goodness of fit. 
-A good fit corresponds to small differences between measured and simulated values, thereby the χ² value is low. In contrast, a bad fit corresponds to large differences, and the χ² value is high. 
-Once fluxes are determined, PhysioFit calculates the p-value of one-tail χ² test, which is given in the log file (have a look to the :doc:`usage` section). Value close to 0 (e.g. under 0.05) means poor fitting, and value between 0.95 and 1 means good fitting (according to the provided weights, which correspond typically to the standard deviations on measurements). Value very close to 1 can be an evidence that weights are overestimated. 
+Pearson's χ² test is a measure of goodness of fit. It is calculated as the sum of differences between measured and
+simulated values, each squared and divided by the simulated value. The resulting value can then be compared with a khi2
+distribution to determine the goodness of fit. A good fit corresponds to small differences between measured and
+simulated values, thereby the χ² value is low. In contrast, a bad fit corresponds to large differences, and the χ² value
+is high. Once fluxes are determined, PhysioFit calculates the p-value of one-tail χ² test, which is given in the log
+file (have a look to the :doc:`usage` section). Value close to 0 (e.g. under 0.05) means poor fitting, and value between
+0.95 and 1 means good fitting (according to the provided weights, which correspond typically to the standard deviations
+on measurements). Value very close to 1 can be an evidence that weights are overestimated.
 
 My data hasn't been correctly fitted. Why?
 ------------------------------------------------------------------
