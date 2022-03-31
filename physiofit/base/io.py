@@ -1,4 +1,4 @@
-"""Module to handle inputs and outputs for the Physiofit software"""
+"""Module to handle inputs and outputs for PhysioFit"""
 import json
 import logging
 from pathlib import Path
@@ -16,7 +16,7 @@ mod_logger = logging.getLogger("PhysioFit.base.io")
 class IoHandler:
     """
     Input/Output class that handles the former and initializes the PhysioFitter component object. It is the
-    interface for interacting with the Physiofit package.
+    preferred interface for interacting with the PhysioFit package.
 
     :param source: Input source
     """
@@ -81,21 +81,21 @@ class IoHandler:
 
         for col in ["time", "X"]:
             if col not in data.columns:
-                raise ValueError(f"The column {col} is missing from the dataset")
+                raise ValueError(f"Column {col} is missing from the dataset")
 
         if len(data.columns) <= 2:
-            raise ValueError(f"The data does not contain any metabolite columns")
+            raise ValueError(f"Data does not contain any metabolite columns")
 
         for col in data.columns:
             if data[col].dtypes != np.int64 and data[col].dtypes != np.float64:
-                raise ValueError(f"The column {col} has values that are not of numeric type")
+                raise ValueError(f"Column {col} has values that are not of numeric type")
 
     @staticmethod
     def generate_config_file(destination_path: str):
         """
         Generate the default configuration file
 
-        :param destination_path: destination to send the file
+        :param destination_path: path to configuration file
         :return: None
         """
 
@@ -145,7 +145,7 @@ class IoHandler:
             if not self.res_path.is_dir():
                 self.res_path.mkdir()
             if not self.home_path.exists():
-                raise KeyError(f"The input file does not exist. Path: {self.home_path}")
+                raise KeyError(f"Input file does not exist. Path: {self.home_path}")
             self.data = IoHandler._read_data(data_path)
             self.data = self.data.sort_values("time", ignore_index=True)
             self.names = self.data.columns[1:].to_list()
@@ -159,7 +159,7 @@ class IoHandler:
 
     def _generate_run_config(self):
         """
-        Generate config file from the parameters of the last run
+        Generate configuration file from parameters of the last run
 
         :return: None
         """
@@ -202,7 +202,7 @@ class IoHandler:
     @staticmethod
     def read_json_config(json_file: str or bytes) -> dict:
         """
-        Import json config file and parse keyword arguments
+        Import json configuration file and parse keyword arguments
 
         :param json_file: path to the json file or json file
         :return config: Dictionnary containing arguments parsed from json file
@@ -264,7 +264,7 @@ class IoHandler:
 
     def initialize_fitter(self, kwargs: dict = None):
         """
-        Initialize the PhysioFitter object
+        Initialize a PhysioFitter object
 
         :param kwargs: Keyword arguments for fitter initialization
         :return: None
@@ -276,7 +276,7 @@ class IoHandler:
         self.fitter = PhysioFitter(self.data)
 
         # Initialize fitter logger
-        file_handle = logging.FileHandler(self.res_path / "log.txt", "w")
+        file_handle = logging.FileHandler(self.res_path / "log.txt", "w+")
         try:
             if kwargs["debug_mode"]:
                 file_handle.setLevel(logging.DEBUG)
@@ -285,7 +285,7 @@ class IoHandler:
         except KeyError:
             file_handle.setLevel(logging.INFO)
         except Exception:
-            raise "There was an error while initializing the log level"
+            raise "An error has occurred while initializing the log level"
 
         file_handle.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         if not self.fitter.logger.handlers:
@@ -318,7 +318,7 @@ class IoHandler:
         self.fitter.initialize_equation()
 
     def _output_pdf(self):
-        """Handle the creation and output of a pdf file containing fit results in plot form"""
+        """Handle the creation and output of a pdf file containing fit results as a plot"""
 
         if not self.home_path:
             raise RuntimeError("No home path detected. Was data loaded in correctly?")
@@ -404,7 +404,7 @@ class IoHandler:
 
     def _draw_plots(self, display: bool):
         """
-        Draw the plots and assign them to the _figures attribute for later access in pdf and plot generation functions
+        Draw plots and assign them to the _figures attribute for later access in pdf and plot generation functions
 
         :param display: Should plots be displayed or not on creation
         """
@@ -446,7 +446,7 @@ class IoHandler:
 
     def _add_sd_area(self, element: str, ax: plt.Axes):
         """
-        Draw red area around the fitting line to show SD
+        Draw red area around the fitting line to show confidence intervals
 
         :param element: Which variable is being plotted
         :param ax: axes on which to draw the area before returning to mother function

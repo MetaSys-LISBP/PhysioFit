@@ -7,7 +7,7 @@ Required input data file
 The input data must be a tabulated file (.tsv extension) with the following structure:
 
 +------+-----+---------+-----+
-| Time |  X  | Glucose | ... |
+| time |  X  | Glucose | ... |
 +======+=====+=========+=====+
 | 1    | 0.2 |   13    | ... |
 +------+-----+---------+-----+
