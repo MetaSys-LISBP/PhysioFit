@@ -71,6 +71,8 @@ This section presents the different parameters that can be adapted to match your
 .. note:: Initial values and bounds should be carefully chosen. Ideally, initial values should be in the range of values used in the experiment. Well-defined bounds will enhance robustness and speed of the flux calculation process. The default
           bounds are sufficient in most cases, but may still be defined by the user when needed (e.g. the higher bound on initial metabolite concentrations should be increased if the initial concentration of substrate is higher than 50, since it is the maximal value allowed by default.).
 
+.. _output:
+
 Output files
 ---------------------------
 
