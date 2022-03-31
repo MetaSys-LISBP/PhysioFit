@@ -22,7 +22,7 @@ copyright = '2022, INRAE'
 author = 'Loïc Le Grégam, Pierre Millard'
 
 # The full version, including alpha/beta/rc tags
-release = '2.0'
+release = '2.0b5'
 
 
 # -- General configuration ---------------------------------------------------
