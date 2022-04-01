@@ -46,15 +46,15 @@ What is a χ² test?
 A χ² test describes how well a model fits a set of observations. Measures of goodness of fit typically summarize the discrepancy between observed values and the values expected under the model used in PhysioFit (see the :doc:`method` section). It is calculated as the sum of differences between measured and simulated values, each squared and divided by the simulated value. 
 A good fit corresponds to small differences between measured and simulated values, thereby the χ² value is low. In contrast, a bad fit corresponds to large differences between simulations and measurements, and the χ² value is high. 
 
-The resulting χ² value can then be compared with a χ² distribution to determine the goodness of fit. The p-value of one-tail χ² test is calculated by PhysioFit from the best fit and is given in the log file (have a look to the :doc:`usage` section). A p-alue close to 0 means poor fitting, and a p-value close to 1 means good fitting (keeping in mind that a p-value very close to 1 can be an evidence that weights might be overestimated). A 
+The resulting χ² value can then be compared with a χ² distribution to determine the goodness of fit. The p-value of one-tail χ² test is calculated by PhysioFit from the best fit and is given in the log file (have a look to the :doc:`usage` section). A p-value close to 0 means poor fitting, and a p-value close to 1 means good fitting (keeping in mind that a p-value very close to 1 can be an evidence that weights might be overestimated). A 
 p-value between 0.95 and 1 means the model fits the data good enough with respect to the standard deviations provided as weights (at a 95% confidence level).
 
 My data hasn't been correctly fitted. Why?
 ------------------------------------------------------------------
 
-A possible reason to explain a bad fit is that a key asumption of the flux calculation method is that cells are in metabolic (pseudo) steady-state, i.e. with constant fluxes during the whole experiment. If this is not the case (e.g. cells are continuously adapting to their environment and fluxes change over time), PhysioFit will not be able to fit the data satisfactorily.
+A possible reason to explain a bad fit is that a key asumption of the flux calculation method (that cells are in metabolic pseudo steady-state, i.e. with constant fluxes during the whole experiment) is not respected. If this asumption is wrong (e.g. cells are continuously adapting to their environment and fluxes change over time), PhysioFit will not be able to fit the data satisfactorily.
 
-In rare situations, it may be because the run parameters have to be tweaked to
+In rare situations, it may also be because some parameters have to be tweaked to
 help PhysioFit fitting the measurements, which results in obviously aberrant fits (e.g. with flat time-course profiles for all metabolites). If this situation happens, we suggest modifying the initial values of fluxes and re-run the flux calculation. For more info on the run parameters and how they may affect the fitting process,
 please refer to section :ref:`physiofit parameters`.
 
