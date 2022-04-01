@@ -61,4 +61,5 @@ please refer to section :ref:`physiofit parameters`.
 I would like a new feature.
 ------------------------------------------------------------------
 
-We would be glad to improve PhysioFit. Please get in touch with us <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_ so we could discuss your problem.
+We would be glad to improve PhysioFit. Please get in touch with us `here 
+<https://github.com/MetaSys-LISBP/PhysioFit/issues>`_ so we could discuss your problem.
