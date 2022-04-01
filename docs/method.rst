@@ -1,7 +1,7 @@
 Method
 ======
 
-Method
+Overview
 -----------------
 
 Initial concentrations of species (i.e. biomass - X - and metabolites - M_i - at t=0) and fluxes
@@ -49,7 +49,10 @@ In the absence of both degradation and lag (i.e. t_lag=0 and k=0), equations 3-4
 
 .. image:: _static/equations/eq9.png
 
-A model containing all metabolites is constructed automatically by PhysioFit from the input data. Model parameters (fluxes, growth rate, and initial concentrations of biomass and metabolites) are estimated using Scipy's L-BFGS-B method (see
+Flux calculation
+-----------------
+
+A model containing all metabolites is constructed automatically by PhysioFit from the input data. Model parameters (i.e. fluxes, growth rate, and initial concentrations of biomass and metabolites) are estimated using Scipy's L-BFGS-B method (see
 `scipy.optimize.minimize <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html>`_ for more
 information) by minimizing the following cost function:
 
