@@ -16,7 +16,7 @@ information on units can be found in the :doc:`usage` section.
 What are the flux units?
 ------------------------
 
-Flux units depend on the units of time and concentrations (of biomass and metabolites). For more details, please refer to the
+Flux units depend on the units of time and concentrations (of biomass and metabolites) used in the input data. For more details, please refer to the
 :doc:`usage` section.
 
 An error has been raised. What should I do?
