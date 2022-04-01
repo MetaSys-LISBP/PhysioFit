@@ -86,6 +86,7 @@ class PhysioFitter:
             self.logger = initialize_fitter_logger(self.debug_mode)
 
         self.simulated_matrix = None
+        self.simulated_data = None
         self.optimize_results = None
         self.simulate = None
         self.time_vector = None
@@ -99,6 +100,7 @@ class PhysioFitter:
         self.opt_params_sds = None
         self.matrices_ci = None
         self.opt_conf_ints = None
+        self.khi2_res = None
 
     def initialize_vectors(self):
         """
@@ -551,6 +553,15 @@ class PhysioFitter:
         cost = self._calculate_cost(self.optimize_results.x, self.simulate, self.experimental_matrix, self.time_vector,
                                     self.deg_vector, self.weight)
         p_val = chi2.cdf(cost, dof)
+
+        khi2_res = {
+            "khi2_value": cost,
+            "number_of_measurements": number_measurements,
+            "number_of_params": number_params,
+            "Degrees_of_freedom": dof,
+            "p_val": p_val
+        }
+        self.khi2_res = DataFrame.from_dict(khi2_res, "index", columns=["Values"])
 
         self.logger.info(f"khi2 test results:\n"
                          f"khi2 value: {cost}\n"

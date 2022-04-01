@@ -360,7 +360,25 @@ class IoHandler:
 
         # Use IDs to clarify which parameter is described on each line
         opt_data.index = self.fitter.ids
-        opt_data.to_csv(fr"{self.res_path}\flux_results.csv", sep="\t")
+        opt_data.to_csv(fr"{self.res_path}\flux_results.tsv", sep="\t")
+
+        if isinstance(self.fitter.khi2_res, DataFrame):
+            with open(fr"{self.res_path}\test_results.tsv", "w+") as stat_out:
+                stat_out.write("==================\n"
+                               "Khi² test results\n"
+                               "==================\n\n")
+                stat_out.write(self.fitter.khi2_res.to_string(header=False, justify="center"))
+                if self.fitter.khi2_res.at["p_val", "Values"] < 0.95:
+                    stat_out.write(
+                        f"\n\nAt level of 95% confidence, the model fits the data good enough with respect to the "
+                        f"provided measurement SD. Value: "
+                        f"{self.fitter.khi2_res.at['p_val', 'Values']}")
+
+                else:
+                    stat_out.write(
+                        f"\n\nAt level of 95% confidence, the model does not fit the data good enough with respect to "
+                        f"the provided measurement SD. "
+                        f"Value: {self.fitter.khi2_res.at['p_val', 'Values']}\n")
 
     def _get_plot_data(self):
         """
