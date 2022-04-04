@@ -179,16 +179,16 @@ class App:
                     help="Select an initial value of fluxes to estimate. Default: 0.2"
                 )
                 self.weight = st.text_input(
-                    "Weights for cost calculation & sensitivity analysis" "Weights",
+                    "Standard deviation on measurements",
                     value=input_values["weight"],
-                    help="Input weights to apply on the different variables. If empty, default is 0.02 for biomass and"
+                    help="Standard deviation on the measurements. If empty, default is 0.02 for biomass and"
                          " 0.5 for metabolites"
                 )
                 self.conc_met_bounds = st.text_input(
                     "Bounds on initial metabolite concentrations",
                     value=input_values["conc_met_bounds"],
-                    help="GBounds for the initial concentrations of the metabolites (Mi0). "
-                         "They will limit the range of possibilities during optimization. Defaults: [1e-06, 50]"
+                    help="Bounds for the initial concentrations of the metabolites (Mi0). "
+                         "These values correspond to the lowest and highest initial concentration of metabolites, this range should include the actual values. Defaults: [1e-06, 50]"
                 )
                 self.flux_met_bounds = st.text_input(
                     "Bounds on fluxes",

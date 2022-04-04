@@ -363,7 +363,7 @@ class IoHandler:
         opt_data.to_csv(fr"{self.res_path}\flux_results.tsv", sep="\t")
 
         if isinstance(self.fitter.khi2_res, DataFrame):
-            with open(fr"{self.res_path}\test_results.tsv", "w+") as stat_out:
+            with open(fr"{self.res_path}\stat_results.tsv", "w+") as stat_out:
                 stat_out.write("==================\n"
                                "Khi² test results\n"
                                "==================\n\n")
