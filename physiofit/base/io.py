@@ -134,13 +134,15 @@ class IoHandler:
         """
 
         # Store the data path
-        self.data_path = str(Path(data_path).resolve())
+        data_path = Path(data_path).resolve()
+        if not data_path.is_absolute():
+            data_path = data_path.absolute()
 
         # Initialize data and set up destination directory
         if self.data is not None:
             raise ValueError(f"It seems data is already loaded in. Data: \n{self.data}\nHome path: {self.home_path}")
         elif self.input_source == "local":
-            self.home_path = Path(data_path).parent.resolve()
+            self.home_path = data_path.parent.resolve()
             self.res_path = self.home_path / (self.home_path.name + "_res")
             if not self.res_path.is_dir():
                 self.res_path.mkdir()
@@ -194,10 +196,9 @@ class IoHandler:
         # Get the data path and remove from config dict to ensure no wrong key errors are returned during fitter
         # initialization
         data_path = config["path_to_data"]
-        data_path = Path(data_path).resolve()
         del config["path_to_data"]
 
-        self.local_in(str(data_path), **config)
+        self.local_in(data_path, **config)
 
     @staticmethod
     def read_json_config(json_file: str or bytes) -> dict:
