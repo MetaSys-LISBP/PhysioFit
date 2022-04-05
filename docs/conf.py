@@ -13,7 +13,7 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-
+import physiofit
 
 # -- Project information -----------------------------------------------------
 
@@ -22,7 +22,7 @@ copyright = '2022, INRAE'
 author = 'Loïc Le Grégam, Pierre Millard'
 
 # The full version, including alpha/beta/rc tags
-release = '2.0'
+release = physiofit.__version__
 
 
 # -- General configuration ---------------------------------------------------
