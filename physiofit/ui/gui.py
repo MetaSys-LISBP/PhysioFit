@@ -122,6 +122,7 @@ class App:
             )
             self.mc = st.checkbox(
                 "Sensitivity analysis (Monte Carlo)",
+                value=True,
                 help="Determine the precision on estimated fluxes by Monte Carlo sensitivity analysis."
             )
             enable_mc = False if self.mc else True
