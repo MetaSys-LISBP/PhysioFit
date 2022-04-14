@@ -2,6 +2,8 @@
 PhysioFit software main module
 """
 
+# TODO: Make sure weight is now called sd everywhere
+
 import logging
 
 import numpy as np
@@ -67,7 +69,7 @@ class PhysioFitter:
     """
 
     def __init__(self, data, vini=0.2, mc=True, iterations=100, conc_biom_bounds=(1e-4, 50),
-                 flux_biom_bounds=(1e-3, 2), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), weight=None,
+                 flux_biom_bounds=(1e-3, 2), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), sd=None,
                  deg=None, t_lag=False, debug_mode=False):
 
         self.data = data
@@ -78,7 +80,7 @@ class PhysioFitter:
         self.flux_biom_bounds = flux_biom_bounds
         self.conc_met_bounds = conc_met_bounds
         self.flux_met_bounds = flux_met_bounds
-        self.weight = weight
+        self.sd = sd
         self.deg = deg
         self.t_lag = t_lag
         self.debug_mode = debug_mode
@@ -164,8 +166,8 @@ class PhysioFitter:
                             f"{type(self.iterations)}")
 
         allowed_weights = [int, float, list, np.ndarray]
-        if type(self.weight) not in allowed_weights:
-            raise TypeError(f"Weights is not in the right format ({type(self.weight)}. "
+        if type(self.sd) not in allowed_weights:
+            raise TypeError(f"Weights is not in the right format ({type(self.sd)}. "
                             f"Compatible formats are:\n{allowed_weights}")
 
         if type(self.deg_vector) is not list:
@@ -178,16 +180,16 @@ class PhysioFitter:
         """Convert weight dictionary to matrix/vector"""
 
         # Perform checks
-        for key in self.weight.keys():
+        for key in self.sd.keys():
             if key not in self.name_vector:
                 raise KeyError(f"The key {key} is not part of the data headers")
         for name in self.name_vector:
-            if name not in self.weight.keys():
+            if name not in self.sd.keys():
                 raise KeyError(f"The key {name} is missing from the weights dict")
 
         # Get lengths of each weight entry
-        weight_lengths = [len(self.weight[key]) if type(self.weight[key]) not in [float, int] else 1
-                          for key in self.weight.keys()]
+        weight_lengths = [len(self.sd[key]) if type(self.sd[key]) not in [float, int] else 1
+                          for key in self.sd.keys()]
 
         # Make sure that lengths are the same
         if not all(elem == weight_lengths[0] for elem in weight_lengths):
@@ -195,11 +197,11 @@ class PhysioFitter:
 
         # Build matrix/vector
         if weight_lengths[0] == 1:
-            self.weight = [self.weight[name] for name in self.name_vector]
+            self.sd = [self.sd[name] for name in self.name_vector]
         else:
-            columns = (self.weight[name] for name in self.name_vector)
+            columns = (self.sd[name] for name in self.name_vector)
             matrix = np.column_stack(columns)
-            self.weight = matrix
+            self.sd = matrix
 
     def initialize_weight_matrix(self):
         """
@@ -212,38 +214,38 @@ class PhysioFitter:
         self.logger.info("Initializing Weight matrix...\n")
 
         # If weight is None, we generate the default matrix
-        if self.weight is None:
+        if self.sd is None:
             try:
-                self.weight = {"X": 0.02}
+                self.sd = {"X": 0.02}
                 for col in self.data.columns[2:]:
-                    self.weight.update({col: 0.5})
+                    self.sd.update({col: 0.5})
             except Exception:
                 raise
 
-        if type(self.weight) is dict:
+        if type(self.sd) is dict:
             self._weight_dict_to_matrix()
         # When weight is a single value, we build a weight matrix containing the value in all positions
-        if isinstance(self.weight, int) or isinstance(self.weight, float):
+        if isinstance(self.sd, int) or isinstance(self.sd, float):
             self._build_weight_matrix()
-            self.logger.debug(f"Weight matrix: {self.weight}\n")
+            self.logger.debug(f"Weight matrix: {self.sd}\n")
             return
-        if not isinstance(self.weight, np.ndarray) and not isinstance(self.weight, list):
+        if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd, list):
             raise TypeError(
                 f"Cannot coerce weights to array. Please check that a list or array is given as input."
-                f"\nCurrent input: \n{self.weight}")
+                f"\nCurrent input: \n{self.sd}")
         else:
-            self.weight = np.array(self.weight)
-        if not np.issubdtype(self.weight.dtype, np.number):
+            self.sd = np.array(self.sd)
+        if not np.issubdtype(self.sd.dtype, np.number):
             try:
-                self.weight = self.weight.astype(float)
+                self.sd = self.sd.astype(float)
             except ValueError:
                 raise ValueError(f"The weight vector/matrix contains values that are not numeric. \n"
-                                 f"Current weight vector/matrix: \n{self.weight}")
+                                 f"Current weight vector/matrix: \n{self.sd}")
             except Exception as e:
                 raise RuntimeError(f"Unknown error: {e}")
         else:
             # If the array is not the right shape, we assume it is a vector that needs to be tiled into a matrix
-            if self.weight.shape != self.experimental_matrix.shape:
+            if self.sd.shape != self.experimental_matrix.shape:
                 try:
                     self._build_weight_matrix()
                 except ValueError:
@@ -251,9 +253,9 @@ class PhysioFitter:
                 except RuntimeError:
                     raise
             else:
-                self.logger.debug(f"Weight matrix: {self.weight}\n")
+                self.logger.debug(f"Weight matrix: {self.sd}\n")
                 return
-        self.logger.info(f"Weight Matrix:\n{self.weight}\n")
+        self.logger.info(f"Weight Matrix:\n{self.sd}\n")
 
     def initialize_equation(self):
 
@@ -302,17 +304,17 @@ class PhysioFitter:
         """
 
         # First condition: the weights are in a 1D array
-        if isinstance(self.weight, np.ndarray):
+        if isinstance(self.sd, np.ndarray):
             # We first check that the weight vector is as long as the experimental matrix on the row axis
-            if self.weight.size != self.experimental_matrix[0].size:
+            if self.sd.size != self.experimental_matrix[0].size:
                 raise ValueError("Weight vector not of right size")
             else:
                 # We duplicate the vector column-wise to build a matrix of duplicated weight vectors
-                self.weight = np.tile(self.weight, (len(self.experimental_matrix), 1))
+                self.sd = np.tile(self.sd, (len(self.experimental_matrix), 1))
 
         # Second condition: the weight is a scalar and must be broadcast to a matrix with same shape as the data
-        elif isinstance(self.weight, int) or isinstance(self.weight, float):
-            self.weight = np.full(self.experimental_matrix.shape, self.weight)
+        elif isinstance(self.sd, int) or isinstance(self.sd, float):
+            self.sd = np.full(self.experimental_matrix.shape, self.sd)
         else:
             raise RuntimeError("Unknown error")
 
@@ -327,7 +329,7 @@ class PhysioFitter:
         weights = [0.2]
         for name in range(len(self.name_vector) - 1):
             weights.append(0.5)
-        self.weight = np.array(weights)
+        self.sd = np.array(weights)
         self._build_weight_matrix()
 
     def optimize(self):
@@ -336,7 +338,7 @@ class PhysioFitter:
         self.logger.info("\nRunning optimization...\n")
         self.optimize_results = PhysioFitter._run_optimization(self.params, self.simulate, self.experimental_matrix,
                                                                self.time_vector, self.deg_vector,
-                                                               self.weight, self.bounds)
+                                                               self.sd, self.bounds)
         self.parameter_stats = {
             "optimal": self.optimize_results.x
         }
@@ -488,7 +490,7 @@ class PhysioFitter:
 
             # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(opt_res.x, self.simulate, new_matrix, self.time_vector,
-                                                     self.deg_vector, self.weight, self.bounds)
+                                                     self.deg_vector, self.sd, self.bounds)
 
             # Store the new simulated matrix in list for later use
             matrices.append(self.simulate(opt_res.x, new_matrix, self.time_vector, self.deg_vector))
@@ -551,7 +553,7 @@ class PhysioFitter:
         number_params = len(self.params)
         dof = number_measurements - number_params
         cost = self._calculate_cost(self.optimize_results.x, self.simulate, self.experimental_matrix, self.time_vector,
-                                    self.deg_vector, self.weight)
+                                    self.deg_vector, self.sd)
         p_val = chi2.cdf(cost, dof)
 
         khi2_res = {
@@ -603,6 +605,6 @@ class PhysioFitter:
 
         new_matrix = np.array([
             PhysioFitter._add_noise(self.simulated_matrix[idx, :], sd)
-            for idx, sd in enumerate(self.weight)
+            for idx, sd in enumerate(self.sd)
         ])
         return new_matrix
