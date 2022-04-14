@@ -4,11 +4,16 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from copy import copy
+import urllib
+import re
 
 import streamlit as st
 import pandas as pd
 
-from physiofit.base.io import IoHandler, DEFAULTS
+from threading import Thread
+
+from physiofit.base.io import IoHandler, DEFAULS
+import physiofit
 
 
 class App:
@@ -24,6 +29,10 @@ class App:
     def start_app(self):
         """Launch the application"""
         st.title("Welcome to PhysioFit")
+        self.update_info = st.empty()
+        thread = Thread(target=self.get_last_version)
+        thread.start()
+        self.check_uptodate()
         self.select_menu = st.selectbox(
             "Select a task to execute",
             ["Calculate extracellular fluxes", "Calculate degradation constant"]
@@ -33,6 +42,34 @@ class App:
             self._build_flux_menu()
         else:
             st.header("Implementation in progress...")
+
+    def check_uptodate(self):
+        """compare installed and most recent Physiofit versions."""
+        pf_path = Path(physiofit.__file__).parent
+        try:
+            with open(str(Path(pf_path, "last_version.txt")), "r") as f:
+                txt = f.read()
+            lastversion = re.findall(r"^__version__ = ['\"]([^'\"]*)['\"]", txt, re.M)[0]
+            if lastversion != physiofit.__version__:
+                # change the next line to streamlit
+                self.update_info = st.info(
+                    f'New version available ({lastversion}). \n You can update PhysioFit with: "pip install --upgrade physiofit" \n Check the documentation for more information.')
+        except:
+            pass
+
+    def get_last_version(self):
+        """Get last Physiofit version."""
+        try:
+            pf_path = Path(physiofit.__file__).parent
+            # Get the distant __init__.py and read its version as it done in setup.py
+            response = urllib.request.urlopen(
+                "https://github.com/MetaSys-LISBP/PhysioFit/raw/master/physiofit/__init__.py")
+            data = response.read()
+            txt = data.decode('utf-8').rstrip()
+            with open(str(Path(pf_path, "last_version.txt")), "w") as f:
+                f.write(txt)
+        except:
+            pass
 
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
@@ -243,5 +280,5 @@ class App:
 
 
 if __name__ == "__main__":
-    physiofit = App()
-    physiofit.start_app()
+    physiofit_app = App()
+    physiofit_app.start_app()
