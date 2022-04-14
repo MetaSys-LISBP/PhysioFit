@@ -8,7 +8,7 @@ from copy import copy
 import streamlit as st
 import pandas as pd
 
-from physiofit.base.io import IoHandler
+from physiofit.base.io import IoHandler, DEFAULTS
 
 
 class App:
@@ -19,17 +19,7 @@ class App:
 
         self.select_menu = None
         self.io_handler = None
-        self.defaults = {
-            "vini": 0.2,
-            "weight": {},
-            "conc_met_bounds": [1e-06, 50],
-            "flux_met_bounds": [-50, 50],
-            "conc_biom_bounds": [1e-03, 50],
-            "flux_biom_bounds": [1e-4, 2],
-            "t_lag": 0,
-            "deg": {},
-            "iterations": 100
-        }
+        self.defaults = DEFAULTS
 
     def start_app(self):
         """Launch the application"""
