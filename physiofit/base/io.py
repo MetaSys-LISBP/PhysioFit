@@ -12,6 +12,18 @@ from physiofit.base.fitter import PhysioFitter
 
 mod_logger = logging.getLogger("PhysioFit.base.io")
 
+DEFAULTS = {
+            "vini": 0.2,
+            "weight": {},
+            "conc_met_bounds": [1e-06, 50],
+            "flux_met_bounds": [-50, 50],
+            "conc_biom_bounds": [1e-03, 50],
+            "flux_biom_bounds": [1e-4, 2],
+            "t_lag": 0,
+            "deg": {},
+            "iterations": 100
+        }
+
 
 class IoHandler:
     """
