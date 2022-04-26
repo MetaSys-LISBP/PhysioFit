@@ -2,8 +2,6 @@
 PhysioFit software main module
 """
 
-# TODO: Make sure weight is now called sd everywhere
-
 import logging
 
 import numpy as np
@@ -54,14 +52,14 @@ class PhysioFitter:
     :type conc_met_bounds: tuple of ints/floats (lower, upper)
     :param flux_met_bounds: lower and upper bounds for metabolite rate of change (qi)
     :type flux_met_bounds: tuple of ints/floats (lower, upper)
-    :param weight: weight matrix used for residuum calculations. Can be:
+    :param sd: weight matrix used for residuum calculations. Can be:
 
                 * a matrix with the same dimensions as the measurements matrix (but without the time column)
                 * a named vector containing weights for all the metabolites provided in the input file
                 * 0  in which case the matrix is automatically constructed from default values
                 * a dictionary with the data column headers as keys and the associated value as a scalar or list
 
-    :type weight: int, float, list, dict or ndarray
+    :type sd: int, float, list, dict or ndarray
     :param deg: dictionary of degradation constants for each metabolite
     :type deg: dict
     :param t_lag: Should lag phase length be estimated
