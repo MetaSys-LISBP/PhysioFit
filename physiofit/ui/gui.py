@@ -3,17 +3,17 @@ import json
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
-from copy import copy
 import urllib
 import re
+from copy import copy
 
 import streamlit as st
 import pandas as pd
 
 from threading import Thread
 
-from physiofit.base.io import IoHandler, DEFAULS
 import physiofit
+from physiofit.base.io import IoHandler, DEFAULTS
 
 
 class App:
@@ -22,9 +22,10 @@ class App:
     """
     def __init__(self):
 
+        self.defaults = copy(DEFAULTS)
         self.select_menu = None
         self.io_handler = None
-        self.defaults = DEFAULTS
+        self.update_info = None
 
     def start_app(self):
         """Launch the application"""
@@ -53,11 +54,13 @@ class App:
             if lastversion != physiofit.__version__:
                 # change the next line to streamlit
                 self.update_info = st.info(
-                    f'New version available ({lastversion}). \n You can update PhysioFit with: "pip install --upgrade physiofit" \n Check the documentation for more information.')
+                    f'New version available ({lastversion}). \n You can update PhysioFit with: "pip install --upgrade '
+                    f'physiofit" \n Check the documentation for more information.')
         except:
             pass
 
-    def get_last_version(self):
+    @staticmethod
+    def get_last_version():
         """Get last Physiofit version."""
         try:
             pf_path = Path(physiofit.__file__).parent
