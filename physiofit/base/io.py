@@ -12,6 +12,7 @@ from physiofit.base.fitter import PhysioFitter
 
 mod_logger = logging.getLogger("PhysioFit.base.io")
 
+
 DEFAULTS = {
             "vini": 0.2,
             "weight": {},
@@ -163,7 +164,7 @@ class IoHandler:
             self.data = IoHandler._read_data(data_path)
             self.data = self.data.sort_values("time", ignore_index=True)
             self.names = self.data.columns[1:].to_list()
-        else:
+        elif self.input_source != "local":
             raise IOError(f"Wrong input source selected. Source: {self.input_source}")
 
         self.initialize_fitter(kwargs)
@@ -222,7 +223,7 @@ class IoHandler:
         """
 
         # Load config file
-        if type(json_file) == str:
+        if isinstance(json_file, str):
             try:
                 path = Path(json_file).resolve()
                 json_file = open(str(path))
@@ -233,14 +234,9 @@ class IoHandler:
             config = json.load(json_file)
 
         # Convert lists to tuples for the bounds
-        if type(config["conc_biom_bounds"]) == list:
-            config["conc_biom_bounds"] = tuple(config["conc_biom_bounds"])
-        if type(config["conc_met_bounds"]) == list:
-            config["conc_met_bounds"] = tuple(config["conc_met_bounds"])
-        if type(config["flux_met_bounds"]) == list:
-            config["flux_met_bounds"] = tuple(config["flux_met_bounds"])
-        if type(config["flux_biom_bounds"]) == list:
-            config["flux_biom_bounds"] = tuple(config["flux_biom_bounds"])
+        for key in ["conc_biom_bounds", "conc_met_bounds", "flux_met_bounds", "flux_biom_bounds"]:
+            if isinstance(config[key], list):
+                config[key] = tuple(config[key])
 
         # Remove None values from config dict so that defaults are used on fitter init
         keys_to_del = [key for key, value in config.items() if value is None]
@@ -304,8 +300,11 @@ class IoHandler:
         if not self.fitter.logger.handlers:
             self.fitter.logger.addHandler(file_handle)
         self.fitter.logger.debug(f"Logger handlers: {self.fitter.logger.handlers}")
-
         if kwargs:
+            # We set the default keyword params
+            for key, value in DEFAULTS.items():
+                if key not in kwargs.keys():
+                    kwargs.update({key: value})
             # Initialize fitter parameters from kwargs
             for key, value in kwargs.items():
                 self.fitter.logger.debug(f"Key: {key}, value: {value}\n")
@@ -463,9 +462,12 @@ class IoHandler:
                 ax = self._add_sd_area(element, ax)
 
             # Finishing touches
-            ax.set(xlim=0, ylim=0, xlabel="Time", ylabel="Concentration")
-            ax.legend()
-            ax.set_title(f"{element}")
+            ax.set(xlim=0, ylim=0)
+            ax.set_xlabel("Time", fontsize=21)
+            ax.set_ylabel("Concentration", fontsize=21)
+            ax.legend(prop={"size": 18})
+            ax.set_title(f"{element}", fontsize=23)
+            ax.tick_params(axis='both', which='major', labelsize=18)
             fig.tight_layout()
 
             # Add the figure with the metabolite name as index to the _figures attribute for later use
