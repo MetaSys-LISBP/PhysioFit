@@ -1,16 +1,14 @@
-from ast import literal_eval
 import json
 import tkinter as tk
-from tkinter import filedialog
-from pathlib import Path
-import urllib
-import re
+from ast import literal_eval
 from copy import copy
-
-import streamlit as st
-import pandas as pd
-
+from pathlib import Path
 from threading import Thread
+from tkinter import filedialog
+
+import pandas as pd
+import requests
+import streamlit as st
 
 import physiofit
 from physiofit.base.io import IoHandler, DEFAULTS
@@ -20,6 +18,7 @@ class App:
     """
     Physiofit Graphical User Interface
     """
+
     def __init__(self):
 
         self.defaults = copy(DEFAULTS)
@@ -31,8 +30,8 @@ class App:
         """Launch the application"""
         st.title("Welcome to PhysioFit")
         self.update_info = st.empty()
-        thread = Thread(target=self.get_last_version)
-        thread.start()
+        # thread = Thread(target=self.get_last_version)
+        # thread.start()
         self.check_uptodate()
         self.select_menu = st.selectbox(
             "Select a task to execute",
@@ -45,34 +44,23 @@ class App:
             st.header("Implementation in progress...")
 
     def check_uptodate(self):
-        """compare installed and most recent Physiofit versions."""
-        pf_path = Path(physiofit.__file__).parent
-        try:
-            with open(str(Path(pf_path, "last_version.txt")), "r") as f:
-                txt = f.read()
-            lastversion = re.findall(r"^__version__ = ['\"]([^'\"]*)['\"]", txt, re.M)[0]
-            if lastversion != physiofit.__version__:
-                # change the next line to streamlit
-                self.update_info = st.info(
-                    f'New version available ({lastversion}). \n You can update PhysioFit with: "pip install --upgrade '
-                    f'physiofit" \n Check the documentation for more information.')
-        except:
-            pass
+        """Compare installed and most recent Physiofit versions."""
 
-    @staticmethod
-    def get_last_version():
-        """Get last Physiofit version."""
         try:
-            pf_path = Path(physiofit.__file__).parent
-            # Get the distant __init__.py and read its version as it done in setup.py
-            response = urllib.request.urlopen(
-                "https://github.com/MetaSys-LISBP/PhysioFit/raw/master/physiofit/__init__.py")
-            data = response.read()
-            txt = data.decode('utf-8').rstrip()
-            with open(str(Path(pf_path, "last_version.txt")), "w") as f:
-                f.write(txt)
-        except:
-            pass
+            response = requests.get(f"https://pypi.org/pypi/{package_name}/json")
+            latest_version = response.json()['info']['version']
+        except Exception:
+            latest_version = False
+        if not latest_version:
+            st.info(
+                f"Error while retrieving latest version. Please check manually. "
+                f"Current version: {physiofit.__version__}"
+            )
+        elif latest_version != physiofit.__version__:
+            st.info(
+                f'New version available ({latest_version}). \n You can update PhysioFit with: "pip install --upgrade '
+                f'physiofit" \n Check the documentation for more information.'
+            )
 
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
@@ -98,8 +86,9 @@ class App:
             config = IoHandler.read_json_config(self.data_file)
             input_values.update(config)
         elif file_extension != "tsv":
-            raise KeyError(f"Wrong input file format. Accepted formats are tsv for data files or json for configuration "
-                           f"files. Detected file: {self.data_file.name}")
+            raise KeyError(
+                f"Wrong input file format. Accepted formats are tsv for data files or json for configuration "
+                f"files. Detected file: {self.data_file.name}")
         else:
             data = pd.read_csv(self.data_file, sep="\t")
             try:
@@ -219,25 +208,29 @@ class App:
                     "Bounds on initial metabolite concentrations",
                     value=input_values["conc_met_bounds"],
                     help="Bounds for the initial concentrations of the metabolites (Mi0). "
-                         "These values correspond to the lowest and highest initial concentration of metabolites, this range should include the actual values. Defaults: [1e-06, 50]"
+                         "These values correspond to the lowest and highest initial concentration of metabolites, "
+                         "this range should include the actual values. Defaults: [1e-06, 50]"
                 )
                 self.flux_met_bounds = st.text_input(
                     "Bounds on fluxes",
                     value=input_values["flux_met_bounds"],
                     help="Bounds for metabolic fluxes (qM). "
-                         "These values correspond to the lowest and highest fluxes, this range should include the actual value. Defaults: [0.01, 50]"
+                         "These values correspond to the lowest and highest fluxes, this range should include the "
+                         "actual value. Defaults: [0.01, 50]"
                 )
                 self.conc_biom_bounds = st.text_input(
                     "Bounds on initial biomass concentration",
                     value=input_values["conc_biom_bounds"],
                     help="Bounds for initial concentrations of the biomass (X0). "
-                         "These values correspond to the lowest and highest (initial) biomass concentration, this range should include the actual value. Defaults: [1e-06, 50]"
+                         "These values correspond to the lowest and highest (initial) biomass concentration, this "
+                         "range should include the actual value. Defaults: [1e-06, 50]"
                 )
                 self.flux_biom_bounds = st.text_input(
                     "Bounds on growth rate",
                     value=input_values["flux_biom_bounds"],
                     help="Bounds for growth rate (µ). "
-                         "These values correspond to the lowest and highest growth rates, this range should include the actual value. Defaults: [0.01, 2]"
+                         "These values correspond to the lowest and highest growth rates, this range should include "
+                         "the actual value. Defaults: [0.01, 2]"
                 )
                 self.debug_mode = st.checkbox(
                     "Verbose logs",
