@@ -3,7 +3,6 @@ import tkinter as tk
 from ast import literal_eval
 from copy import copy
 from pathlib import Path
-from threading import Thread
 from tkinter import filedialog
 
 import pandas as pd
@@ -29,9 +28,6 @@ class App:
     def start_app(self):
         """Launch the application"""
         st.title("Welcome to PhysioFit")
-        self.update_info = st.empty()
-        # thread = Thread(target=self.get_last_version)
-        # thread.start()
         self.check_uptodate()
         self.select_menu = st.selectbox(
             "Select a task to execute",
@@ -43,7 +39,8 @@ class App:
         else:
             st.header("Implementation in progress...")
 
-    def check_uptodate(self, package_name="physiofit"):
+    @staticmethod
+    def check_uptodate(package_name="physiofit"):
         """Compare installed and most recent Physiofit versions."""
 
         try:
