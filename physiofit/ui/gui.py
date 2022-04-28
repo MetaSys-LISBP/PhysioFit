@@ -43,7 +43,7 @@ class App:
         else:
             st.header("Implementation in progress...")
 
-    def check_uptodate(self):
+    def check_uptodate(self, package_name="physiofit"):
         """Compare installed and most recent Physiofit versions."""
 
         try:
