@@ -3,8 +3,7 @@ import json
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
-import urllib
-import re
+import requests
 from copy import copy
 
 import streamlit as st
@@ -29,6 +28,7 @@ class App:
 
     def start_app(self):
         """Launch the application"""
+
         st.title("Welcome to PhysioFit")
         self.update_info = st.empty()
         thread = Thread(target=self.get_last_version)
@@ -45,12 +45,11 @@ class App:
             st.header("Implementation in progress...")
 
     def check_uptodate(self):
-        """compare installed and most recent Physiofit versions."""
+        """Compare installed and most recent Physiofit versions."""
         pf_path = Path(physiofit.__file__).parent
         try:
             with open(str(Path(pf_path, "last_version.txt")), "r") as f:
-                txt = f.read()
-            lastversion = re.findall(r"^__version__ = ['\"]([^'\"]*)['\"]", txt, re.M)[0]
+                lastversion = f.read()
             if lastversion != physiofit.__version__:
                 # change the next line to streamlit
                 self.update_info = st.info(
@@ -64,13 +63,12 @@ class App:
         """Get last Physiofit version."""
         try:
             pf_path = Path(physiofit.__file__).parent
-            # Get the distant __init__.py and read its version as it done in setup.py
-            response = urllib.request.urlopen(
-                "https://github.com/MetaSys-LISBP/PhysioFit/raw/master/physiofit/__init__.py")
-            data = response.read()
-            txt = data.decode('utf-8').rstrip()
+            # Get the version from pypi
+            response = requests.get(f'https://pypi.org/pypi/physiofit/json')
+            latest_version = response.json()['info']['version']
+
             with open(str(Path(pf_path, "last_version.txt")), "w") as f:
-                f.write(txt)
+                f.write(latest_version)
         except:
             pass
 
