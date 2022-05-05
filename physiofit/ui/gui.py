@@ -14,7 +14,6 @@ from threading import Thread
 import physiofit
 from physiofit.base.io import IoHandler, DEFAULTS
 
-
 class App:
     """
     Physiofit Graphical User Interface
@@ -31,9 +30,6 @@ class App:
         """Launch the application"""
 
         st.title("Welcome to PhysioFit")
-        self.update_info = st.empty()
-        thread = Thread(target=self.get_last_version)
-        thread.start()
         self.check_uptodate()
         self.select_menu = st.selectbox(
             "Select a task to execute",
@@ -44,6 +40,7 @@ class App:
             self._build_flux_menu()
         else:
             st.header("Implementation in progress...")
+
 
     def check_uptodate(self):
         """Compare installed and most recent Physiofit versions."""
@@ -60,20 +57,7 @@ class App:
         except:
             pass
 
-    @staticmethod
-    def get_last_version():
-        """Get last Physiofit version."""
-        try:
-            pf_path = Path(physiofit.__file__).parent
-            # Get the version from pypi
-            response = requests.get(f'https://pypi.org/pypi/physiofit/json')
-            latest_version = response.json()['info']['version']
-
-            with open(str(Path(pf_path, "last_version.txt")), "w") as f:
-                f.write(latest_version)
-        except:
-            pass
-
+          
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
 
@@ -220,25 +204,29 @@ class App:
                     "Bounds on initial metabolite concentrations",
                     value=input_values["conc_met_bounds"],
                     help="Bounds for the initial concentrations of the metabolites (Mi0). "
-                         "These values correspond to the lowest and highest initial concentration of metabolites, this range should include the actual values. Defaults: [1e-06, 50]"
+                         "These values correspond to the lowest and highest initial concentration of metabolites, "
+                         "this range should include the actual values. Defaults: [1e-06, 50]"
                 )
                 self.flux_met_bounds = st.text_input(
                     "Bounds on fluxes",
                     value=input_values["flux_met_bounds"],
                     help="Bounds for metabolic fluxes (qM). "
-                         "These values correspond to the lowest and highest fluxes, this range should include the actual value. Defaults: [0.01, 50]"
+                         "These values correspond to the lowest and highest fluxes, this range should include the "
+                         "actual value. Defaults: [0.01, 50]"
                 )
                 self.conc_biom_bounds = st.text_input(
                     "Bounds on initial biomass concentration",
                     value=input_values["conc_biom_bounds"],
                     help="Bounds for initial concentrations of the biomass (X0). "
-                         "These values correspond to the lowest and highest (initial) biomass concentration, this range should include the actual value. Defaults: [1e-06, 50]"
+                         "These values correspond to the lowest and highest (initial) biomass concentration, this "
+                         "range should include the actual value. Defaults: [1e-06, 50]"
                 )
                 self.flux_biom_bounds = st.text_input(
                     "Bounds on growth rate",
                     value=input_values["flux_biom_bounds"],
                     help="Bounds for growth rate (µ). "
-                         "These values correspond to the lowest and highest growth rates, this range should include the actual value. Defaults: [0.01, 2]"
+                         "These values correspond to the lowest and highest growth rates, this range should include "
+                         "the actual value. Defaults: [0.01, 2]"
                 )
                 self.debug_mode = st.checkbox(
                     "Verbose logs",
