@@ -6,7 +6,7 @@ import logging
 
 import numpy as np
 from pandas import DataFrame
-from scipy.optimize import minimize
+from scipy.optimize import minimize, differential_evolution
 from scipy.stats import chi2
 
 from physiofit.logger import initialize_fitter_logger
@@ -336,7 +336,7 @@ class PhysioFitter:
         self.logger.info("\nRunning optimization...\n")
         self.optimize_results = PhysioFitter._run_optimization(self.params, self.simulate, self.experimental_matrix,
                                                                self.time_vector, self.deg_vector,
-                                                               self.sd, self.bounds)
+                                                               self.sd, self.bounds, "differential_evolution")
         self.parameter_stats = {
             "optimal": self.optimize_results.x
         }
@@ -455,16 +455,26 @@ class PhysioFitter:
         return residuum
 
     @staticmethod
-    def _run_optimization(params, func, exp_data_matrix, time_vector, deg, weight_matrix, bounds):
+    def _run_optimization(params, func, exp_data_matrix, time_vector, deg, weight_matrix, bounds, method):
         """
         Run the optimization on input parameters using the cost function and Scipy minimize (L-BFGS-B method
         that is deterministic and uses the gradient method for optimizing)
         """
 
-        optimize_results = minimize(PhysioFitter._calculate_cost, x0=params, args=(
-            func, exp_data_matrix, time_vector, deg, weight_matrix), method="L-BFGS-B", bounds=bounds,
-                                    options={'maxcor': 30}
-                                    )
+        if method == "differential_evolution":
+            optimize_results = differential_evolution(
+                PhysioFitter._calculate_cost, bounds=bounds,
+                args=(func, exp_data_matrix, time_vector, deg, weight_matrix),
+                polish=True
+            )
+        elif method == "L-BFGS-B":
+            optimize_results = minimize(PhysioFitter._calculate_cost, x0=params, args=(
+                func, exp_data_matrix, time_vector, deg, weight_matrix), method="L-BFGS-B", bounds=bounds,
+                                        options={'maxcor': 30}
+                                        )
+        else:
+            raise ValueError(f"{method} is not implemented")
+
         return optimize_results
 
     def monte_carlo_analysis(self):
@@ -488,7 +498,7 @@ class PhysioFitter:
 
             # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(opt_res.x, self.simulate, new_matrix, self.time_vector,
-                                                     self.deg_vector, self.sd, self.bounds)
+                                                     self.deg_vector, self.sd, self.bounds, "L-BFGS-B")
 
             # Store the new simulated matrix in list for later use
             matrices.append(self.simulate(opt_res.x, new_matrix, self.time_vector, self.deg_vector))
