@@ -54,8 +54,9 @@ class App:
             if lastversion != physiofit.__version__:
                 # change the next line to streamlit
                 self.update_info = st.info(
-                    f'New version available ({lastversion}). \n You can update PhysioFit with: "pip install --upgrade '
-                    f'physiofit" \n Check the documentation for more information.')
+                    f'New version available ({lastversion}). \n '
+                    f'You can update PhysioFit with: "pip install --upgrade physiofit". \n '
+                    f'Check the documentation for more information.')
         except:
             pass
 
