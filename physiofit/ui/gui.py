@@ -30,6 +30,9 @@ class App:
         """Launch the application"""
 
         st.title("Welcome to PhysioFit")
+        self.update_info = st.empty()
+        thread = Thread(target=self.get_last_version)
+        thread.start()
         self.check_uptodate()
         self.select_menu = st.selectbox(
             "Select a task to execute",
@@ -41,6 +44,19 @@ class App:
         else:
             st.header("Implementation in progress...")
 
+    @staticmethod
+    def get_last_version():
+        """Get last Physiofit version."""
+        try:
+            pf_path = Path(physiofit.__file__).parent
+            # Get the version from pypi
+            response = requests.get(f'https://pypi.org/pypi/physiofit/json')
+            latest_version = response.json()['info']['version']
+
+            with open(str(Path(pf_path, "last_version.txt")), "w") as f:
+                f.write(latest_version)
+        except:
+            pass
 
     def check_uptodate(self):
         """Compare installed and most recent Physiofit versions."""
@@ -57,7 +73,6 @@ class App:
         except:
             pass
 
-          
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
 
