@@ -68,14 +68,6 @@ Optionals:
         - Initial biom flux bounds (--flux_biom_bounds, -fb): Bounds on initial biomass fluxes. Add and give bounds as 
         a tuple.
         - Debug mode (--verbose, -v): Activate the debug logs. Add fo True.
-        
-2. Cli class
-
-    A. Initialization
-    
-The only thing to do here is to 
-
-
 
 """
 
@@ -115,7 +107,7 @@ def parse_args():
                         help="Bounds on initial biomass fluxes. Give bounds as a tuple.")
 
     # Parse developer arguments
-    parser.add_argument("-g", "--galaxy", help="Is the CLI being used on the galaxy platform")
+    parser.add_argument("-g", "--galaxy", action="store_true", help="Is the CLI being used on the galaxy platform")
     parser.add_argument("-v", "--verbose", help="Activate the debug logs")
 
     return parser
@@ -154,7 +146,7 @@ class Cli:
                 fitter_args[arg] = literal_eval(fitter_args.pop(arg))
 
         # Remove arguments that are data or config files
-        for arg in ["data", "config"]:
+        for arg in ["data", "config", "galaxy"]:
             if arg in fitter_args.keys():
                 del fitter_args[arg]
 
@@ -178,10 +170,30 @@ class Cli:
             self.io_handler.launch_from_json(self.args.config)
         elif self.args.data:
             print("Data file detected")
-            self.io_handler.local_in(self.args.data, self.fitter_args)
+            self.io_handler.local_in(self.args.data, **self.fitter_args)
         else:
             raise DataError("No config file or data file detected")
         print("Fitter initialized")
+        self.run()
+
+    def galaxy_launch(self):
+
+        self.io_handler = IoHandler("galaxy")
+        if self.args.config and not self.args.data:
+            raise DataError("To run on Galaxy using a config file, Physiofit 2.0 needs the data to be given as well.")
+        elif self.args.config and self.args.data:
+            print("Json config file detected")
+            self.io_handler.galaxy_json_launch(self.args.config, self.args.data)
+        elif self.args.data and not self.args.config:
+            print("Data file detected")
+            self.io_handler.galaxy_in(self.args.data, **self.fitter_args)
+        else:
+            raise DataError("No config file or data file detected")
+        print("Fitter initialized")
+        self.run()
+
+    def run(self):
+
         print("Running optimization...")
         self.io_handler.fitter.optimize()
         if self.io_handler.fitter.mc:
@@ -192,14 +204,6 @@ class Cli:
         print("Exporting results...")
         self.io_handler.local_out("data", "plot", "pdf")
         print("Done!")
-
-    def galaxy_launch(self):
-        # TODO: implement galaxy logic
-        self.io_handler = IoHandler("galaxy")
-        if self.args.config and not self.args.data:
-            raise DataError("To run on Galaxy using a config file, Physiofit 2.0 needs the data to be given as well.")
-
-
 
 class DataError(Exception):
     pass

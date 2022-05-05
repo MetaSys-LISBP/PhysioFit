@@ -16,10 +16,10 @@ mod_logger = logging.getLogger("PhysioFit.base.io")
 DEFAULTS = {
             "vini": 0.2,
             "weight": {},
-            "conc_met_bounds": [1e-06, 50],
-            "flux_met_bounds": [-50, 50],
-            "conc_biom_bounds": [1e-03, 50],
-            "flux_biom_bounds": [1e-4, 2],
+            "conc_met_bounds": (1e-06, 50),
+            "flux_met_bounds": (-50, 50),
+            "conc_biom_bounds": (1e-03, 50),
+            "flux_biom_bounds": (1e-4, 2),
             "t_lag": 0,
             "deg": {},
             "iterations": 100
@@ -172,6 +172,53 @@ class IoHandler:
         if not self.has_config_been_read:
             self._generate_run_config()
 
+    def galaxy_in(self, data_path: str, **kwargs: dict):
+        """
+        Function for reading data and initializing the fitter object in a Galaxy instance
+
+        :param data_path: path to data file
+        :param kwargs: supplementary keyword arguments are passed on to the PhysioFitter object
+        :return: None
+        """
+
+        # Store the data path
+        data_path = Path(data_path).resolve()
+        if not data_path.is_absolute():
+            data_path = data_path.absolute()
+
+        # Initialize data and set up destination directory
+        if self.data is not None:
+            raise ValueError(f"It seems data is already loaded in. Data: \n{self.data}\nHome path: {self.home_path}")
+        if self.input_source == "galaxy":
+            self.data = IoHandler._read_data(data_path)
+            self.data = self.data.sort_values("time", ignore_index=True)
+            self.names = self.data.columns[1:].to_list()
+        else:
+            raise IOError(f"Wrong input source selected. Source: {self.input_source}")
+
+        self.home_path = Path(".")
+        self.res_path = self.home_path
+        self.initialize_fitter(kwargs)
+
+        if not self.has_config_been_read:
+            self._generate_run_config()
+
+    def galaxy_json_launch(self, json_file: str, data_path: str):
+        """
+        Launch the run using a json config file as input. In the context of a Galaxy instance the path to the data file
+        must also be given because the user cannot know it beforehand and give it in the config file
+        :param json_file: path to json file
+        :param data_path: path to data
+        :return: None
+        """
+        config = self.read_json_config(json_file)
+        self.has_config_been_read = True
+
+        if "path_to_data" in config:
+            del config["path_to_data"]
+
+        self.galaxy_in(data_path, **config)
+
     def _generate_run_config(self):
         """
         Generate configuration file from parameters of the last run
@@ -187,9 +234,10 @@ class IoHandler:
                 else:
                     to_dump.update({key: value})
 
-        to_dump.update(
-            {"path_to_data": str(self.data_path)}
-        )
+        if self.input_source == "local":
+            to_dump.update(
+                {"path_to_data": str(self.data_path)}
+            )
 
         with open(str(self.res_path / "config_file.json"), "w") as conf:
             json.dump(to_dump, conf, indent=4, sort_keys=True)
