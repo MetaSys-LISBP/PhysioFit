@@ -3,13 +3,10 @@ import json
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
-import requests
 from copy import copy
 
 import streamlit as st
 import pandas as pd
-
-from threading import Thread
 
 import physiofit
 from physiofit.base.io import IoHandler, DEFAULTS
@@ -30,6 +27,7 @@ class App:
         """Launch the application"""
 
         st.title("Welcome to PhysioFit")
+        self.update_info = st.empty()
         self.check_uptodate()
         self.select_menu = st.selectbox(
             "Select a task to execute",
@@ -41,11 +39,10 @@ class App:
         else:
             st.header("Implementation in progress...")
 
-
     def check_uptodate(self):
         """Compare installed and most recent Physiofit versions."""
-        pf_path = Path(physiofit.__file__).parent
         try:
+            pf_path = Path(physiofit.__file__).parent
             with open(str(Path(pf_path, "last_version.txt")), "r") as f:
                 lastversion = f.read()
             if lastversion != physiofit.__version__:
@@ -57,7 +54,6 @@ class App:
         except:
             pass
 
-          
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
 
