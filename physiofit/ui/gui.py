@@ -19,6 +19,7 @@ class App:
     """
     Physiofit Graphical User Interface
     """
+
     def __init__(self):
 
         self.defaults = copy(DEFAULTS)
@@ -53,8 +54,8 @@ class App:
             if lastversion != physiofit.__version__:
                 # change the next line to streamlit
                 self.update_info = st.info(
-                    f'New version available ({lastversion}). \n '
-                    f'You can update PhysioFit with: "pip install --upgrade physiofit". \n '
+                    f'New version available ({lastversion}). '
+                    f'You can update PhysioFit with: "pip install --upgrade physiofit". '
                     f'Check the documentation for more information.')
         except:
             pass
@@ -97,8 +98,9 @@ class App:
             config = IoHandler.read_json_config(self.data_file)
             input_values.update(config)
         elif file_extension != "tsv":
-            raise KeyError(f"Wrong input file format. Accepted formats are tsv for data files or json for configuration "
-                           f"files. Detected file: {self.data_file.name}")
+            raise KeyError(
+                f"Wrong input file format. Accepted formats are tsv for data files or json for configuration "
+                f"files. Detected file: {self.data_file.name}")
         else:
             data = pd.read_csv(self.data_file, sep="\t")
             try:

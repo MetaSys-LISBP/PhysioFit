@@ -6,3 +6,5 @@ physiofit/base/__pycache__/__init__.cpython-310.pyc
 physiofit/base/__pycache__/fitter.cpython-310.pyc
 physiofit/base/__pycache__/io.cpython-310.pyc
 physiofit/last_version.txt
+/data/KEIO_test_data/KEIO_ROBOT6_2/
+/data/KEIO_test_data/KEIO_ROBOT6_7/
