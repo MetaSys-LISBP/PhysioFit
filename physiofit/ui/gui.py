@@ -41,8 +41,8 @@ class App:
 
     def check_uptodate(self):
         """Compare installed and most recent Physiofit versions."""
-        pf_path = Path(physiofit.__file__).parent
         try:
+            pf_path = Path(physiofit.__file__).parent
             with open(str(Path(pf_path, "last_version.txt")), "r") as f:
                 lastversion = f.read()
             if lastversion != physiofit.__version__:
