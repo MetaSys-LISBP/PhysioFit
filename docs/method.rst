@@ -52,9 +52,9 @@ In the absence of both degradation and lag (i.e. t_lag=0 and k=0), equations 3-4
 Flux calculation
 -----------------
 
-A model containing all metabolites is constructed automatically by PhysioFit from the input data. Model parameters (i.e. fluxes, growth rate, and initial concentrations of biomass and metabolites) are estimated using Scipy's L-BFGS-B method (see
-`scipy.optimize.minimize <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html>`_ for more
-information) by minimizing the following cost function:
+A model containing all metabolites is constructed automatically by PhysioFit from the input data, as detailed above. Model parameters (i.e. fluxes, growth rate, and initial concentrations of biomass and metabolites) are estimated using Scipy's Differential evolution method, and the best solution is polished using the L-BFGS-B method (see
+`scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for more
+information on the optimization method), by minimizing the following cost function:
 
 .. image:: _static/equations/eq10.png
 

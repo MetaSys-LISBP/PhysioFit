@@ -24,11 +24,11 @@ What units should be used for input data?
 ------------------------------
 
 Input data (biomass concentration, metabolites concentrations, and time) can be provided to PhysioFit using any unit. Still, we recommand to use units for which values are as close to unity as
-possible to ensure numerical stability (e.g. 3 mM instead of 3e3 µM). Importantly, units of the extimated fluxes depend on units of time and metabolites and biomass concentrations.
+possible to ensure numerical stability (e.g. 3 mM instead of 3e3 µM). Importantly, units of the estimated fluxes depend on units of time and metabolites and biomass concentrations.
 
 .. seealso:: :ref:`flux units` 
 
-To limit any numerical instabilities, provide values in a range not too far from unity (e.g. if a metabolite 
+To avoid any numerical instabilities, provide values in a range not too far from unity (e.g. if a metabolite 
 concentration is 2 mM, provide the value directly in mM and not as 2e-3 M). The concentration of different metabolites can 
 be provided using different units, but a single unit must be used for all measurements of a given metabolite.
 
