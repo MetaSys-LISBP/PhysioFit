@@ -18,8 +18,8 @@ DEFAULTS = {
             "weight": {},
             "conc_met_bounds": (1e-06, 50),
             "flux_met_bounds": (-50, 50),
-            "conc_biom_bounds": (1e-03, 50),
-            "flux_biom_bounds": (1e-4, 2),
+            "conc_biom_bounds": (1e-03, 10),
+            "flux_biom_bounds": (1e-3, 3),
             "t_lag": 0,
             "deg": {},
             "iterations": 100
@@ -333,7 +333,13 @@ class IoHandler:
         self.fitter = PhysioFitter(self.data)
 
         # Initialize fitter logger
-        file_handle = logging.FileHandler(self.res_path / "log.txt", "w+")
+        if self.res_path is not None:
+            try:
+                file_handle = logging.FileHandler(self.res_path / "log.txt", "w+")
+            except:
+                raise ValueError("An error has occurred while initializing the log file. Please check the 'Output data directory'.")
+        else:
+            raise ValueError("Please select an 'Output data directory'.")
         try:
             if kwargs["debug_mode"]:
                 file_handle.setLevel(logging.DEBUG)

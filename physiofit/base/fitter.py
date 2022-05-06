@@ -33,7 +33,7 @@ class PhysioFitter:
 
             residuum = sum((sim - meas) / weight)²
 
-        * **optimization of the initial parameters** using `scipy.optimize.minimize ('L-BFGS-B' method) <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb>`_
+        * **optimization of the initial parameters** using `scipy.optimize.minimize ('Differential evolution', with polish with 'L-BFGS-B' method) <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb>`_
         * **sensitivity analysis, khi2 tests and plotting**
 
     :param data: DataFrame containing data and passed by IOstream object
@@ -66,8 +66,8 @@ class PhysioFitter:
     :type t_lag: bool
     """
 
-    def __init__(self, data, vini=0.2, mc=True, iterations=100, conc_biom_bounds=(1e-4, 50),
-                 flux_biom_bounds=(1e-3, 2), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), sd=None,
+    def __init__(self, data, vini=0.2, mc=True, iterations=100, conc_biom_bounds=(1e-3, 10),
+                 flux_biom_bounds=(1e-3, 3), conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50), sd=None,
                  deg=None, t_lag=False, debug_mode=False):
 
         self.data = data
@@ -465,7 +465,7 @@ class PhysioFitter:
             optimize_results = differential_evolution(
                 PhysioFitter._calculate_cost, bounds=bounds,
                 args=(func, exp_data_matrix, time_vector, deg, weight_matrix),
-                polish=True
+                polish=True, x0=params
             )
         elif method == "L-BFGS-B":
             optimize_results = minimize(PhysioFitter._calculate_cost, x0=params, args=(

@@ -51,10 +51,10 @@ This section presents the different parameters that can be adapted to match your
 
     * **Basic parameters**:
         - **Lag**: consider (or not) a lag phase (i.e. without growth) during flux calculation (see eq. 1 in :doc:`method` section).
-        - **Degradation**: (first-order) degradation constants to be used during flux calculation (constants should be given as a
-          Python dictionary, see eq. 2 in :doc:`method` section).
+        - **Degradation**: (first-order) degradation constants to be used during flux calculation (see eq. 2 in :doc:`method` section, constants should be given as a
+          Python dictionary).
         - **Sensitivity analysis (Monte Carlo)**: Estimate (or not) the precision on calculated fluxes, using a Monte Carlo sensitivity analysis. If
-          selected, then provide the number of monte carlo iterations. A higher number of iterations will give more accurate confidence
+          checked, PhysioFit let you choose the number of monte carlo iterations. A higher number of iterations means more accurate confidence
           intervals on the estimated parameters, but will slow down calculations. The default number of
           iterations (100) is sufficient in most situations.
 
@@ -65,8 +65,8 @@ This section presents the different parameters that can be adapted to match your
         - **Bounds on initial metabolite concentrations (Mi0)**: Minimal and maximal values of the initial concentration of metabolites. Default: [1e-06, 50]
         - **Flux bounds**: Minimal and maximal values of fluxes. Default:
           [-50, 50]
-        - **Bounds on initial biomass concentration (X0)**: Minimal and maximal values of the initial concentration of biomass. Default: [1e-03, 2]
-        - **Bounds on growth rate (µ)**: Minimal and maximal values of the growth rate. Default: [1e-4, 50]
+        - **Bounds on initial biomass concentration (X0)**: Minimal and maximal values of the initial concentration of biomass. Default: [1e-03, 10]
+        - **Bounds on growth rate (µ)**: Minimal and maximal values of the growth rate. Default: [1e-3, 3]
         - **Verbose logs**: Should debug information be written in log file. Useful in case of trouble (please join it to the issue on github). Default: False
 
 .. note:: Initial values and bounds should be carefully chosen. Ideally, initial values should be in the range of values used in the experiment. Well-defined bounds will enhance robustness and speed of the flux calculation process. The default
