@@ -6,3 +6,11 @@ physiofit/base/__pycache__/__init__.cpython-310.pyc
 physiofit/base/__pycache__/fitter.cpython-310.pyc
 physiofit/base/__pycache__/io.cpython-310.pyc
 physiofit/last_version.txt
+physiofit/ui/__pycache__/__init__.cpython-310.pyc
+physiofit/ui/__pycache__/cli.cpython-310.pyc
+physiofit.egg-info/dependency_links.txt
+physiofit.egg-info/entry_points.txt
+physiofit.egg-info/PKG-INFO
+physiofit.egg-info/requires.txt
+physiofit.egg-info/SOURCES.txt
+physiofit.egg-info/top_level.txt

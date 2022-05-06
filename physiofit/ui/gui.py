@@ -26,7 +26,8 @@ class App:
     def start_app(self):
         """Launch the application"""
 
-        st.title("Welcome to PhysioFit")
+        st.set_page_config(page_title=f"PhysioFit (v{physiofit.__version__})")
+        st.title(f"Welcome to PhysioFit (v{physiofit.__version__})")
         self.update_info = st.empty()
         self.check_uptodate()
         self.select_menu = st.selectbox(
