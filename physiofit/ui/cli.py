@@ -82,7 +82,7 @@ def parse_args():
     parser = argparse.ArgumentParser("Physiofit: Extracellular flux estimation software")
 
     # Parse data arguments (tsv + json)
-    parser.add_argument("-t", "--data", type=str, help="Path to data file in tsv format")
+    parser.add_argument("-t", "--data", type=str, help="Path to data file in tabulated format (txt or tsv)")
     parser.add_argument("-c", "--config", type=str, help="Path to config file in json format")
 
     # Parse basic parameters

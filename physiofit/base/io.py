@@ -67,7 +67,7 @@ class IoHandler:
 
         data_path = Path(path_to_data).resolve()
 
-        if data_path.suffix == ".tsv":
+        if data_path.suffix in [".txt", ".tsv"]:
             data = read_csv(str(data_path), sep="\t")
         elif data_path.suffix == ".csv":
             data = read_csv(str(data_path), sep=";")
@@ -75,7 +75,7 @@ class IoHandler:
             if not data_path.exists():
                 raise ValueError(f"{data_path} is not a valid file")
             else:
-                raise TypeError(f"{data_path} is not a valid format. Accepted formats are .csv or .tsv")
+                raise TypeError(f"{data_path} is not a valid format. Accepted formats are .csv, .txt or .tsv")
 
         IoHandler._verify_data(data)
         return data

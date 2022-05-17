@@ -1,4 +1,6 @@
-pandas
-matplotlib
-numpy
-scipy
+pandas >= 1.1.5
+numpy >= 1.21.6
+scipy >= 1.5.2
+streamlit>=1.8.0
+matplotlib >= 3.5.1
+openpyxl >= 3.0.9
