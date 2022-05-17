@@ -78,7 +78,7 @@ class App:
         if file_extension == "json":
             config = IoHandler.read_json_config(self.data_file)
             input_values.update(config)
-        elif file_extension != "tsv":
+        elif file_extension not in ["tsv", "txt"]:
             raise KeyError(
                 f"Wrong input file format. Accepted formats are tsv for data files or json for configuration "
                 f"files. Detected file: {self.data_file.name}")
@@ -94,7 +94,7 @@ class App:
         submitted = self._initialize_opt_menu_widgets(input_values, file_extension)
 
         if submitted:
-            if file_extension == "tsv":
+            if file_extension in ["tsv", "txt"]:
                 self.io_handler.data = data
                 self.io_handler.data = self.io_handler.data.sort_values("time", ignore_index=True)
                 self.io_handler.names = self.io_handler.data.columns[1:].to_list()
@@ -145,7 +145,7 @@ class App:
                 disabled=enable_mc
             )
 
-            if file_extension == "tsv":
+            if file_extension in ["tsv", "txt"]:
 
                 # Set up tkinter for directory chooser
                 root = tk.Tk()
