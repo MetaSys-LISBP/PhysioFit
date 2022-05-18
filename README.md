@@ -27,7 +27,7 @@ Detailed documentation can be found online at Read the Docs ([https://physiofit.
 * biologist-friendly.
 
 ## Quick-start
-PhysioFit requires Python 3.7 or higher and run on all plate-forms.
+PhysioFit requires Python 3.7 or higher and run on all platforms.
 Please check [the documentation](https://physiofit.readthedocs.io/en/latest/quickstart.html) for complete
 installation and usage instructions.
 
