@@ -4,7 +4,7 @@ Installation
 Installation
 -----------------
 
-PhysioFit requires Python 3.6 or higher and can run on most systems supporting Python3 (Windows, MacOS and Linux). If you do not have a Python environment
+PhysioFit requires Python 3.7 or higher and can run on most systems supporting Python3 (Windows, MacOS and Linux). If you do not have a Python environment
 configured on your computer, we recommend that you follow the instructions
 from `Anaconda <https://www.anaconda.com/download/>`_.
 
