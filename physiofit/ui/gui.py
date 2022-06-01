@@ -110,7 +110,7 @@ class App:
             self.io_handler.fitter.khi2_test()
             outputs = ["data", "plot", "pdf"]
             self.io_handler.local_out(*outputs)
-            st.write(f"Run is finished. Check {self.io_handler.res_path} for the results.")
+            st.success(f"Run is finished. Check {self.io_handler.res_path} for the results.")
 
     def _initialize_opt_menu_widgets(self, input_values, file_extension):
 
