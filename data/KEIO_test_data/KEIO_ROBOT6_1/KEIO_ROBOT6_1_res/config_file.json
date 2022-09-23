@@ -1,17 +1,17 @@
 {
     "conc_biom_bounds": [
-        0.001,
+        1e-06,
         50
     ],
     "conc_met_bounds": [
         1e-06,
         50
     ],
-    "debug_mode": false,
+    "debug_mode": true,
     "deg": {},
     "flux_biom_bounds": [
-        0.0001,
-        2
+        0.01,
+        50
     ],
     "flux_met_bounds": [
         -50,
@@ -23,8 +23,8 @@
     "t_lag": false,
     "vini": 0.2,
     "weight": {
-        "Ace": 0.5,
-        "Glc": 0.5,
-        "X": 0.2
+        "Ace": 0.2,
+        "Glc": 0.46,
+        "X": 0.02
     }
 }
