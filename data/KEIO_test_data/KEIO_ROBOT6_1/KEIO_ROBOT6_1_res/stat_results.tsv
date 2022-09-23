@@ -2,10 +2,10 @@
 Khi² test results
 ==================
 
-khi2_value              10.461021
+khi2_value              10.462184
 number_of_measurements  23.000000
 number_of_params         6.000000
 Degrees_of_freedom      17.000000
-p_val                    0.116826
+p_val                    0.116881
 
-At level of 95% confidence, the model fits the data good enough with respect to the provided measurement SD. Value: 0.1168262756046404
+At level of 95% confidence, the model fits the data good enough with respect to the provided measurement SD. Value: 0.11688057092259863
