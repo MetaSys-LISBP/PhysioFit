@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument("-i", "--vini", type=float,
                         help="Select an initial value for fluxes to estimate")
     parser.add_argument("-s", "--sd", type=str,
-                        help="Standard deviation on measurements. Give weights in "
+                        help="Standard deviation on measurements. Give sds in "
                              "dictionary format")
     parser.add_argument("-cm", "--conc_met_bounds", type=str,
                         help="Bounds on initial metabolite concentrations. "

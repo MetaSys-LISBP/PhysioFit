@@ -16,7 +16,7 @@ mod_logger = logging.getLogger("PhysioFit.base.io")
 
 DEFAULTS = {
             "vini": 0.2,
-            "weight": {},
+            "sd": {},
             "conc_met_bounds": (1e-06, 50),
             "flux_met_bounds": (-50, 50),
             "conc_biom_bounds": (1e-03, 10),
@@ -38,7 +38,7 @@ class IoHandler:
 
     allowed_keys = {
         "vini", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds",
-        "flux_met_bounds", "weight", "t_lag", "deg", "iterations", "mc",
+        "flux_met_bounds", "sd", "t_lag", "deg", "iterations", "mc",
         "debug_mode"
     }
 
@@ -141,7 +141,7 @@ class IoHandler:
         config["flux_biom_bounds"] = None
         config["conc_met_bounds"] = None
         config["flux_met_bounds"] = None
-        config["weight"] = None
+        config["sd"] = None
         config["deg"] = None
         config["t_lag"] = None
         config["debug_mode"] = False
@@ -455,7 +455,7 @@ class IoHandler:
         """
 
         self.fitter.initialize_vectors()
-        self.fitter.initialize_weight_matrix()
+        self.fitter.initialize_sd_matrix()
         self.fitter.initialize_bounds()
         self.fitter.initialize_equation()
 
