@@ -85,9 +85,9 @@ class App:
         else:
             data = pd.read_csv(self.data_file, sep="\t")
             try:
-                self.defaults["weight"].update({"X": 0.2})
+                self.defaults["sd"].update({"X": 0.2})
                 for col in data.columns[2:]:
-                    self.defaults["weight"].update({col: 0.5})
+                    self.defaults["sd"].update({col: 0.5})
             except Exception:
                 raise
 
@@ -191,10 +191,10 @@ class App:
                     key="vini",
                     help="Select an initial value of fluxes to estimate. Default: 0.2"
                 )
-                self.weight = st.text_input(
+                self.sd = st.text_input(
                     "Standard deviation on measurements",
-                    value=input_values["weight"],
-                    help="Standard deviation on the measurements. If empty, default is 0.02 for biomass and"
+                    value=input_values["sd"],
+                    help="Standard deviation on the measurements. If empty, default is 0.2 for biomass and"
                          " 0.5 for metabolites"
                 )
                 self.conc_met_bounds = st.text_input(
@@ -236,7 +236,7 @@ class App:
 
         kwargs = {
             "vini": float(self.vini),
-            "weight": literal_eval(self.weight),
+            "sd": literal_eval(self.sd),
             "conc_met_bounds": tuple(literal_eval(self.conc_met_bounds)),
             "flux_met_bounds": tuple(literal_eval(self.flux_met_bounds)),
             "conc_biom_bounds": tuple(literal_eval(self.conc_biom_bounds)),
@@ -253,7 +253,7 @@ class App:
 
         final_json = json.dumps({
             "vini": float(self.vini),
-            "weight": literal_eval(self.weight),
+            "sd": literal_eval(self.sd),
             "conc_met_bounds": literal_eval(self.conc_met_bounds),
             "flux_met_bounds": literal_eval(self.flux_met_bounds),
             "conc_biom_bounds": literal_eval(self.conc_biom_bounds),

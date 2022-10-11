@@ -31,7 +31,7 @@ class PhysioFitter:
         * **simulation of data points** from given initial parameters
         * **cost calculation** using the equation:
 
-            residuum = sum((sim - meas) / weight)²
+            residuum = sum((sim - meas) / sd)²
 
         * **optimization of the initial parameters** using `scipy.optimize.minimize ('Differential evolution', with polish with 'L-BFGS-B' method) <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb>`_
         * **sensitivity analysis, khi2 tests and plotting**
@@ -52,10 +52,10 @@ class PhysioFitter:
     :type conc_met_bounds: tuple of ints/floats (lower, upper)
     :param flux_met_bounds: lower and upper bounds for metabolite rate of change (qi)
     :type flux_met_bounds: tuple of ints/floats (lower, upper)
-    :param sd: weight matrix used for residuum calculations. Can be:
+    :param sd: sd matrix used for residuum calculations. Can be:
 
                 * a matrix with the same dimensions as the measurements matrix (but without the time column)
-                * a named vector containing weights for all the metabolites provided in the input file
+                * a named vector containing sds for all the metabolites provided in the input file
                 * 0  in which case the matrix is automatically constructed from default values
                 * a dictionary with the data column headers as keys and the associated value as a scalar or list
 
@@ -163,10 +163,10 @@ class PhysioFitter:
             raise TypeError(f"Number of monte carlo iterations must be an integer, and not of type "
                             f"{type(self.iterations)}")
 
-        allowed_weights = [int, float, list, np.ndarray]
-        if type(self.sd) not in allowed_weights:
-            raise TypeError(f"Weights is not in the right format ({type(self.sd)}. "
-                            f"Compatible formats are:\n{allowed_weights}")
+        allowed_sds = [int, float, list, np.ndarray]
+        if type(self.sd) not in allowed_sds:
+            raise TypeError(f"sds is not in the right format ({type(self.sd)}. "
+                            f"Compatible formats are:\n{allowed_sds}")
 
         if type(self.deg_vector) is not list:
             raise TypeError(f"Degradation constants have not been well initialized.\nConstants: {self.deg}")
@@ -174,8 +174,8 @@ class PhysioFitter:
         if type(self.t_lag) is not bool:
             raise TypeError(f"t_lag parameter must be a boolean (True or False)")
 
-    def _weight_dict_to_matrix(self):
-        """Convert weight dictionary to matrix/vector"""
+    def _sd_dict_to_matrix(self):
+        """Convert sd dictionary to matrix/vector"""
 
         # Perform checks
         for key in self.sd.keys():
@@ -183,53 +183,53 @@ class PhysioFitter:
                 raise KeyError(f"The key {key} is not part of the data headers")
         for name in self.name_vector:
             if name not in self.sd.keys():
-                raise KeyError(f"The key {name} is missing from the weights dict")
+                raise KeyError(f"The key {name} is missing from the sds dict")
 
-        # Get lengths of each weight entry
-        weight_lengths = [len(self.sd[key]) if type(self.sd[key]) not in [float, int] else 1
+        # Get lengths of each sd entry
+        sd_lengths = [len(self.sd[key]) if type(self.sd[key]) not in [float, int] else 1
                           for key in self.sd.keys()]
 
         # Make sure that lengths are the same
-        if not all(elem == weight_lengths[0] for elem in weight_lengths):
-            raise ValueError("All weight vectors must have the same length")
+        if not all(elem == sd_lengths[0] for elem in sd_lengths):
+            raise ValueError("All sd vectors must have the same length")
 
         # Build matrix/vector
-        if weight_lengths[0] == 1:
+        if sd_lengths[0] == 1:
             self.sd = [self.sd[name] for name in self.name_vector]
         else:
             columns = (self.sd[name] for name in self.name_vector)
             matrix = np.column_stack(columns)
             self.sd = matrix
 
-    def initialize_weight_matrix(self):
+    def initialize_sd_matrix(self):
         """
-        Initialize the weight matrix from different types of inputs: single value, vector or matrix.
+        Initialize the sd matrix from different types of inputs: single value, vector or matrix.
 
         :return: None
         """
 
         # This function can be optimized, if the input is a matrix we should detect it directly
-        self.logger.info("Initializing Weight matrix...\n")
+        self.logger.info("Initializing sd matrix...\n")
 
-        # If weight is None, we generate the default matrix
+        # If sd is None, we generate the default matrix
         if self.sd is None:
             try:
-                self.sd = {"X": 0.02}
+                self.sd = {"X": 0.2}
                 for col in self.data.columns[2:]:
                     self.sd.update({col: 0.5})
             except Exception:
                 raise
 
         if type(self.sd) is dict:
-            self._weight_dict_to_matrix()
-        # When weight is a single value, we build a weight matrix containing the value in all positions
+            self._sd_dict_to_matrix()
+        # When sd is a single value, we build a sd matrix containing the value in all positions
         if isinstance(self.sd, int) or isinstance(self.sd, float):
-            self._build_weight_matrix()
-            self.logger.debug(f"Weight matrix: {self.sd}\n")
+            self._build_sd_matrix()
+            self.logger.debug(f"SD matrix: {self.sd}\n")
             return
         if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd, list):
             raise TypeError(
-                f"Cannot coerce weights to array. Please check that a list or array is given as input."
+                f"Cannot coerce SD to array. Please check that a list or array is given as input."
                 f"\nCurrent input: \n{self.sd}")
         else:
             self.sd = np.array(self.sd)
@@ -237,23 +237,23 @@ class PhysioFitter:
             try:
                 self.sd = self.sd.astype(float)
             except ValueError:
-                raise ValueError(f"The weight vector/matrix contains values that are not numeric. \n"
-                                 f"Current weight vector/matrix: \n{self.sd}")
+                raise ValueError(f"The sd vector/matrix contains values that are not numeric. \n"
+                                 f"Current sd vector/matrix: \n{self.sd}")
             except Exception as e:
                 raise RuntimeError(f"Unknown error: {e}")
         else:
             # If the array is not the right shape, we assume it is a vector that needs to be tiled into a matrix
             if self.sd.shape != self.experimental_matrix.shape:
                 try:
-                    self._build_weight_matrix()
+                    self._build_sd_matrix()
                 except ValueError:
                     raise
                 except RuntimeError:
                     raise
             else:
-                self.logger.debug(f"Weight matrix: {self.sd}\n")
+                self.logger.debug(f"sd matrix: {self.sd}\n")
                 return
-        self.logger.info(f"Weight Matrix:\n{self.sd}\n")
+        self.logger.info(f"sd Matrix:\n{self.sd}\n")
 
     def initialize_equation(self):
 
@@ -294,41 +294,41 @@ class PhysioFitter:
         self.bounds = tuple(bounds)
         self.logger.info(f"Bounds: {self.bounds}\n")
 
-    def _build_weight_matrix(self):
+    def _build_sd_matrix(self):
         """
-        Build the weight matrix from different input types
+        Build the sd matrix from different input types
 
         :return: None
         """
 
-        # First condition: the weights are in a 1D array
+        # First condition: the sds are in a 1D array
         if isinstance(self.sd, np.ndarray):
-            # We first check that the weight vector is as long as the experimental matrix on the row axis
+            # We first check that the sd vector is as long as the experimental matrix on the row axis
             if self.sd.size != self.experimental_matrix[0].size:
-                raise ValueError("Weight vector not of right size")
+                raise ValueError("sd vector not of right size")
             else:
-                # We duplicate the vector column-wise to build a matrix of duplicated weight vectors
+                # We duplicate the vector column-wise to build a matrix of duplicated sd vectors
                 self.sd = np.tile(self.sd, (len(self.experimental_matrix), 1))
 
-        # Second condition: the weight is a scalar and must be broadcast to a matrix with same shape as the data
+        # Second condition: the sd is a scalar and must be broadcast to a matrix with same shape as the data
         elif isinstance(self.sd, int) or isinstance(self.sd, float):
             self.sd = np.full(self.experimental_matrix.shape, self.sd)
         else:
             raise RuntimeError("Unknown error")
 
-    def _get_default_weights(self):
+    def _get_default_sds(self):
         """
-        Build a default weight matrix. Default values:
+        Build a default sd matrix. Default values:
             * Biomass: 0.2
             * Metabolites: 0.5
         :return: None
         """
 
-        weights = [0.2]
+        sds = [0.2]
         for name in range(len(self.name_vector) - 1):
-            weights.append(0.5)
-        self.sd = np.array(weights)
-        self._build_weight_matrix()
+            sds.append(0.5)
+        self.sd = np.array(sds)
+        self._build_sd_matrix()
 
     def optimize(self):
         """Run optimization and build the simulated matrix from the optimized parameters"""
@@ -446,16 +446,16 @@ class PhysioFitter:
         return simulated_matrix
 
     @staticmethod
-    def _calculate_cost(params, func, exp_data_matrix, time_vector, deg, weight_matrix):
+    def _calculate_cost(params, func, exp_data_matrix, time_vector, deg, sd_matrix):
         """Calculate the cost (residue) using the square of simulated-experimental over the SDs"""
 
         simulated_matrix = func(params, exp_data_matrix, time_vector, deg)
-        cost_val = np.square((simulated_matrix - exp_data_matrix) / weight_matrix)
+        cost_val = np.square((simulated_matrix - exp_data_matrix) / sd_matrix)
         residuum = np.nansum(cost_val)
         return residuum
 
     @staticmethod
-    def _run_optimization(params, func, exp_data_matrix, time_vector, deg, weight_matrix, bounds, method):
+    def _run_optimization(params, func, exp_data_matrix, time_vector, deg, sd_matrix, bounds, method):
         """
         Run the optimization on input parameters using the cost function and Scipy minimize (L-BFGS-B method
         that is deterministic and uses the gradient method for optimizing)
@@ -464,12 +464,12 @@ class PhysioFitter:
         if method == "differential_evolution":
             optimize_results = differential_evolution(
                 PhysioFitter._calculate_cost, bounds=bounds,
-                args=(func, exp_data_matrix, time_vector, deg, weight_matrix),
+                args=(func, exp_data_matrix, time_vector, deg, sd_matrix),
                 polish=True, x0=params
             )
         elif method == "L-BFGS-B":
             optimize_results = minimize(PhysioFitter._calculate_cost, x0=params, args=(
-                func, exp_data_matrix, time_vector, deg, weight_matrix), method="L-BFGS-B", bounds=bounds,
+                func, exp_data_matrix, time_vector, deg, sd_matrix), method="L-BFGS-B", bounds=bounds,
                                         options={'maxcor': 30}
                                         )
         else:
@@ -607,7 +607,7 @@ class PhysioFitter:
 
     def _apply_noise(self):
         """
-        Apply noise to the simulated matrix obtained using optimized parameters. SDs are obtained from the weight
+        Apply noise to the simulated matrix obtained using optimized parameters. SDs are obtained from the sd
         matrix
         """
 
