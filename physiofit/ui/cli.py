@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument("-g", "--galaxy", action="store_true",
                         help="Is the CLI being used on the galaxy platform"
                         )
-    parser.add_argument("-v", "--debug_mode",action="store_true",
+    parser.add_argument("-v", "--debug_mode", action="store_true",
                         help="Activate the debug logs"
                         )
 
@@ -84,7 +84,6 @@ def parse_args():
         "-oc", "--output_config", type=str,
         help="Path to output the json config file"
     )
-
 
     return parser
 
