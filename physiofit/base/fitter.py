@@ -127,11 +127,15 @@ class PhysioFitter:
 
         # Handle the creation of a vector of degradation constants
         if self.deg:
-            if type(self.deg) is dict:
+            if isinstance(self.deg, dict):
                 for key in self.deg.keys():
                     if key not in metabolites:
-                        raise KeyError(f"The degradation constant for {key} is missing. If no degradation applies to this "
-                                       f"metabolite, please enter 0 in the corresponding dictionary entry")
+                        raise KeyError(
+                            f"The degradation constant for {key} is missing. "
+                            f"If no degradation applies to this metabolite, "
+                            f"please enter 0 in the corresponding dictionary "
+                            f"entry"
+                        )
             self.deg_vector = [self.deg[met] for met in metabolites]
         elif self.deg == {} or self.deg is None:
             self.deg_vector = [0 for _ in metabolites]
@@ -220,7 +224,7 @@ class PhysioFitter:
             except Exception:
                 raise
 
-        if type(self.sd) is dict:
+        if isinstance(self.sd, dict):
             self._sd_dict_to_matrix()
         # When sd is a single value, we build a sd matrix containing the value in all positions
         if isinstance(self.sd, int) or isinstance(self.sd, float):
@@ -303,14 +307,17 @@ class PhysioFitter:
 
         # First condition: the sds are in a 1D array
         if isinstance(self.sd, np.ndarray):
-            # We first check that the sd vector is as long as the experimental matrix on the row axis
+            # We first check that the sd vector is as long as the
+            # experimental matrix on the row axis
             if self.sd.size != self.experimental_matrix[0].size:
                 raise ValueError("sd vector not of right size")
             else:
-                # We duplicate the vector column-wise to build a matrix of duplicated sd vectors
+                # We duplicate the vector column-wise to build a matrix of
+                # duplicated sd vectors
                 self.sd = np.tile(self.sd, (len(self.experimental_matrix), 1))
 
-        # Second condition: the sd is a scalar and must be broadcast to a matrix with same shape as the data
+        # Second condition: the sd is a scalar and must be broadcast to a
+        # matrix with same shape as the data
         elif isinstance(self.sd, int) or isinstance(self.sd, float):
             self.sd = np.full(self.experimental_matrix.shape, self.sd)
         else:
@@ -331,23 +338,36 @@ class PhysioFitter:
         self._build_sd_matrix()
 
     def optimize(self):
-        """Run optimization and build the simulated matrix from the optimized parameters"""
+        """
+        Run optimization and build the simulated matrix
+        from the optimized parameters
+        """
 
         self.logger.info("\nRunning optimization...\n")
-        self.optimize_results = PhysioFitter._run_optimization(self.params, self.simulate, self.experimental_matrix,
-                                                               self.time_vector, self.deg_vector,
-                                                               self.sd, self.bounds, "differential_evolution")
+        self.optimize_results = PhysioFitter._run_optimization(
+            self.params, self.simulate, self.experimental_matrix,
+            self.time_vector, self.deg_vector,
+            self.sd, self.bounds, "differential_evolution"
+        )
         self.parameter_stats = {
             "optimal": self.optimize_results.x
         }
         self.logger.info(f"Optimization results: \n{self.optimize_results}\n")
         for i, param in zip(self.ids, self.optimize_results.x):
             self.logger.info(f"\n{i} = {param}\n")
-        self.simulated_matrix = self.simulate(self.optimize_results.x, self.experimental_matrix,
-                                              self.time_vector, self.deg_vector)
+        self.simulated_matrix = self.simulate(
+            self.optimize_results.x,
+            self.experimental_matrix,
+            self.time_vector,
+            self.deg_vector
+        )
         nan_sim_mat = np.copy(self.simulated_matrix)
         nan_sim_mat[np.isnan(self.experimental_matrix)] = np.nan
-        self.simulated_data = DataFrame(data=nan_sim_mat, index=self.time_vector, columns=self.name_vector)
+        self.simulated_data = DataFrame(
+            data=nan_sim_mat,
+            index=self.time_vector,
+            columns=self.name_vector
+        )
         self.simulated_data.index.name = "Time"
         self.logger.info(f"Final Simulated Data: \n{self.simulated_data}\n")
 

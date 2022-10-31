@@ -18,7 +18,7 @@ def get_last_version():
         latest_version = response.json()['info']['version']
         with open(str(Path(pf_path, "last_version.txt")), "w") as f:
             f.write(latest_version)
-    except:
+    except Exception:
         pass
 
 def main():
