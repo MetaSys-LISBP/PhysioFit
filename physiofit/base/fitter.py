@@ -10,6 +10,7 @@ from scipy.optimize import minimize, differential_evolution
 from scipy.stats import chi2
 
 from physiofit.logger import initialize_fitter_logger
+from physiofit.models.base_model import Model
 
 mod_logger = logging.getLogger("PhysioFit.base.fitter")
 
@@ -38,20 +39,10 @@ class PhysioFitter:
 
     :param data: DataFrame containing data and passed by IOstream object
     :type data: class: pandas.DataFrame
-    :param vini: initial value for fluxes and concentrations (default=1)
-    :type vini: int or float
     :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
     :type mc: Boolean
     :param iterations: number of iterations for Monte-Carlo simulation (default=50)
     :type iterations: int
-    :param conc_biom_bounds: lower and upper bounds for biomass concentration (X0)
-    :type conc_biom_bounds: tuple of ints/floats (lower, upper)
-    :param flux_biom_bounds: lower and upper bounds for biomass rate of change (mu)
-    :type flux_biom_bounds: tuple of ints/floats (lower, upper)
-    :param conc_met_bounds: lower and upper bounds for metabolite concentration (mi0)
-    :type conc_met_bounds: tuple of ints/floats (lower, upper)
-    :param flux_met_bounds: lower and upper bounds for metabolite rate of change (qi)
-    :type flux_met_bounds: tuple of ints/floats (lower, upper)
     :param sd: sd matrix used for residuum calculations. Can be:
 
                 * a matrix with the same dimensions as the measurements matrix (but without the time column)
@@ -67,26 +58,21 @@ class PhysioFitter:
     """
 
     def __init__(
-            self, data, vini=0.2, mc=True, iterations=100,
-            conc_biom_bounds=(1e-3, 10), flux_biom_bounds=(1e-3, 3),
-            conc_met_bounds=(1e-6, 50), flux_met_bounds=(-50, 50),
-            sd=None, deg=None, t_lag=False, debug_mode=False
+            self, data, mc=True, iterations=100,
+            sd=None, debug_mode=False
     ):
 
         self.data = data
-        self.vini = vini
         self.mc = mc
         self.iterations = iterations
-        self.conc_biom_bounds = conc_biom_bounds
-        self.flux_biom_bounds = flux_biom_bounds
-        self.conc_met_bounds = conc_met_bounds
-        self.flux_met_bounds = flux_met_bounds
         self.sd = sd
-        self.deg = deg
-        self.t_lag = t_lag
         self.debug_mode = debug_mode
         if not hasattr(self, "logger"):
             self.logger = initialize_fitter_logger(self.debug_mode)
+
+        # Initialize model
+        self.model = Model(self.data)
+        self.model.get_params()
 
         self.simulated_matrix = None
         self.simulated_data = None
@@ -105,96 +91,53 @@ class PhysioFitter:
         self.opt_conf_ints = None
         self.khi2_res = None
 
-    def initialize_vectors(self):
-        """
-        Initialize the vectors needed for flux calculations from the input parameters
-
-        :return: None
-        """
-
-        self.time_vector = self.data.time.to_numpy()
-        self.name_vector = self.data.drop("time", axis=1).columns.to_list()
-        self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
-        metabolites = self.name_vector[1:]
-        mu = self.vini
-        x_0 = self.vini
-
-        # Check if t_lag should be added to the list of parameters to estimate
-        if self.t_lag:
-            t_lag = 0.1 * self.time_vector.max()
-            self.params = [x_0, mu, t_lag]
-            self.ids = ["X_0", "mu", "t_lag"]
-        else:
-            self.params = [x_0, mu]
-            self.ids = ["X_0", "mu"]
-
-        # Handle the creation of a vector of degradation constants
-        if self.deg:
-            if isinstance(self.deg, dict):
-                for key in self.deg.keys():
-                    if key not in metabolites:
-                        raise KeyError(
-                            f"The degradation constant for {key} is missing. "
-                            f"If no degradation applies to this metabolite, "
-                            f"please enter 0 in the corresponding dictionary "
-                            f"entry"
-                        )
-            self.deg_vector = [self.deg[met] for met in metabolites]
-        elif self.deg == {} or self.deg is None:
-            self.deg_vector = [0 for _ in metabolites]
-
-        # Build a list containing each metabolite's q and m0
-        for met in metabolites:
-            self.params.append(self.vini)
-            self.params.append(self.vini)
-            self.ids.append(f"{met}_q")
-            self.ids.append(f"{met}_M0")
-
-    def verify_attrs(self):
-        """Check that attributes are valid"""
-
-        allowed_vinis = [int, float]
-        if type(self.vini) not in allowed_vinis:
-            raise TypeError(f"Initial value for fluxes and concentrations is not a number. Detected type:  "
-                            f"{type(self.vini)}\nValid types: {allowed_vinis}")
-
-        for bound in [self.conc_biom_bounds, self.flux_biom_bounds, self.conc_met_bounds, self.flux_met_bounds]:
-            if type(bound) is not tuple:
-                raise TypeError(f"Error reading bounds. Bounds should be ('int/float', 'int/float') tuples.\n"
-                                f"Current bounds: {bound}")
-            if self.vini < bound[0] or self.vini > bound[1]:
-                raise RuntimeError(f"Initial value for fluxes and concentrations ({self.vini}) cannot be set outside "
-                                   f"the given bounds: {bound}")
-
-        if type(self.iterations) is not int:
-            raise TypeError(f"Number of monte carlo iterations must be an integer, and not of type "
-                            f"{type(self.iterations)}")
-
-        allowed_sds = [int, float, list, np.ndarray]
-        if type(self.sd) not in allowed_sds:
-            raise TypeError(f"sds is not in the right format ({type(self.sd)}. "
-                            f"Compatible formats are:\n{allowed_sds}")
-
-        if type(self.deg_vector) is not list:
-            raise TypeError(f"Degradation constants have not been well initialized.\nConstants: {self.deg}")
-
-        if type(self.t_lag) is not bool:
-            raise TypeError(f"t_lag parameter must be a boolean (True or False)")
+    # def verify_attrs(self):
+    #     """Check that attributes are valid"""
+    #
+    #     allowed_vinis = [int, float]
+    #     if type(self.vini) not in allowed_vinis:
+    #         raise TypeError(f"Initial value for fluxes and concentrations is not a number. Detected type:  "
+    #                         f"{type(self.vini)}\nValid types: {allowed_vinis}")
+    #
+    #     for bound in [self.conc_biom_bounds, self.flux_biom_bounds, self.conc_met_bounds, self.flux_met_bounds]:
+    #         if type(bound) is not tuple:
+    #             raise TypeError(f"Error reading bounds. Bounds should be ('int/float', 'int/float') tuples.\n"
+    #                             f"Current bounds: {bound}")
+    #         if self.vini < bound[0] or self.vini > bound[1]:
+    #             raise RuntimeError(f"Initial value for fluxes and concentrations ({self.vini}) cannot be set outside "
+    #                                f"the given bounds: {bound}")
+    #
+    #     if type(self.iterations) is not int:
+    #         raise TypeError(f"Number of monte carlo iterations must be an integer, and not of type "
+    #                         f"{type(self.iterations)}")
+    #
+    #     allowed_sds = [int, float, list, np.ndarray]
+    #     if type(self.sd) not in allowed_sds:
+    #         raise TypeError(f"sds is not in the right format ({type(self.sd)}. "
+    #                         f"Compatible formats are:\n{allowed_sds}")
+    #
+    #     if type(self.deg_vector) is not list:
+    #         raise TypeError(f"Degradation constants have not been well initialized.\nConstants: {self.deg}")
+    #
+    #     if type(self.t_lag) is not bool:
+    #         raise TypeError(f"t_lag parameter must be a boolean (True or False)")
 
     def _sd_dict_to_matrix(self):
         """Convert sd dictionary to matrix/vector"""
 
         # Perform checks
         for key in self.sd.keys():
-            if key not in self.name_vector:
+            if key not in self.model.name_vector:
                 raise KeyError(f"The key {key} is not part of the data headers")
-        for name in self.name_vector:
+        for name in self.model.name_vector:
             if name not in self.sd.keys():
                 raise KeyError(f"The key {name} is missing from the sds dict")
 
         # Get lengths of each sd entry
-        sd_lengths = [len(self.sd[key]) if type(self.sd[key]) not in [float, int] else 1
-                          for key in self.sd.keys()]
+        sd_lengths = [
+            len(self.sd[key]) if type(self.sd[key]) not in [float, int] else 1
+            for key in self.sd.keys()
+        ]
 
         # Make sure that lengths are the same
         if not all(elem == sd_lengths[0] for elem in sd_lengths):
@@ -202,20 +145,22 @@ class PhysioFitter:
 
         # Build matrix/vector
         if sd_lengths[0] == 1:
-            self.sd = [self.sd[name] for name in self.name_vector]
+            self.sd = [self.sd[name] for name in self.model.name_vector]
         else:
-            columns = (self.sd[name] for name in self.name_vector)
+            columns = (self.sd[name] for name in self.model.name_vector)
             matrix = np.column_stack(columns)
             self.sd = matrix
 
     def initialize_sd_matrix(self):
         """
-        Initialize the sd matrix from different types of inputs: single value, vector or matrix.
+        Initialize the sd matrix from different types of inputs: single value,
+        vector or matrix.
 
         :return: None
         """
 
-        # This function can be optimized, if the input is a matrix we should detect it directly
+        # This function can be optimized, if the input is a matrix we should
+        # detect it directly
         self.logger.info("Initializing sd matrix...\n")
 
         # If sd is None, we generate the default matrix
@@ -229,27 +174,32 @@ class PhysioFitter:
 
         if isinstance(self.sd, dict):
             self._sd_dict_to_matrix()
-        # When sd is a single value, we build a sd matrix containing the value in all positions
+        # When sd is a single value, we build a sd matrix containing the value
+        # in all positions
         if isinstance(self.sd, int) or isinstance(self.sd, float):
             self._build_sd_matrix()
             self.logger.debug(f"SD matrix: {self.sd}\n")
             return
         if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd, list):
             raise TypeError(
-                f"Cannot coerce SD to array. Please check that a list or array is given as input."
-                f"\nCurrent input: \n{self.sd}")
+                f"Cannot coerce SD to array. Please check that a list or array "
+                f"is given as input.\nCurrent input: \n{self.sd}"
+            )
         else:
             self.sd = np.array(self.sd)
         if not np.issubdtype(self.sd.dtype, np.number):
             try:
                 self.sd = self.sd.astype(float)
             except ValueError:
-                raise ValueError(f"The sd vector/matrix contains values that are not numeric. \n"
-                                 f"Current sd vector/matrix: \n{self.sd}")
+                raise ValueError(
+                    f"The sd vector/matrix contains values that are not "
+                    f"numeric. \nCurrent sd vector/matrix: \n{self.sd}"
+                )
             except Exception as e:
                 raise RuntimeError(f"Unknown error: {e}")
         else:
-            # If the array is not the right shape, we assume it is a vector that needs to be tiled into a matrix
+            # If the array is not the right shape, we assume it is a vector
+            # that needs to be tiled into a matrix
             if self.sd.shape != self.experimental_matrix.shape:
                 try:
                     self._build_sd_matrix()
@@ -261,45 +211,6 @@ class PhysioFitter:
                 self.logger.debug(f"sd matrix: {self.sd}\n")
                 return
         self.logger.info(f"sd Matrix:\n{self.sd}\n")
-
-    def initialize_equation(self):
-
-        if self.t_lag and self.deg:
-            self.logger.debug("_total_sim function used for simulation\n")
-            self.simulate = self._total_sim
-        if self.t_lag and not self.deg:
-            self.logger.debug("_lag_sim function used for simulation\n")
-            self.simulate = self._lag_sim
-        if not self.t_lag:
-            self.logger.debug("_simple_sim function used for simulation\n")
-            self.simulate = self._simple_sim
-
-    def initialize_bounds(self):
-        """Initialize the bounds for each parameter"""
-
-        self.logger.info("Initializing bounds...\n")
-        # We set the bounds for x0 and mu
-        bounds = [
-            self.conc_biom_bounds,
-            self.flux_biom_bounds
-        ]
-        # If lag phase time should be estimated, add default bounds
-        if self.t_lag:
-            bounds.append(
-                (0, 0.5 * self.time_vector.max())
-            )
-        # We get the number of times that we must add the m0 and q0 bounds (once per metabolite)
-        ids_range = int((len(self.ids) - 2) / 2)  # We force int so that Python does not think it could be float
-        for _ in range(ids_range):
-            bounds.append(
-                self.flux_met_bounds  # q_0
-            )
-            bounds.append(
-                self.conc_met_bounds  # M_0
-            )
-
-        self.bounds = tuple(bounds)
-        self.logger.info(f"Bounds: {self.bounds}\n")
 
     def _build_sd_matrix(self):
         """
@@ -340,6 +251,7 @@ class PhysioFitter:
         self.sd = np.array(sds)
         self._build_sd_matrix()
 
+    # TODO: add in model system
     def optimize(self):
         """
         Run optimization and build the simulated matrix
@@ -390,8 +302,14 @@ class PhysioFitter:
 
     @staticmethod
     def _run_optimization(
-            params, func, exp_data_matrix, time_vector, deg, sd_matrix, bounds,
-            method
+            params: list,
+            func: Model,
+            exp_data_matrix: np.ndarray,
+            time_vector: np.ndarray,
+            deg,
+            sd_matrix: np.ndarray,
+            bounds: dict,
+            method: str
     ):
         """
         Run the optimization on input parameters using the cost function and
