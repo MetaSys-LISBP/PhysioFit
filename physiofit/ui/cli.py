@@ -127,7 +127,7 @@ class Cli:
 
         # Transform the strings into the right types
         for arg in ["deg", "conc_met_bounds", "flux_met_bounds",
-                    "conc_biom_bounds", "flux_biom_bounds"]:
+                    "conc_biom_bounds", "flux_biom_bounds", "sd"]:
             if arg in fitter_args.keys():
                 fitter_args[arg] = literal_eval(fitter_args.pop(arg))
 

@@ -203,16 +203,18 @@ class PhysioFitter:
 
     def initialize_sd_matrix(self):
         """
-        Initialize the sd matrix from different types of inputs: single value, vector or matrix.
+        Initialize the sd matrix from different types of inputs: dict,
+        vector or matrix.
 
         :return: None
         """
 
-        # This function can be optimized, if the input is a matrix we should detect it directly
+        # This function can be optimized, if the input is a matrix we should
+        # detect it directly
         self.logger.info("Initializing sd matrix...\n")
 
         # If sd is None, we generate the default matrix
-        if self.sd is None:
+        if self.sd is None or self.sd == {}:
             try:
                 self.sd = {"X": 0.2}
                 for col in self.data.columns[2:]:
@@ -222,7 +224,8 @@ class PhysioFitter:
 
         if type(self.sd) is dict:
             self._sd_dict_to_matrix()
-        # When sd is a single value, we build a sd matrix containing the value in all positions
+        # When sd is a single value, we build a sd matrix containing the value
+        # in all positions
         if isinstance(self.sd, int) or isinstance(self.sd, float):
             self._build_sd_matrix()
             self.logger.debug(f"SD matrix: {self.sd}\n")
@@ -242,7 +245,8 @@ class PhysioFitter:
             except Exception as e:
                 raise RuntimeError(f"Unknown error: {e}")
         else:
-            # If the array is not the right shape, we assume it is a vector that needs to be tiled into a matrix
+            # If the array is not the right shape, we assume it is a vector
+            # that needs to be tiled into a matrix
             if self.sd.shape != self.experimental_matrix.shape:
                 try:
                     self._build_sd_matrix()
