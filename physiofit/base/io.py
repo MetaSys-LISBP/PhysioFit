@@ -3,26 +3,22 @@
 import json
 import logging
 from pathlib import Path
+import os
+import importlib
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame, read_csv
 
+import physiofit
 from physiofit.base.fitter import PhysioFitter
 
 mod_logger = logging.getLogger("PhysioFit.base.io")
 
 
 DEFAULTS = {
-            "vini": 0.2,
             "sd": {},
-            "conc_met_bounds": (1e-06, 50),
-            "flux_met_bounds": (-50, 50),
-            "conc_biom_bounds": (1e-03, 10),
-            "flux_biom_bounds": (1e-3, 3),
-            "t_lag": 0,
-            "deg": {},
             "iterations": 100
         }
 
@@ -42,11 +38,13 @@ class IoHandler:
         "debug_mode"
     }
 
-    def __init__(self, source='local'):
+    def __init__(self, source='local', model=None):
 
         self.input_source = source
+        self.model = model
         self._output_type = []
         self._figures = []
+        self.models = []
         self.fitter = None
         self.output = None
         self.data = None
@@ -116,6 +114,23 @@ class IoHandler:
                     f"Column {col} has values that are not of numeric type"
                 )
 
+    def get_models(self):
+        """
+        Read modules containing the different models and add them to the
+        self.models
+
+        :return: list containing the different model objects
+        """
+
+        model_dir = Path(physiofit.__file__).parent / "models"
+        for file in os.listdir(str(model_dir)):
+            if "model_" in file:
+                module = importlib.import_module(
+                    f"physiofit.models.{file[:-3]}"
+                )
+                model_class = getattr(module, "ChildModel")
+                self.models.append(model_class(self.data))
+
     @staticmethod
     def generate_config_file(destination_path: str):
         """
@@ -154,7 +169,11 @@ class IoHandler:
         with open(str(dest_path), "w") as conf:
             json.dump(config, conf, indent=4, sort_keys=False)
 
-    def local_in(self, data_path: str | Path, **kwargs: dict):
+    def local_in(
+            self,
+            data_path: str | Path,
+            model: physiofit.models.base_model.Model,
+            **kwargs: dict):
         """
         Function for reading data and initializing the fitter object in local
         context

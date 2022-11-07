@@ -21,6 +21,11 @@ class Model(ABC):
         self.name_vector = self.data.drop("time", axis=1).columns.to_list()
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
         self.metabolites = self.name_vector[1:]
+        self.model_name = None
+        self.params_to_estimate = None
+        self.fixed_parameters = None
+        self.bounds = None
+        self.default_init_values = None
 
     @abstractmethod
     def get_params(self):

@@ -39,6 +39,8 @@ class PhysioFitter:
 
     :param data: DataFrame containing data and passed by IOstream object
     :type data: class: pandas.DataFrame
+    :param model: Model to initialize parameters and optimize
+    :type model: physiofit.models.base_model.Model
     :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
     :type mc: Boolean
     :param iterations: number of iterations for Monte-Carlo simulation (default=50)
@@ -51,18 +53,20 @@ class PhysioFitter:
                 * a dictionary with the data column headers as keys and the associated value as a scalar or list
 
     :type sd: int, float, list, dict or ndarray
-    :param deg: dictionary of degradation constants for each metabolite
-    :type deg: dict
-    :param t_lag: Should lag phase length be estimated
-    :type t_lag: bool
     """
 
     def __init__(
-            self, data, mc=True, iterations=100,
-            sd=None, debug_mode=False
+            self,
+            data,
+            model,
+            mc=True,
+            iterations=100,
+            sd=None,
+            debug_mode=False
     ):
 
         self.data = data
+        self.model = model(self.data)
         self.mc = mc
         self.iterations = iterations
         self.sd = sd
@@ -71,7 +75,6 @@ class PhysioFitter:
             self.logger = initialize_fitter_logger(self.debug_mode)
 
         # Initialize model
-        self.model = Model(self.data)
         self.model.get_params()
 
         self.simulated_matrix = None
@@ -259,10 +262,14 @@ class PhysioFitter:
         """
 
         self.logger.info("\nRunning optimization...\n")
-        self.optimize_results = PhysioFitter._run_optimization(
-            self.params, self.simulate, self.experimental_matrix,
-            self.time_vector, self.deg_vector,
-            self.sd, self.bounds, "differential_evolution"
+        self.optimize_results = self._run_optimization(
+            params = self.model.parameters_to_estimate,
+            func = self.model.simulate,
+            exp_data_matrix = self.data,
+            non_opt_params = self.model.fixed_parameters,
+            sd_matrix = self.sd,
+            bounds = self.model.bounds,
+            method = "differential_evolution"
         )
         self.parameter_stats = {
             "optimal": self.optimize_results.x
@@ -288,14 +295,14 @@ class PhysioFitter:
 
     @staticmethod
     def _calculate_cost(
-            params, func, exp_data_matrix, time_vector, deg, sd_matrix
+            params, func, exp_data_matrix, time_vector, non_opt_params, sd_matrix
     ):
         """
         Calculate the cost (residue) using the square of
         simulated-experimental over the SDs
         """
 
-        simulated_matrix = func(params, exp_data_matrix, time_vector, deg)
+        simulated_matrix = func(params, exp_data_matrix, time_vector, non_opt_params)
         cost_val = np.square((simulated_matrix - exp_data_matrix) / sd_matrix)
         residuum = np.nansum(cost_val)
         return residuum
@@ -306,7 +313,7 @@ class PhysioFitter:
             func: Model,
             exp_data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            deg,
+            non_opt_params,
             sd_matrix: np.ndarray,
             bounds: dict,
             method: str
@@ -320,13 +327,13 @@ class PhysioFitter:
         if method == "differential_evolution":
             optimize_results = differential_evolution(
                 PhysioFitter._calculate_cost, bounds=bounds,
-                args=(func, exp_data_matrix, time_vector, deg, sd_matrix),
+                args=(func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
                 polish=True, x0=params
             )
         elif method == "L-BFGS-B":
             optimize_results = minimize(
                 PhysioFitter._calculate_cost, x0=params,
-                args=(func, exp_data_matrix, time_vector, deg, sd_matrix),
+                args=(func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
                 method="L-BFGS-B", bounds=bounds, options={'maxcor': 30}
             )
         else:

@@ -7,13 +7,15 @@ import numpy as np
 from physiofit.models.base_model import Model
 
 
-class Simple(Model):
+class ChildModel(Model):
 
     def __init__(self, data):
 
         super().__init__(data)
-        self.method_name = "Simple Simulation"
+        self.model_name = "General model"
         self.vini = 1
+        self.parameters_to_estimate = None
+        self.initial_values = None
 
     def get_params(self):
 

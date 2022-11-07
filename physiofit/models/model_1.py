@@ -3,22 +3,28 @@ Module containing the methods used by PhysioFit.
 """
 
 import numpy as np
+import pandas as pd
 
 from physiofit.models.base_model import Model
 
 
-class DegAndLag(Model):
+class ChildModel(Model):
 
     def __init__(self, data):
 
         super().__init__(data)
-        self.method_name = "Simple Simulation"
+        self.model_name = "General Model including lag phase estimation and " \
+                          "degradation of metabolites "
         self.vini = 1
+        self.parameters_to_estimate = None
+        self.initial_values = None
 
     def get_params(self):
 
         self.parameters_to_estimate = ["X_0", "mu", "t_lag"]
-        self.fixed_parameters = {"deg": {}}
+        self.fixed_parameters = {"Degradation": {
+            met: 0 for met in self.metabolites
+        }}
         self.bounds = {
             "X_0": (1e-3, 10),
             "mu": (1e-3, 3),
@@ -72,10 +78,20 @@ class DegAndLag(Model):
                 mu * (time_vector - t_lag)
             ) - np.exp(-k * (time_vector - t_lag))) + (m_0 * np.exp(
                 -k * time_vector)
-            )
+                                                       )
             simulated_matrix[:, i] = np.concatenate(
                 (m_t_lag, mult_by_time),
                 axis=None
             )
 
         return simulated_matrix
+
+
+if __name__ == "__main__":
+    model = ChildModel(
+        pd.read_csv(
+            r"C:\Users\legregam\Documents\Projets\PhysioFit\data"
+            r"\KEIO_test_data\KEIO_ROBOT6_1\KEIO_ROBOT6_1.tsv",
+            sep='\t')
+    )
+    print(type(model))
