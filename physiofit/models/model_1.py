@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from physiofit.models.base_model import Model
+from ..base.io import Bounds
 
 
 class ChildModel(Model):
@@ -24,19 +25,20 @@ class ChildModel(Model):
         self.parameters_to_estimate = ["X_0", "mu", "t_lag"]
         self.fixed_parameters = {"Degradation": {
             met: 0 for met in self.metabolites
-        }}
+            }
+        }
         self.bounds = {
             "X_0": (1e-3, 10),
             "mu": (1e-3, 3),
             "t_lag": (0, 0.5 * self.time_vector.max()),
         }
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.append(f"{metabolite}_M0")
             self.parameters_to_estimate.append(f"{metabolite}_q")
+            self.parameters_to_estimate.append(f"{metabolite}_M0")
             self.bounds.update(
                 {
-                    f"{metabolite}_M0": (1e-6, 50),
-                    f"{metabolite}_q": (-50, 50)
+                    f"{metabolite}_q": (-50, 50),
+                    f"{metabolite}_M0": (1e-6, 50)
                 }
             )
         self.initial_values = {
@@ -58,6 +60,12 @@ class ChildModel(Model):
         mu = params_opti[1]
         t_lag = params_opti[2]
 
+        # If degradation constants are in dict, broadcast to list
+        if isinstance(params_non_opti, dict):
+            params_non_opti = [
+                item[0] for item in params_non_opti.items()
+            ]
+
         # We get indices in time vector where time < t_lag
         idx = np.nonzero(time_vector < t_lag)
 
@@ -72,7 +80,7 @@ class ChildModel(Model):
         for i in range(1, int(len(params_opti) / 2)):
             q = params_opti[i * 2 + 1]
             m_0 = params_opti[i * 2 + 2]
-            k = params_non_opti[idx]
+            k = params_non_opti[i-1]
             m_t_lag = np.full((len(idx) - 1,), m_0)
             mult_by_time = q * (x_0 / (mu + k)) * (np.exp(
                 mu * (time_vector - t_lag)

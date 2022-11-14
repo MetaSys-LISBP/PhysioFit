@@ -26,12 +26,12 @@ class ChildModel(Model):
             "t_lag": (0, 0.5 * self.time_vector.max()),
         }
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.append(f"{metabolite}_M0")
             self.parameters_to_estimate.append(f"{metabolite}_q")
+            self.parameters_to_estimate.append(f"{metabolite}_M0")
             self.bounds.update(
                 {
-                    f"{metabolite}_M0": (1e-6, 50),
-                    f"{metabolite}_q": (-50, 50)
+                    f"{metabolite}_q": (-50, 50),
+                    f"{metabolite}_M0": (1e-6, 50)
                 }
             )
         self.initial_values = {

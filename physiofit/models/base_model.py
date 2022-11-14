@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import numpy as np
 
+
 # Initialization: nom des métabolites en entrée
 
 # Get les parametres en fonction du modèle: retourne les noms des paramètres
@@ -22,11 +23,23 @@ class Model(ABC):
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
         self.metabolites = self.name_vector[1:]
         self.model_name = None
-        self.params_to_estimate = None
+        self.parameters_to_estimate = None
         self.fixed_parameters = None
         self.bounds = None
-        self.default_init_values = None
+        self.initial_values = None
 
+    def __repr__(self):
+        return f"Selected model: {self.model_name}\n" \
+               f"Model data: \n{self.data}\n" \
+               f"Experimental matrix: \n{self.experimental_matrix}\n" \
+               f"Time vector: {self.time_vector}\n" \
+               f"Name vector: {self.name_vector}\n" \
+               f"Metabolites: {self.metabolites}\n" \
+               f"Parameters to estimate: {self.parameters_to_estimate}\n" \
+               f"Fixed parameters: {self.fixed_parameters}\n" \
+               f"Bounds: {self.bounds}\n" \
+               f"Initial values: {self.initial_values}\n" \
+ \
     @abstractmethod
     def get_params(self):
         """
@@ -49,3 +62,38 @@ class Model(ABC):
     ):
         pass
 
+
+class Bounds:
+
+    __slots__ = "limits"
+    def __init__(self, **kwargs):
+
+        for key, value in kwargs.values():
+            if not isinstance(value, tuple):
+                raise TypeError(
+                    "All bounds must be tuples"
+                )
+            for x in value:
+                if not isinstance(x, int) or not isinstance(x, float):
+                    raise TypeError(
+                        "Bounds must be numbers"
+                    )
+            if value[0] >= value[1]:
+                raise ValueError(
+                    "Lower bound cannot be higher than upper bound. "
+                )
+            if not isinstance(key, str):
+                raise TypeError(
+                    "Name for bounds must be strings"
+                )
+        self.limits = kwargs
+
+    def __repr__(self):
+        for key, bound in self.limits.items():
+            print(f"{key}: {bound}")
+
+    def __getitem__(self, item):
+        return self.limits[item]
+
+    def __setitem__(self, key, value):
+        self.limits[key] = value

@@ -1,10 +1,10 @@
 """Module to handle inputs and outputs for PhysioFit"""
 
+import importlib
 import json
 import logging
-from pathlib import Path
 import os
-import importlib
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,7 +22,6 @@ DEFAULTS = {
             "iterations": 100
         }
 
-
 class IoHandler:
     """
     Input/Output class that handles the former and initializes the
@@ -33,9 +32,7 @@ class IoHandler:
     """
 
     allowed_keys = {
-        "vini", "conc_biom_bounds", "flux_biom_bounds", "conc_met_bounds",
-        "flux_met_bounds", "sd", "t_lag", "deg", "iterations", "mc",
-        "debug_mode"
+        "sd", "model", "iterations", "mc", "debug_mode"
     }
 
     def __init__(self, source='local', model=None):
@@ -172,8 +169,9 @@ class IoHandler:
     def local_in(
             self,
             data_path: str | Path,
-            model: physiofit.models.base_model.Model,
-            **kwargs: dict):
+            model,
+            **kwargs: dict
+    ):
         """
         Function for reading data and initializing the fitter object in local
         context
@@ -181,8 +179,11 @@ class IoHandler:
         :param data_path: path to data
         :param kwargs: supplementary keyword arguments are passed on to the
                        PhysioFitter object
+        :param model: model containing the parameters to estimate, fixed
+                      parameters and simulation function
         :return: None
         """
+        # TODO: add model system into function
 
         # Store the data path
         data_path = Path(data_path).resolve()
@@ -397,7 +398,10 @@ class IoHandler:
         wrong_keys = []
 
         # Initialize fitter
-        self.fitter = PhysioFitter(self.data)
+        self.fitter = PhysioFitter(
+            data = self.data,
+            model = kwargs["model"]
+        )
 
         # Initialize fitter logger
         if self.res_path is not None:
@@ -458,7 +462,6 @@ class IoHandler:
                     wrong_keys.append(key)
 
         self._initialize_fitter_vars()
-        self.fitter.verify_attrs()
         self.fitter.logger.debug(
             f"Fitter attribute dictionary:\n{self.fitter.__dict__}"
         )
@@ -473,10 +476,8 @@ class IoHandler:
         :return: None
         """
 
-        self.fitter.initialize_vectors()
         self.fitter.initialize_sd_matrix()
-        self.fitter.initialize_bounds()
-        self.fitter.initialize_equation()
+        self.fitter.verify_attrs()
 
     def output_pdf(self, export_path: str | Path = None):
         """
@@ -715,3 +716,44 @@ class IoHandler:
         x = self.simulated_data.index
         ax.fill_between(x, y1, y2, alpha=.3, linewidth=0, color="red")
         return ax
+
+
+if __name__ == "__main__":
+    import pandas as pd
+
+    io_handler = IoHandler()
+    data_file = pd.read_csv(
+        r"C:\Users\legregam\Documents\Projets\PhysioFit\data\KEIO_test_data\KEIO_ROBOT6_1\KEIO_ROBOT6_1.tsv",
+        sep = "\t"
+    )
+    io_handler.data = data_file
+    io_handler.data = io_handler.data.sort_values(
+        "time",
+        ignore_index=True
+    )
+    io_handler.get_models()
+    try:
+        defaults = DEFAULTS
+        defaults["sd"].update({"X": 0.2})
+        for col in io_handler.data.columns[2:]:
+            defaults["sd"].update({col: 0.5})
+    except Exception:
+        raise
+    io_handler.names = io_handler.data.columns[1:].to_list()
+    model = io_handler.models[-1]
+    model.get_params()
+    print(model)
+    for key in model.bounds.keys():
+        model.bounds[key] = str(model.bounds[key])
+    print(model.bounds)
+    kwargs = {
+        "sd": defaults["sd"],
+        "model": model,
+        "mc": True,
+        "iterations": 100,
+        "debug_mode": True,
+    }
+    io_handler.res_path = Path(r"C:\Users\legregam\Documents\Projets\PhysioFit\data\KEIO_test_data\KEIO_ROBOT6_1")
+    io_handler.initialize_fitter(kwargs)
+    io_handler.fitter.optimize()
+

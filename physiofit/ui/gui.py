@@ -52,9 +52,11 @@ class App:
                 # change the next line to streamlit
                 self.update_info = st.info(
                     f'New version available ({lastversion}). '
-                    f'You can update PhysioFit with: "pip install --upgrade physiofit". '
-                    f'Check the documentation for more information.')
-        except:
+                    f'You can update PhysioFit with: "pip install --upgrade '
+                    f'physiofit". Check the documentation for more '
+                    f'information.'
+                )
+        except Exception:
             pass
 
     def _build_flux_menu(self):
@@ -75,9 +77,11 @@ class App:
         are parsed from it. If the input is tsv, the defaults are used instead.
         """
 
+        # Check file extension and initialize defaults
         file_extension = self.data_file.name.split(".")[1]
         input_values = self.defaults
         if file_extension == "json":
+            # Get parameters from json file
             config = IoHandler.read_json_config(self.data_file)
             input_values.update(config)
         elif file_extension not in ["tsv", "txt"]:
@@ -86,12 +90,15 @@ class App:
                 f"files or json for configuration files. Detected file: "
                 f"{self.data_file.name}")
         else:
+            # Load data into io_handler
             data = pd.read_csv(self.data_file, sep="\t")
             self.io_handler.data = data
             self.io_handler.data = self.io_handler.data.sort_values(
                 "time", ignore_index=True
             )
+            # Initialize the models
             self.io_handler.get_models()
+            # Get default SDs
             try:
                 self.defaults["sd"].update({"X": 0.2})
                 for col in data.columns[2:]:
@@ -99,11 +106,13 @@ class App:
             except Exception:
                 raise
 
+        # Build menu
         submitted = self._initialize_opt_menu_widgets(
             input_values, file_extension
         )
 
         if submitted:
+            # Initialize the fitter object
             if file_extension in ["tsv", "txt"]:
                 self.io_handler.names = self.io_handler.data.columns[
                                         1:].to_list()
@@ -115,6 +124,7 @@ class App:
                     input_values["path_to_data"]
                 )
                 self.io_handler.launch_from_json(final_json)
+            # Do the work and export results
             self.io_handler.fitter.optimize()
             if self.mc:
                 self.io_handler.fitter.monte_carlo_analysis()
@@ -128,37 +138,41 @@ class App:
 
     def _initialize_opt_menu_widgets(self, input_values, file_extension):
 
+        # Get model names and give as options to user
         model_options = [
-                model.model_name for model in self.io_handler.models
-            ]
+            model.model_name for model in self.io_handler.models
+        ]
         model_options.insert(0, "--")
         model_name = st.selectbox(
             label="Model",
             options=model_options,
-            key = "model_selector",
+            key="model_selector",
             help="Select the model to use for flux calculation"
         )
 
         if model_name != "--":
+            # Initialize selected model
             for model in self.io_handler.models:
                 if model.model_name == model_name:
                     self.model = model
                     self.model.get_params()
                     break
-            expand_basic_settings = st.expander("Basic settings", expanded=True)
+            expand_basic_settings = st.expander("Basic settings",
+                                                expanded=True)
             with expand_basic_settings:
+                # Select model parameters
                 if self.model.fixed_parameters is not None:
                     for key, val in self.model.fixed_parameters.items():
                         self.model.fixed_parameters[key] = st.text_input(
-                            label = key,
-                            value = val,
-                            help = f"Input value for fixed parameter {key}"
+                            label=key,
+                            value=val,
+                            help=f"Input value for fixed parameter {key}"
                         )
                 self.mc = st.checkbox(
                     "Sensitivity analysis (Monte Carlo)",
                     value=True,
-                    help="Determine the precision on estimated fluxes by Monte "
-                         "Carlo sensitivity analysis."
+                    help="Determine the precision on estimated fluxes by "
+                         "Monte Carlo sensitivity analysis."
                 )
                 enable_mc = False if self.mc else True
                 self.iterations = st.number_input(
@@ -206,8 +220,7 @@ class App:
                             raise RuntimeError("Please provide a valid path")
 
                         # Initialize the result export directory
-                        self.io_handler.res_path = self.io_handler.home_path / (
-                                    self.io_handler.home_path.name + "_res")
+                        self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
                         if not clicked:
                             if not self.io_handler.res_path.is_dir():
                                 self.io_handler.res_path.mkdir()
@@ -217,26 +230,33 @@ class App:
             with form:
                 expand_run_params = st.expander("Advanced settings")
                 with expand_run_params:
+                    # Select initial values and bounds on estimable model
+                    # parameters
                     for key, val in self.model.initial_values.items():
                         self.model.initial_values[key] = st.text_input(
                             label=f"{key} initial value",
                             value=val,
                             help=f"Input initial value for {key}"
                         )
-                        self.model.bounds[key] = st.text_input(
-                            label=f"{key} bounds",
-                            value= self.model.bounds[key],
-                            help=f"Input bounds for {key} as a tuple (min, max)"
+                        self.model.bounds[key] = literal_eval(
+                            st.text_input(
+                                label=f"{key} bounds",
+                                value=self.model.bounds[key],
+                                help=f"Input bounds for {key} as a tuple "
+                                     f"(min, max)"
+                            )
                         )
                     self.sd = st.text_input(
                         "Standard deviation on measurements",
                         value=input_values["sd"],
-                        help="Standard deviation on the measurements. If empty, default is 0.2 for biomass and"
-                             " 0.5 for metabolites"
+                        help="Standard deviation on the measurements. If "
+                             "empty, default is 0.2 for biomass and 0.5 for "
+                             "metabolites"
                     )
                     self.debug_mode = st.checkbox(
                         "Verbose logs",
-                        help="Useful in case of trouble. Join it to the issue on github."
+                        help="Useful in case of trouble. Join it to the "
+                             "issue on github."
                     )
                 submitted = st.form_submit_button("Run flux calculation")
             return submitted
@@ -244,7 +264,6 @@ class App:
     def _build_fitter_kwargs(self):
 
         kwargs = {
-            "vini": float(self.vini),
             "sd": literal_eval(self.sd),
             "model": self.model,
             "mc": self.mc,
@@ -256,7 +275,6 @@ class App:
     def _build_internal_json(self, path_to_data):
 
         final_json = json.dumps({
-            "vini": float(self.vini),
             "sd": literal_eval(self.sd),
             "model": self.model.model_name,
             "mc": self.mc,

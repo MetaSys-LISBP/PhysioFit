@@ -66,16 +66,14 @@ class PhysioFitter:
     ):
 
         self.data = data
-        self.model = model(self.data)
+        self.model = model
         self.mc = mc
         self.iterations = iterations
         self.sd = sd
         self.debug_mode = debug_mode
         if not hasattr(self, "logger"):
             self.logger = initialize_fitter_logger(self.debug_mode)
-
-        # Initialize model
-        self.model.get_params()
+        self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
 
         self.simulated_matrix = None
         self.simulated_data = None
@@ -84,7 +82,6 @@ class PhysioFitter:
         self.time_vector = None
         self.name_vector = None
         self.deg_vector = None
-        self.experimental_matrix = None
         self.params = None
         self.ids = None
         self.bounds = None
@@ -94,47 +91,37 @@ class PhysioFitter:
         self.opt_conf_ints = None
         self.khi2_res = None
 
-    # def verify_attrs(self):
-    #     """Check that attributes are valid"""
-    #
-    #     allowed_vinis = [int, float]
-    #     if type(self.vini) not in allowed_vinis:
-    #         raise TypeError(f"Initial value for fluxes and concentrations is not a number. Detected type:  "
-    #                         f"{type(self.vini)}\nValid types: {allowed_vinis}")
-    #
-    #     for bound in [self.conc_biom_bounds, self.flux_biom_bounds, self.conc_met_bounds, self.flux_met_bounds]:
-    #         if type(bound) is not tuple:
-    #             raise TypeError(f"Error reading bounds. Bounds should be ('int/float', 'int/float') tuples.\n"
-    #                             f"Current bounds: {bound}")
-    #         if self.vini < bound[0] or self.vini > bound[1]:
-    #             raise RuntimeError(f"Initial value for fluxes and concentrations ({self.vini}) cannot be set outside "
-    #                                f"the given bounds: {bound}")
-    #
-    #     if type(self.iterations) is not int:
-    #         raise TypeError(f"Number of monte carlo iterations must be an integer, and not of type "
-    #                         f"{type(self.iterations)}")
-    #
-    #     allowed_sds = [int, float, list, np.ndarray]
-    #     if type(self.sd) not in allowed_sds:
-    #         raise TypeError(f"sds is not in the right format ({type(self.sd)}. "
-    #                         f"Compatible formats are:\n{allowed_sds}")
-    #
-    #     if type(self.deg_vector) is not list:
-    #         raise TypeError(f"Degradation constants have not been well initialized.\nConstants: {self.deg}")
-    #
-    #     if type(self.t_lag) is not bool:
-    #         raise TypeError(f"t_lag parameter must be a boolean (True or False)")
+    def verify_attrs(self):
+        """Check that attributes are valid"""
+
+        if type(self.iterations) is not int:
+            raise TypeError(
+                f"Number of monte carlo iterations must be an "
+                f"integer, and not of type {type(self.iterations)}"
+            )
+
+        allowed_sds = [int, float, list, np.ndarray]
+        if type(self.sd) not in allowed_sds:
+            raise TypeError(
+                f"sds is not in the right format ({type(self.sd)}. "
+                f"Compatible formats are:\n{allowed_sds}"
+            )
 
     def _sd_dict_to_matrix(self):
         """Convert sd dictionary to matrix/vector"""
 
+        self.logger.debug("Initializing sd matrix from dict")
         # Perform checks
         for key in self.sd.keys():
             if key not in self.model.name_vector:
-                raise KeyError(f"The key {key} is not part of the data headers")
+                raise KeyError(
+                    f"The key {key} is not part of the data headers"
+                )
         for name in self.model.name_vector:
             if name not in self.sd.keys():
-                raise KeyError(f"The key {name} is missing from the sds dict")
+                raise KeyError(
+                    f"The key {name} is missing from the sds dict"
+                )
 
         # Get lengths of each sd entry
         sd_lengths = [
@@ -153,6 +140,9 @@ class PhysioFitter:
             columns = (self.sd[name] for name in self.model.name_vector)
             matrix = np.column_stack(columns)
             self.sd = matrix
+
+        self.logger.debug(f"SD object type: {type(self.sd)}")
+        self.logger.debug(f"Array built from dict:\n{self.sd}")
 
     def initialize_sd_matrix(self):
         """
@@ -183,7 +173,8 @@ class PhysioFitter:
             self._build_sd_matrix()
             self.logger.debug(f"SD matrix: {self.sd}\n")
             return
-        if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd, list):
+        if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd,
+                                                                  list):
             raise TypeError(
                 f"Cannot coerce SD to array. Please check that a list or array "
                 f"is given as input.\nCurrent input: \n{self.sd}"
@@ -203,6 +194,8 @@ class PhysioFitter:
         else:
             # If the array is not the right shape, we assume it is a vector
             # that needs to be tiled into a matrix
+            self.logger.debug(f"SD matrix: {self.sd}\n")
+            self.logger.debug(f"Type of SD matrix: {type(self.sd)}")
             if self.sd.shape != self.experimental_matrix.shape:
                 try:
                     self._build_sd_matrix()
@@ -263,13 +256,14 @@ class PhysioFitter:
 
         self.logger.info("\nRunning optimization...\n")
         self.optimize_results = self._run_optimization(
-            params = self.model.parameters_to_estimate,
-            func = self.model.simulate,
-            exp_data_matrix = self.data,
-            non_opt_params = self.model.fixed_parameters,
-            sd_matrix = self.sd,
-            bounds = self.model.bounds,
-            method = "differential_evolution"
+            params=self.model.parameters_to_estimate,
+            func=self.model.simulate,
+            exp_data_matrix=self.data,
+            time_vector=self.model.time_vector,
+            non_opt_params=self.model.fixed_parameters,
+            sd_matrix=self.sd,
+            bounds=(bound() for bound in self.model.bounds.values()),
+            method="differential_evolution"
         )
         self.parameter_stats = {
             "optimal": self.optimize_results.x
@@ -295,14 +289,16 @@ class PhysioFitter:
 
     @staticmethod
     def _calculate_cost(
-            params, func, exp_data_matrix, time_vector, non_opt_params, sd_matrix
+            params, func, exp_data_matrix, time_vector, non_opt_params,
+            sd_matrix
     ):
         """
         Calculate the cost (residue) using the square of
         simulated-experimental over the SDs
         """
 
-        simulated_matrix = func(params, exp_data_matrix, time_vector, non_opt_params)
+        simulated_matrix = func(params, exp_data_matrix, time_vector,
+                                non_opt_params)
         cost_val = np.square((simulated_matrix - exp_data_matrix) / sd_matrix)
         residuum = np.nansum(cost_val)
         return residuum
@@ -310,7 +306,7 @@ class PhysioFitter:
     @staticmethod
     def _run_optimization(
             params: list,
-            func: Model,
+            func: Model.simulate,
             exp_data_matrix: np.ndarray,
             time_vector: np.ndarray,
             non_opt_params,
@@ -327,13 +323,15 @@ class PhysioFitter:
         if method == "differential_evolution":
             optimize_results = differential_evolution(
                 PhysioFitter._calculate_cost, bounds=bounds,
-                args=(func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
+                args=(
+                func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
                 polish=True, x0=params
             )
         elif method == "L-BFGS-B":
             optimize_results = minimize(
                 PhysioFitter._calculate_cost, x0=params,
-                args=(func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
+                args=(
+                func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
                 method="L-BFGS-B", bounds=bounds, options={'maxcor': 30}
             )
         else:
