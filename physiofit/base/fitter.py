@@ -79,12 +79,6 @@ class PhysioFitter:
         self.simulated_data = None
         self.optimize_results = None
         self.simulate = None
-        self.time_vector = None
-        self.name_vector = None
-        self.deg_vector = None
-        self.params = None
-        self.ids = None
-        self.bounds = None
         self.parameter_stats = None
         self.opt_params_sds = None
         self.matrices_ci = None
@@ -242,7 +236,7 @@ class PhysioFitter:
         """
 
         sds = [0.2]
-        for name in range(len(self.name_vector) - 1):
+        for name in range(len(self.model.name_vector) - 1):
             sds.append(0.5)
         self.sd = np.array(sds)
         self._build_sd_matrix()
@@ -255,34 +249,39 @@ class PhysioFitter:
         """
 
         self.logger.info("\nRunning optimization...\n")
+        bounds = self.model.bounds()
+        parameters = [param for param in self.model.initial_values.values()]
         self.optimize_results = self._run_optimization(
-            params=self.model.parameters_to_estimate,
+            params=parameters,
             func=self.model.simulate,
-            exp_data_matrix=self.data,
+            exp_data_matrix=self.experimental_matrix,
             time_vector=self.model.time_vector,
             non_opt_params=self.model.fixed_parameters,
             sd_matrix=self.sd,
-            bounds=(bound() for bound in self.model.bounds.values()),
+            bounds=bounds,
             method="differential_evolution"
         )
         self.parameter_stats = {
             "optimal": self.optimize_results.x
         }
         self.logger.info(f"Optimization results: \n{self.optimize_results}\n")
-        for i, param in zip(self.ids, self.optimize_results.x):
+        for i, param in zip(
+                self.model.parameters_to_estimate, self.optimize_results.x
+        ):
             self.logger.info(f"\n{i} = {param}\n")
-        self.simulated_matrix = self.simulate(
+        self.simulated_matrix = self.model.simulate(
             self.optimize_results.x,
             self.experimental_matrix,
-            self.time_vector,
-            self.deg_vector
+            self.model.time_vector,
+            self.model.fixed_parameters
         )
+        self.logger.debug(f"simulated_matrix:\n{self.simulated_matrix}")
         nan_sim_mat = np.copy(self.simulated_matrix)
         nan_sim_mat[np.isnan(self.experimental_matrix)] = np.nan
         self.simulated_data = DataFrame(
             data=nan_sim_mat,
-            index=self.time_vector,
-            columns=self.name_vector
+            index=self.model.time_vector,
+            columns=self.model.name_vector
         )
         self.simulated_data.index.name = "Time"
         self.logger.info(f"Final Simulated Data: \n{self.simulated_data}\n")
@@ -311,7 +310,7 @@ class PhysioFitter:
             time_vector: np.ndarray,
             non_opt_params,
             sd_matrix: np.ndarray,
-            bounds: dict,
+            bounds: tuple,
             method: str
     ):
         """
@@ -368,14 +367,16 @@ class PhysioFitter:
 
             # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(
-                opt_res.x, self.simulate, new_matrix, self.time_vector,
-                self.deg_vector, self.sd, self.bounds, "L-BFGS-B"
+                opt_res.x, self.simulate, new_matrix, self.model.time_vector,
+                self.model.fixed_parameters, self.sd, self.model.bounds(),
+                "L-BFGS-B"
             )
 
             # Store the new simulated matrix in list for later use
             matrices.append(
                 self.simulate(
-                    opt_res.x, new_matrix, self.time_vector, self.deg_vector
+                    opt_res.x, new_matrix, self.model.time_vector,
+                    self.model.fixed_parameters
                 )
             )
 
@@ -445,7 +446,7 @@ class PhysioFitter:
         number_measurements = np.count_nonzero(
             ~np.isnan(self.experimental_matrix)
         )
-        number_params = len(self.params)
+        number_params = len(self.model.initial_values)
         dof = number_measurements - number_params
         cost = self._calculate_cost(
             self.optimize_results.x, self.simulate, self.experimental_matrix,

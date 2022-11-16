@@ -17,11 +17,6 @@ from physiofit.base.fitter import PhysioFitter
 mod_logger = logging.getLogger("PhysioFit.base.io")
 
 
-DEFAULTS = {
-            "sd": {},
-            "iterations": 100
-        }
-
 class IoHandler:
     """
     Input/Output class that handles the former and initializes the
@@ -98,17 +93,17 @@ class IoHandler:
                 "DataFrame has not been generated"
             )
 
-        for col in ["time", "X"]:
-            if col not in data.columns:
-                raise ValueError(f"Column {col} is missing from the dataset")
+        for x in ["time", "X"]:
+            if x not in data.columns:
+                raise ValueError(f"Column {x} is missing from the dataset")
 
         if len(data.columns) <= 2:
             raise ValueError(f"Data does not contain any metabolite columns")
 
-        for col in data.columns:
-            if data[col].dtypes != np.int64 and data[col].dtypes != np.float64:
+        for x in data.columns:
+            if data[x].dtypes != np.int64 and data[x].dtypes != np.float64:
                 raise ValueError(
-                    f"Column {col} has values that are not of numeric type"
+                    f"Column {x} has values that are not of numeric type"
                 )
 
     def get_models(self):
@@ -169,7 +164,6 @@ class IoHandler:
     def local_in(
             self,
             data_path: str | Path,
-            model,
             **kwargs: dict
     ):
         """
@@ -179,8 +173,6 @@ class IoHandler:
         :param data_path: path to data
         :param kwargs: supplementary keyword arguments are passed on to the
                        PhysioFitter object
-        :param model: model containing the parameters to estimate, fixed
-                      parameters and simulation function
         :return: None
         """
         # TODO: add model system into function
@@ -206,7 +198,7 @@ class IoHandler:
                 raise KeyError(
                     f"Input file does not exist. Path: {self.home_path}"
                 )
-            self.data = IoHandler._read_data(data_path)
+            self.data = self._read_data(data_path)
             self.data = self.data.sort_values("time", ignore_index=True)
             self.names = self.data.columns[1:].to_list()
 
@@ -399,8 +391,8 @@ class IoHandler:
 
         # Initialize fitter
         self.fitter = PhysioFitter(
-            data = self.data,
-            model = kwargs["model"]
+            data=self.data,
+            model=kwargs["model"]
         )
 
         # Initialize fitter logger
@@ -448,11 +440,6 @@ class IoHandler:
 
         if kwargs:
 
-            # We set the default keyword params
-            for key, value in DEFAULTS.items():
-                if key not in kwargs.keys():
-                    kwargs.update({key: value})
-
             # Initialize fitter parameters from kwargs
             for key, value in kwargs.items():
                 self.fitter.logger.debug(f"Key: {key}, value: {value}\n")
@@ -460,15 +447,16 @@ class IoHandler:
                     self.fitter.__dict__.update({key: value})
                 else:
                     wrong_keys.append(key)
+            if wrong_keys:
+                raise KeyError(
+                    f"Some keyword arguments were not valid: {wrong_keys}"
+                )
 
         self._initialize_fitter_vars()
         self.fitter.logger.debug(
             f"Fitter attribute dictionary:\n{self.fitter.__dict__}"
         )
-        if wrong_keys:
-            raise KeyError(
-                f"Some keyword arguments were not valid: {wrong_keys}"
-            )
+
 
     def _initialize_fitter_vars(self):
         """
@@ -723,8 +711,9 @@ if __name__ == "__main__":
 
     io_handler = IoHandler()
     data_file = pd.read_csv(
-        r"C:\Users\legregam\Documents\Projets\PhysioFit\data\KEIO_test_data\KEIO_ROBOT6_1\KEIO_ROBOT6_1.tsv",
-        sep = "\t"
+        r"C:\Users\legregam\Documents\Projets\PhysioFit\data\KEIO_test_data"
+        r"\KEIO_ROBOT6_1\KEIO_ROBOT6_1.tsv",
+        sep="\t"
     )
     io_handler.data = data_file
     io_handler.data = io_handler.data.sort_values(
@@ -733,27 +722,24 @@ if __name__ == "__main__":
     )
     io_handler.get_models()
     try:
-        defaults = DEFAULTS
-        defaults["sd"].update({"X": 0.2})
+        sd = {"X": 0.}
         for col in io_handler.data.columns[2:]:
-            defaults["sd"].update({col: 0.5})
+            sd.update({col: 0.5})
     except Exception:
         raise
     io_handler.names = io_handler.data.columns[1:].to_list()
     model = io_handler.models[-1]
     model.get_params()
     print(model)
-    for key in model.bounds.keys():
-        model.bounds[key] = str(model.bounds[key])
-    print(model.bounds)
-    kwargs = {
-        "sd": defaults["sd"],
+    keywargs = {
+        "sd": sd,
         "model": model,
         "mc": True,
         "iterations": 100,
         "debug_mode": True,
     }
-    io_handler.res_path = Path(r"C:\Users\legregam\Documents\Projets\PhysioFit\data\KEIO_test_data\KEIO_ROBOT6_1")
-    io_handler.initialize_fitter(kwargs)
+    io_handler.res_path = Path(
+        r"C:\Users\legregam\Documents\Projets\PhysioFit\data\KEIO_test_data"
+        r"\KEIO_ROBOT6_1")
+    io_handler.initialize_fitter(kwargs=keywargs)
     io_handler.fitter.optimize()
-
