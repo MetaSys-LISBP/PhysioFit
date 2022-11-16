@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from ast import literal_eval
 
 import pandas as pd
 import numpy as np
@@ -38,9 +39,9 @@ class Model(ABC):
                f"Parameters to estimate: {self.parameters_to_estimate}\n" \
                f"Fixed parameters: {self.fixed_parameters}\n" \
                f"Bounds: {self.bounds}\n" \
-               f"Initial values: {self.initial_values}\n" \
- \
-    @abstractmethod
+               f"Initial values: {self.initial_values}\n"
+
+    @ abstractmethod
     def get_params(self):
         """
 
@@ -63,37 +64,68 @@ class Model(ABC):
         pass
 
 
-class Bounds:
+class Bounds(dict):
 
-    __slots__ = "limits"
-    def __init__(self, **kwargs):
+    def __init__(self, mapping=None, **kwargs):
 
-        for key, value in kwargs.values():
-            if not isinstance(value, tuple):
-                raise TypeError(
-                    "All bounds must be tuples"
-                )
-            for x in value:
-                if not isinstance(x, int) or not isinstance(x, float):
-                    raise TypeError(
-                        "Bounds must be numbers"
-                    )
-            if value[0] >= value[1]:
-                raise ValueError(
-                    "Lower bound cannot be higher than upper bound. "
-                )
-            if not isinstance(key, str):
-                raise TypeError(
-                    "Name for bounds must be strings"
-                )
-        self.limits = kwargs
+        if mapping is None:
+            mapping = {}
+        if kwargs:
+            mapping.update(
+                {key: value for key, value in kwargs.items()}
+            )
 
-    def __repr__(self):
-        for key, bound in self.limits.items():
-            print(f"{key}: {bound}")
+        for key, value in mapping.items():
+            key, value = self._check_bounds(key, value)
+            mapping[key] = value
 
-    def __getitem__(self, item):
-        return self.limits[item]
+        super().__init__(mapping)
+
+    def __call__(self):
+
+        tuples = tuple(value for value in self.values())
+        return tuples
 
     def __setitem__(self, key, value):
-        self.limits[key] = value
+
+        key, value = self._check_bounds(key, value)
+        super().__setitem__(key, value)
+
+    @staticmethod
+    def _check_bounds(key, value):
+
+        if not isinstance(value, tuple):
+            if isinstance(value, str):
+                try:
+                    value = literal_eval(value)
+                except Exception:
+                    raise TypeError(
+                        f"Could not coerce {value} into string"
+                    )
+        for x in value:
+            if not isinstance(x, int) and not isinstance(x, float):
+                raise TypeError(
+                    "Individual bound values must be numbers"
+                )
+        if value[0] >= value[1]:
+            raise ValueError(
+                "Lower bound cannot be higher than upper bound. "
+            )
+        if len(value) != 2:
+            raise ValueError(
+                "Bounds can only have two values. Number of values detected: "
+                f"{len(value)}"
+            )
+        if not isinstance(key, str):
+            raise TypeError(
+                "Name for bounds must be strings"
+            )
+        return key, value
+
+
+if __name__ == "__main__":
+    bounds = Bounds(
+        X_0=(1e-3, 10),
+        mu=(1e-3, 3)
+    )
+    print(bounds())

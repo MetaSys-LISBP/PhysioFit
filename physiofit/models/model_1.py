@@ -5,9 +5,7 @@ Module containing the methods used by PhysioFit.
 import numpy as np
 import pandas as pd
 
-from physiofit.models.base_model import Model
-from ..base.io import Bounds
-
+from physiofit.models.base_model import Model, Bounds
 
 class ChildModel(Model):
 
@@ -27,11 +25,16 @@ class ChildModel(Model):
             met: 0 for met in self.metabolites
             }
         }
-        self.bounds = {
-            "X_0": (1e-3, 10),
-            "mu": (1e-3, 3),
-            "t_lag": (0, 0.5 * self.time_vector.max()),
-        }
+        # self.bounds = Bounds(
+        #     "X_0" = (1e-3, 10),
+        #     "mu" = (1e-3, 3),
+        #     "t_lag" = (0, 0.5 * self.time_vector.max()),
+        # )
+        self.bounds = Bounds(
+            X_0=(1e-3, 10),
+            mu=(1e-3, 3),
+            t_lag = (0, 0.5*self.time_vector.max())
+        )
         for metabolite in self.metabolites:
             self.parameters_to_estimate.append(f"{metabolite}_q")
             self.parameters_to_estimate.append(f"{metabolite}_M0")
