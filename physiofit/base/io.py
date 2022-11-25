@@ -3,6 +3,7 @@
 import json
 import logging
 from pathlib import Path
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -154,7 +155,7 @@ class IoHandler:
         with open(str(dest_path), "w") as conf:
             json.dump(config, conf, indent=4, sort_keys=False)
 
-    def local_in(self, data_path: str | Path, **kwargs: dict):
+    def local_in(self, data_path: Union[str, Path], **kwargs: dict):
         """
         Function for reading data and initializing the fitter object in local
         context
@@ -255,7 +256,7 @@ class IoHandler:
 
         self.galaxy_in(data_path, **config)
 
-    def _generate_run_config(self, export_path: str | Path = None):
+    def _generate_run_config(self, export_path: Union[str, Path] = None):
         """
         Generate configuration file from parameters of the last run
 
@@ -284,7 +285,7 @@ class IoHandler:
         self.fitter.logger.info(
             f"\nConfiguration file saved at: {export_path}")
 
-    def launch_from_json(self, json_file: str | bytes):
+    def launch_from_json(self, json_file: Union[str, bytes]):
         """
         Launch the run using a json file as input
 
@@ -304,7 +305,7 @@ class IoHandler:
         self.local_in(data_path, **config)
 
     @staticmethod
-    def read_json_config(json_file: str | bytes) -> dict:
+    def read_json_config(json_file: Union[str, bytes]) -> dict:
         """
         Import json configuration file and parse keyword arguments
 
@@ -459,7 +460,7 @@ class IoHandler:
         self.fitter.initialize_bounds()
         self.fitter.initialize_equation()
 
-    def output_pdf(self, export_path: str | Path = None):
+    def output_pdf(self, export_path: Union[str, Path] = None):
         """
         Handle the creation and output of a pdf file containing fit results as
         a plot
