@@ -11,6 +11,7 @@ import pandas as pd
 import physiofit
 from physiofit.base.io import IoHandler, DEFAULTS
 
+
 class App:
     """
     Physiofit Graphical User Interface
@@ -32,7 +33,8 @@ class App:
         self.check_uptodate()
         self.select_menu = st.selectbox(
             "Select a task to execute",
-            ["Calculate extracellular fluxes", "Calculate degradation constant"]
+            ["Calculate extracellular fluxes",
+             "Calculate degradation constant"]
         )
         if self.select_menu == "Calculate extracellular fluxes":
             self.io_handler = IoHandler()
@@ -91,18 +93,22 @@ class App:
             except Exception:
                 raise
 
-        submitted = self._initialize_opt_menu_widgets(input_values, file_extension)
+        submitted = self._initialize_opt_menu_widgets(input_values,
+                                                      file_extension)
 
         if submitted:
             if file_extension in ["tsv", "txt"]:
                 self.io_handler.data = data
-                self.io_handler.data = self.io_handler.data.sort_values("time", ignore_index=True)
-                self.io_handler.names = self.io_handler.data.columns[1:].to_list()
+                self.io_handler.data = self.io_handler.data.sort_values("time",
+                                                                        ignore_index=True)
+                self.io_handler.names = self.io_handler.data.columns[
+                                        1:].to_list()
                 kwargs = self._build_fitter_kwargs()
                 self.io_handler.initialize_fitter(kwargs)
             if file_extension == "json":
                 st.session_state.submitted = True
-                final_json = self._build_internal_json(input_values["path_to_data"])
+                final_json = self._build_internal_json(
+                    input_values["path_to_data"])
                 self.io_handler.launch_from_json(final_json)
             self.io_handler.fitter.optimize()
             if self.mc:
@@ -110,7 +116,8 @@ class App:
             self.io_handler.fitter.khi2_test()
             outputs = ["data", "plot", "pdf"]
             self.io_handler.local_out(*outputs)
-            st.success(f"Run is finished. Check {self.io_handler.res_path} for the results.")
+            st.success(
+                f"Run is finished. Check {self.io_handler.res_path} for the results.")
 
     def _initialize_opt_menu_widgets(self, input_values, file_extension):
 
@@ -155,27 +162,34 @@ class App:
                 root.wm_attributes('-topmost', 1)
 
                 # Initialize folder picker button and add logic
-                clicked = st.button("Select output data directory", key="clicker")
+                clicked = st.button("Select output data directory",
+                                    key="clicker")
                 if clicked:
 
                     # Initialize home path from directory selector and add to session state
                     st.session_state.home_path = Path(st.text_input(
-                        "Selected output data directory:", filedialog.askdirectory(master=root)
+                        "Selected output data directory:",
+                        filedialog.askdirectory(master=root)
                     ))
-                    if st.session_state.home_path == Path(".") or not st.session_state.home_path.exists():
+                    if st.session_state.home_path == Path(
+                            ".") or not st.session_state.home_path.exists():
                         raise RuntimeError("Please provide a valid path")
-                    self.io_handler.home_path = copy(st.session_state.home_path)
+                    self.io_handler.home_path = copy(
+                        st.session_state.home_path)
 
                 elif hasattr(st.session_state, "home_path"):
 
                     self.io_handler.home_path = Path(st.text_input(
-                        "Selected output data directory:", st.session_state.home_path
+                        "Selected output data directory:",
+                        st.session_state.home_path
                     ))
-                    if self.io_handler.home_path == Path(".") or not self.io_handler.home_path.exists():
+                    if self.io_handler.home_path == Path(
+                            ".") or not self.io_handler.home_path.exists():
                         raise RuntimeError("Please provide a valid path")
 
                     # Initialize the result export directory
-                    self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
+                    self.io_handler.res_path = self.io_handler.home_path / (
+                                self.io_handler.home_path.name + "_res")
                     if not clicked:
                         if not self.io_handler.res_path.is_dir():
                             self.io_handler.res_path.mkdir()
