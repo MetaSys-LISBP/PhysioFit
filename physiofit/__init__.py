@@ -1,1 +1,3 @@
-__version__ = "2.3.0dev1"
+import importlib.metadata
+
+__version__ = importlib.metadata.version("physiofit")
