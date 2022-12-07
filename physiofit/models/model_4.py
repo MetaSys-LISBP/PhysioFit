@@ -2,6 +2,7 @@
 Module containing the methods used by PhysioFit.
 """
 
+from __future__ import annotations
 import numpy as np
 
 from physiofit.models.base_model import Model, Bounds

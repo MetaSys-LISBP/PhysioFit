@@ -1,6 +1,7 @@
 """
 Module containing the methods used by PhysioFit.
 """
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
@@ -20,30 +21,35 @@ class ChildModel(Model):
 
     def get_params(self):
 
-        self.parameters_to_estimate = ["X_0", "mu", "t_lag"]
-        self.fixed_parameters = {"Degradation": {
-            met: 0 for met in self.metabolites
-            }
+        self.parameters_to_estimate = {
+            "X_0" : 1,
+            "mu" : 1,
+            "t_lag" : 1
         }
-        # self.bounds = Bounds(
-        #     "X_0" = (1e-3, 10),
-        #     "mu" = (1e-3, 3),
-        #     "t_lag" = (0, 0.5 * self.time_vector.max()),
-        # )
         self.bounds = Bounds(
             X_0=(1e-3, 10),
             mu=(1e-3, 3),
             t_lag = (0, 0.5*self.time_vector.max())
         )
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.append(f"{metabolite}_q")
-            self.parameters_to_estimate.append(f"{metabolite}_M0")
+            self.parameters_to_estimate.update(
+                {
+                    f"{metabolite}_q" : 1,
+                    f"{metabolite}_M0" : 1
+                }
+            )
             self.bounds.update(
                 {
                     f"{metabolite}_q": (-50, 50),
                     f"{metabolite}_M0": (1e-6, 50)
                 }
             )
+
+        self.fixed_parameters = {"Degradation": {
+            met: 0 for met in self.metabolites
+            }
+        }
+
         self.initial_values = {
             i: self.vini for i in self.parameters_to_estimate
         }

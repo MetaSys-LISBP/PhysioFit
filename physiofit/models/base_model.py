@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from ast import literal_eval
 
@@ -121,6 +123,37 @@ class Bounds(dict):
                 "Name for bounds must be strings"
             )
         return key, value
+
+
+class StandardDevs(dict):
+
+    def __init__(self, mapping=None, **kwargs):
+
+        self._vector = None
+
+        if mapping is None:
+            mapping = {}
+        if kwargs:
+            mapping.update(
+                {key: value for key, value in kwargs.items()}
+            )
+
+        for key, value in mapping.items():
+            if not isinstance(key, str):
+                raise TypeError(
+                    f"SD name field can only contain strings. Detected type {type(key)} for {key}"
+                )
+            if not isinstance(value, int) and not isinstance(value, float):
+                pass
+        super().__init__(mapping)
+
+    @property
+    def vector(self):
+
+        if self._vector is not None:
+            return self._vector
+        self._vector = np.array([value for value in self.values])
+        return self._vector
 
 
 if __name__ == "__main__":

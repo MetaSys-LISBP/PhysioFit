@@ -1,5 +1,6 @@
 """Module to handle inputs and outputs for PhysioFit"""
 
+from __future__ import annotations
 import importlib
 import json
 import logging
