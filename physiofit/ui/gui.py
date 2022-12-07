@@ -9,7 +9,8 @@ import streamlit as st
 import pandas as pd
 
 import physiofit
-from physiofit.base.io import IoHandler, DEFAULTS
+from physiofit.base.io import IoHandler
+from physiofit.models.base_model import StandardDevs
 
 
 class App:
@@ -19,7 +20,10 @@ class App:
 
     def __init__(self):
 
-        self.defaults = copy(DEFAULTS)
+        self.defaults = {
+            "iterations" : 100,
+            "sd" : StandardDevs()
+        }
         self.select_menu = None
         self.io_handler = None
         self.update_info = None
@@ -96,22 +100,24 @@ class App:
             self.io_handler.data = self.io_handler.data.sort_values(
                 "time", ignore_index=True
             )
+
+            # Initialize default SDs
+            self.defaults["sd"].update({
+                "X" : 0.5
+            })
+            self.defaults["sd"].update({
+                col: 0.2 for col in self.io_handler.data.columns[2:]
+            })
             # Initialize the models
             self.io_handler.get_models()
-            # Get default SDs
-            try:
-                self.defaults["sd"].update({"X": 0.2})
-                for col in data.columns[2:]:
-                    self.defaults["sd"].update({col: 0.5})
-            except Exception:
-                raise
 
         # Build menu
         submitted = self._initialize_opt_menu_widgets(
-            input_values, file_extension
+            file_extension
         )
 
         if submitted:
+            session_data = self._get_data_from_session_state()
             # Initialize the fitter object
             if file_extension in ["tsv", "txt"]:
                 self.io_handler.names = self.io_handler.data.columns[
@@ -136,7 +142,7 @@ class App:
                 f"the results."
             )
 
-    def _initialize_opt_menu_widgets(self, input_values, file_extension):
+    def _initialize_opt_menu_widgets(self, file_extension):
 
         # Get model names and give as options to user
         model_options = [
@@ -161,13 +167,6 @@ class App:
                                                 expanded=True)
             with expand_basic_settings:
                 # Select model parameters
-                if self.model.fixed_parameters is not None:
-                    for key, val in self.model.fixed_parameters.items():
-                        self.model.fixed_parameters[key] = st.text_input(
-                            label=key,
-                            value=val,
-                            help=f"Input value for fixed parameter {key}"
-                        )
                 self.mc = st.checkbox(
                     "Sensitivity analysis (Monte Carlo)",
                     value=True,
@@ -177,89 +176,106 @@ class App:
                 enable_mc = False if self.mc else True
                 self.iterations = st.number_input(
                     "Number of iterations",
-                    value=input_values["iterations"],
+                    value=self.defaults["iterations"],
                     help="Number of iterations for the Monte Carlo analysis.",
                     disabled=enable_mc
+                )
+                self.debug_mode = st.checkbox(
+                    "Verbose logs",
+                    help="Useful in case of trouble. Join it to the "
+                         "issue on github."
                 )
 
                 if file_extension in ["tsv", "txt"]:
 
-                    # Set up tkinter for directory chooser
-                    root = tk.Tk()
-                    root.withdraw()
-
-                    # Make folder picker dialog appear on top of other windows
-                    root.wm_attributes('-topmost', 1)
-
-                    # Initialize folder picker button and add logic
-                    clicked = st.button(
-                        "Select output data directory", key="clicker"
-                    )
-                    if clicked:
-
-                        # Initialize home path from directory selector and add
-                        # to session state
-                        st.session_state.home_path = Path(st.text_input(
-                            "Selected output data directory:",
-                            filedialog.askdirectory(master=root)
-                        ))
-                        if st.session_state.home_path == Path(".") \
-                                or not st.session_state.home_path.exists():
-                            raise RuntimeError("Please provide a valid path")
-                        self.io_handler.home_path = copy(
-                            st.session_state.home_path)
-
-                    elif hasattr(st.session_state, "home_path"):
-
-                        self.io_handler.home_path = Path(st.text_input(
-                            "Selected output data directory:",
-                            st.session_state.home_path
-                        ))
-                        if self.io_handler.home_path == Path(".") \
-                                or not self.io_handler.home_path.exists():
-                            raise RuntimeError("Please provide a valid path")
-
-                        # Initialize the result export directory
-                        self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
-                        if not clicked:
-                            if not self.io_handler.res_path.is_dir():
-                                self.io_handler.res_path.mkdir()
+                    self._output_directory_selector()
 
             # Build the form for advanced parameters
             form = st.form("Parameter_form")
             with form:
-                expand_run_params = st.expander("Advanced settings")
+                expand_run_params = st.expander("Parameters")
                 with expand_run_params:
-                    # Select initial values and bounds on estimable model
-                    # parameters
-                    for key, val in self.model.initial_values.items():
-                        self.model.initial_values[key] = st.text_input(
-                            label=f"{key} initial value",
-                            value=val,
-                            help=f"Input initial value for {key}"
-                        )
-                        self.model.bounds[key] = literal_eval(
+                    st.subheader("Parameters to estimate")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.write("Parameter Name")
+                        for key in self.model.initial_values:
                             st.text_input(
-                                label=f"{key} bounds",
-                                value=self.model.bounds[key],
-                                help=f"Input bounds for {key} as a tuple "
-                                     f"(min, max)"
+                                label="label", # Unused
+                                label_visibility="collapsed",
+                                value=key,
+                                key=f"Parameter_name_{key}",
+                                disabled=True
                             )
-                        )
-                    self.sd = st.text_input(
-                        "Standard deviation on measurements",
-                        value=input_values["sd"],
-                        help="Standard deviation on the measurements. If "
-                             "empty, default is 0.2 for biomass and 0.5 for "
-                             "metabolites"
-                    )
-                    self.debug_mode = st.checkbox(
-                        "Verbose logs",
-                        help="Useful in case of trouble. Join it to the "
-                             "issue on github."
-                    )
+                    with col2:
+                        st.write("Parameter Value")
+                        for key, value in self.model.initial_values.items():
+                            st.text_input(
+                                label="label", # Unused
+                                label_visibility = "collapsed",
+                                value=value,
+                                key=f"Parameter_value_{key}"
+                            )
+                    with col3:
+                        st.write("Bounds")
+                        for key, bound in self.model.bounds.items():
+                            st.text_input(
+                                label="label",  # Unused
+                                label_visibility="collapsed",
+                                value=bound,
+                                key=f"parameter_bound_{key}"
+                            )
+
+                    if self.model.fixed_parameters is not None:
+                        for param in self.model.fixed_parameters.keys():
+                            st.subheader(f"Fixed parameters: {param}")
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                for key in self.model.fixed_parameters[param].keys():
+                                    st.text_input(
+                                        label="label", # Unused
+                                        label_visibility="collapsed",
+                                        value=key,
+                                        key=f"Fixed_{param}_{key}",
+                                        disabled=True
+                                    )
+                            with col2:
+                                for key, value in self.model.fixed_parameters[param].items():
+                                    st.text_input(
+                                        label="label", # Unused
+                                        label_visibility="collapsed",
+                                        value=value,
+                                        key=f"Fixed_{param}_value_{key}"
+                                    )
+
+                expand_sds = st.expander("Standard Deviations")
+                with expand_sds:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        for key in self.defaults["sd"].keys():
+                            st.text_input(
+                                label="label",  # Unused
+                                label_visibility="collapsed",
+                                value=key,
+                                key=f"{key}_sd",
+                                disabled=True
+                            )
+                    with col2:
+                        for key, value in self.defaults["sd"].items():
+                            st.text_input(
+                                label="label",  # Unused
+                                label_visibility="collapsed",
+                                value=value,
+                                key=f"Fixed_{key}_sd_value"
+                            )
+
+                st.write(st.session_state)
+
                 submitted = st.form_submit_button("Run flux calculation")
             return submitted
+
+    def _get_data_from_session_state(self):
+        pass
 
     def _build_fitter_kwargs(self):
 
@@ -283,6 +299,50 @@ class App:
             "path_to_data": path_to_data
         })
         return final_json
+
+    def _output_directory_selector(self):
+
+        # Set up tkinter for directory chooser
+        root = tk.Tk()
+        root.withdraw()
+
+        # Make folder picker dialog appear on top of other windows
+        root.wm_attributes('-topmost', 1)
+
+        # Initialize folder picker button and add logic
+        clicked = st.button(
+            "Select output data directory", key="clicker"
+        )
+        if clicked:
+
+            # Initialize home path from directory selector and add
+            # to session state
+            st.session_state.home_path = Path(st.text_input(
+                "Selected output data directory:",
+                filedialog.askdirectory(master=root)
+            ))
+            if st.session_state.home_path == Path(".") \
+                    or not st.session_state.home_path.exists():
+                raise RuntimeError("Please provide a valid path")
+            self.io_handler.home_path = copy(
+                st.session_state.home_path)
+
+        elif hasattr(st.session_state, "home_path"):
+
+            self.io_handler.home_path = Path(st.text_input(
+                "Selected output data directory:",
+                st.session_state.home_path
+            ))
+            if self.io_handler.home_path == Path(".") \
+                    or not self.io_handler.home_path.exists():
+                raise RuntimeError("Please provide a valid path")
+
+            # Initialize the result export directory
+            self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
+            if not clicked:
+                if not self.io_handler.res_path.is_dir():
+                    self.io_handler.res_path.mkdir()
+
 
 
 if __name__ == "__main__":
