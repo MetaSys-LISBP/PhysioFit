@@ -250,7 +250,7 @@ class PhysioFitter:
 
         self.logger.info("\nRunning optimization...\n")
         bounds = self.model.bounds()
-        parameters = [param for param in self.model.initial_values.values()]
+        parameters = [param for param in self.model.parameters_to_estimate.values()]
         self.optimize_results = self._run_optimization(
             params=parameters,
             func=self.model.simulate,
@@ -308,7 +308,7 @@ class PhysioFitter:
             func: Model.simulate,
             exp_data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            non_opt_params,
+            non_opt_params: dict,
             sd_matrix: np.ndarray,
             bounds: tuple,
             method: str
@@ -446,11 +446,11 @@ class PhysioFitter:
         number_measurements = np.count_nonzero(
             ~np.isnan(self.experimental_matrix)
         )
-        number_params = len(self.model.initial_values)
+        number_params = len(self.model.parameters_to_estimate)
         dof = number_measurements - number_params
         cost = self._calculate_cost(
             self.optimize_results.x, self.simulate, self.experimental_matrix,
-            self.time_vector, self.deg_vector, self.sd
+            self.model.time_vector, self.model.fixed_parameters, self.sd
         )
         p_val = chi2.cdf(cost, dof)
 
