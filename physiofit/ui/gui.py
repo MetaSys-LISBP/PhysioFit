@@ -117,7 +117,7 @@ class App:
         )
 
         if submitted:
-            session_data = self._get_data_from_session_state()
+            self._get_data_from_session_state()
             # Initialize the fitter object
             if file_extension in ["tsv", "txt"]:
                 self.io_handler.names = self.io_handler.data.columns[
