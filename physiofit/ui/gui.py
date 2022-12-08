@@ -196,7 +196,7 @@ class App:
                 expand_run_params = st.expander("Parameters")
                 with expand_run_params:
                     st.subheader("Parameters to estimate")
-                    col1, col2, col3 = st.columns(3)
+                    col1, col2, col3, col4 = st.columns(4)
                     with col1:
                         st.write("Parameter Name")
                         for key in self.model.initial_values:
@@ -217,13 +217,22 @@ class App:
                                 key=f"Parameter_value_{key}"
                             )
                     with col3:
-                        st.write("Bounds")
+                        st.write("Lower Bound")
                         for key, bound in self.model.bounds.items():
                             st.text_input(
                                 label="label",  # Unused
                                 label_visibility="collapsed",
-                                value=bound,
-                                key=f"parameter_bound_{key}"
+                                value=bound[0],
+                                key=f"Parameter_lower_{key}"
+                            )
+                    with col4:
+                        st.write("Upper Bound")
+                        for key, bound in self.model.bounds.items():
+                            st.text_input(
+                                label="label",  # Unused
+                                label_visibility="collapsed",
+                                value=bound[1],
+                                key=f"Parameter_upper_{key}"
                             )
 
                     if self.model.fixed_parameters is not None:
@@ -231,6 +240,7 @@ class App:
                             st.subheader(f"Fixed parameters: {param}")
                             col1, col2 = st.columns(2)
                             with col1:
+                                st.write("Parameter Name")
                                 for key in self.model.fixed_parameters[param].keys():
                                     st.text_input(
                                         label="label", # Unused
@@ -240,6 +250,7 @@ class App:
                                         disabled=True
                                     )
                             with col2:
+                                st.write("Parameter Value")
                                 for key, value in self.model.fixed_parameters[param].items():
                                     st.text_input(
                                         label="label", # Unused
@@ -275,7 +286,25 @@ class App:
             return submitted
 
     def _get_data_from_session_state(self):
-        pass
+        """
+        Get the data from the widgets input
+        """
+
+        # Start with estimable parameters
+        # Get order of parameter names to build dict
+        estimable_parameter_name_order = [key for key in self.model.parameters_to_estimate.keys()]
+        for name in estimable_parameter_name_order:
+            # Get values from widgets
+            self.model.parameters_to_estimate[name] = st.session_state[f"Parameter_value_{name}"]
+            # Get bounds
+            self.model.bounds[name][0] = st.session_state[f"Parameter_lower_{name}"]
+            self.model.bounds[name][1] = st.session_state[f"Parameter_upper_{name}"]
+        # Do the same for each fixed parameter class
+        if self.model.fixed_parameters is not None:
+            fixed_parameter_classes = [param for param in self.model.fixed_parameters]
+            for param in fixed_parameter_classes:
+                for key in self.model.fixed_parameters[param].keys():
+                    self.model.fixed_parameters[param][key] = st.session_state[f"Fixed_{param}_{key}"]
 
     def _build_fitter_kwargs(self):
 
