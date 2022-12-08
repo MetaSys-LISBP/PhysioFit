@@ -199,7 +199,7 @@ class App:
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
                         st.write("Parameter Name")
-                        for key in self.model.initial_values:
+                        for key in self.model.parameters_to_estimate:
                             st.text_input(
                                 label="label", # Unused
                                 label_visibility="collapsed",
@@ -209,7 +209,7 @@ class App:
                             )
                     with col2:
                         st.write("Parameter Value")
-                        for key, value in self.model.initial_values.items():
+                        for key, value in self.model.parameters_to_estimate.items():
                             st.text_input(
                                 label="label", # Unused
                                 label_visibility = "collapsed",
@@ -280,8 +280,6 @@ class App:
                                 key=f"Fixed_{key}_sd_value"
                             )
 
-                st.write(st.session_state)
-
                 submitted = st.form_submit_button("Run flux calculation")
             return submitted
 
@@ -294,22 +292,81 @@ class App:
         # Get order of parameter names to build dict
         estimable_parameter_name_order = [key for key in self.model.parameters_to_estimate.keys()]
         for name in estimable_parameter_name_order:
-            # Get values from widgets
-            self.model.parameters_to_estimate[name] = st.session_state[f"Parameter_value_{name}"]
-            # Get bounds
-            self.model.bounds[name][0] = st.session_state[f"Parameter_lower_{name}"]
-            self.model.bounds[name][1] = st.session_state[f"Parameter_upper_{name}"]
+            try:
+                # Get values from widgets
+                if st.session_state[f"Parameter_value_{name}"] == "0":
+                    self.model.parameters_to_estimate[name] = 0
+                else:
+                    self.model.parameters_to_estimate[name] = literal_eval(
+                        st.session_state[f"Parameter_value_{name}"].lstrip("0") # Strip leading zeroes to stop eval errors
+                    )
+                # Get bounds
+                if st.session_state[f"Parameter_lower_{name}"] == "0":
+                    st.warning(
+                        f"WARNING: {name} has a lower bound at 0. Sometimes this might confuse the optimizer. It is "
+                        f"advised to replace 0 with a very small number, 1e-6 for example."
+                    )
+                    lower_bound = 0
+                else:
+                    lower_bound = literal_eval(st.session_state[f"Parameter_lower_{name}"].lstrip("0"))
+                if st.session_state[f"Parameter_upper_{name}"] == "0":
+                    st.warning(
+                        f"WARNING: {name} has an upper bound at 0. Sometimes this might confuse the optimizer. It is "
+                        f"advised to replace 0 with a very small number, 1e-6 for example."
+                    )
+                    upper_bound = 0
+                else:
+                    upper_bound = literal_eval(st.session_state[f"Parameter_upper_{name}"].lstrip("0"))
+                self.model.bounds[name] = (
+                    lower_bound,
+                    upper_bound
+                )
+            except ValueError:
+                st.error(
+                    f"ERROR: An error occurred while parsing the input for {name}. Please check that only numbers "
+                    f"have been entered."
+                )
+                raise
+
         # Do the same for each fixed parameter class
         if self.model.fixed_parameters is not None:
             fixed_parameter_classes = [param for param in self.model.fixed_parameters]
             for param in fixed_parameter_classes:
                 for key in self.model.fixed_parameters[param].keys():
-                    self.model.fixed_parameters[param][key] = st.session_state[f"Fixed_{param}_{key}"]
+                    try:
+                        if st.session_state[f"Fixed_{param}_value_{key}"] == "0":
+                            self.model.fixed_parameters[param][key] = 0
+                        else:
+                            self.model.fixed_parameters[param][key] = literal_eval(
+                                st.session_state[f"Fixed_{param}_value_{key}"].lstrip("0")
+                            )
+                    except ValueError:
+                        st.error(
+                            f"ERROR: An error occurred while parsing the input in the fixed parameter class {param} for "
+                            f"{key}. Please check that only numbers have been entered."
+                        )
+                        raise
+
+        # And finally do the same for Standard Deviations
+        self.sd = self.defaults["sd"]
+        sd_name_order = [key for key in self.sd.keys()]
+        for name in sd_name_order:
+            try:
+                # Get values from widgets
+                self.sd[name] = literal_eval(
+                    st.session_state[f"Fixed_{name}_sd_value"].lstrip("0")  # Strip leading zeroes to stop eval errors
+                )
+            except ValueError:
+                st.error(
+                    f"ERROR: An error occurred while parsing the input for {name} (SDs). Please check that only numbers "
+                    f"have been entered."
+                )
+                raise
 
     def _build_fitter_kwargs(self):
 
         kwargs = {
-            "sd": literal_eval(self.sd),
+            "sd": self.sd,
             "model": self.model,
             "mc": self.mc,
             "iterations": self.iterations,
@@ -320,7 +377,7 @@ class App:
     def _build_internal_json(self, path_to_data):
 
         final_json = json.dumps({
-            "sd": literal_eval(self.sd),
+            "sd": self.sd,
             "model": self.model.model_name,
             "mc": self.mc,
             "iterations": self.iterations,
