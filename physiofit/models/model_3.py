@@ -16,12 +16,14 @@ class ChildModel(Model):
         self.model_name = "General Model including degradation of metabolites"
         self.vini = 1
         self.parameters_to_estimate = None
-        self.initial_values = None
         self.fixed_parameters = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = ["X_0", "mu"]
+        self.parameters_to_estimate = {
+            "X_O" : self.vini,
+            "mu" : self.vini
+        }
         self.fixed_parameters = {"Degradation": {
             met: 0 for met in self.metabolites
             }
@@ -31,17 +33,18 @@ class ChildModel(Model):
             "mu": (1e-3, 3),
         })
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.append(f"{metabolite}_q")
-            self.parameters_to_estimate.append(f"{metabolite}_M0")
+            self.parameters_to_estimate.update(
+                {
+                    f"{metabolite}_q": self.vini,
+                    f"{metabolite}_M0": self.vini
+                }
+            )
             self.bounds.update(
                 {
                     f"{metabolite}_q": (-50, 50),
                     f"{metabolite}_M0": (1e-6, 50)
                 }
             )
-        self.initial_values = {
-            i: self.vini for i in self.parameters_to_estimate
-        }
 
     @staticmethod
     def simulate(
@@ -57,12 +60,6 @@ class ChildModel(Model):
         x_0 = params_opti[0]
         mu = params_opti[1]
 
-        # If degradation constants are in dict, broadcast to list
-        if isinstance(params_non_opti, dict):
-            params_non_opti = [
-                item[0] for item in params_non_opti.items()
-            ]
-
         # Get X_0 values
         exp_mu_t = np.exp(mu * time_vector)
         simulated_matrix[:, 0] = x_0 * exp_mu_t
@@ -70,7 +67,7 @@ class ChildModel(Model):
         for i in range(1, int(len(params_opti) / 2)):
             q = params_opti[i * 2]
             m_0 = params_opti[i * 2 + 1]
-            k = params_non_opti[i - 1]
+            k = params_non_opti["Degradation"][i - 1]
             exp_k_t = np.exp(-k * time_vector)
             simulated_matrix[:, i] = q * (x_0 / (mu + k)) \
                                      * (exp_mu_t - exp_k_t) \

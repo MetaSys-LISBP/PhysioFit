@@ -16,28 +16,33 @@ class ChildModel(Model):
         self.model_name = "General Model including lag phase estimation"
         self.vini = 1
         self.parameters_to_estimate = None
-        self.initial_values = None
+        self.fixed_parameters = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = ["X_0", "mu", "t_lag"]
+        self.parameters_to_estimate = {
+            "X_0" : self.vini,
+            "mu" : self.vini,
+            "t_lag" : self.vini
+        }
         self.bounds = Bounds({
             "X_0": (1e-3, 10),
             "mu": (1e-3, 3),
             "t_lag": (0, 0.5 * self.time_vector.max()),
         })
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.append(f"{metabolite}_q")
-            self.parameters_to_estimate.append(f"{metabolite}_M0")
+            self.parameters_to_estimate.update(
+                {
+                    f"{metabolite}_q" : 1,
+                    f"{metabolite}_M0" : 1
+                }
+            )
             self.bounds.update(
                 {
                     f"{metabolite}_q": (-50, 50),
                     f"{metabolite}_M0": (1e-6, 50)
                 }
             )
-        self.initial_values = {
-            i: self.vini for i in self.parameters_to_estimate
-        }
 
     @staticmethod
     def simulate(

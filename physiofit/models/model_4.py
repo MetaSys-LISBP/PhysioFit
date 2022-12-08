@@ -17,27 +17,30 @@ class ChildModel(Model):
         self.vini = 1
         self.parameters_to_estimate = None
         self.initial_values = None
-        self.fixed_parameters = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = ["X_0", "mu"]
+        self.parameters_to_estimate = {
+            "X_0" : self.vini,
+            "mu" : self.vini
+        }
         self.bounds = Bounds({
             "X_0": (1e-3, 10),
             "mu": (1e-3, 3)
         })
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.append(f"{metabolite}_q")
-            self.parameters_to_estimate.append(f"{metabolite}_M0")
+            self.parameters_to_estimate.update(
+                {
+                    f"{metabolite}_q" : self.vini,
+                    f"{metabolite}_M0" : self.vini
+                }
+            )
             self.bounds.update(
                 {
                     f"{metabolite}_q": (-50, 50),
                     f"{metabolite}_M0": (1e-6, 50)
                 }
             )
-        self.initial_values = {
-            i: self.vini for i in self.parameters_to_estimate
-        }
 
     @staticmethod
     def simulate(

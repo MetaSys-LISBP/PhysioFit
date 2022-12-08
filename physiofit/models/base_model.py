@@ -29,7 +29,6 @@ class Model(ABC):
         self.parameters_to_estimate = None
         self.fixed_parameters = None
         self.bounds = None
-        self.initial_values = None
 
     def __repr__(self):
         return f"Selected model: {self.model_name}\n" \
@@ -40,8 +39,7 @@ class Model(ABC):
                f"Metabolites: {self.metabolites}\n" \
                f"Parameters to estimate: {self.parameters_to_estimate}\n" \
                f"Fixed parameters: {self.fixed_parameters}\n" \
-               f"Bounds: {self.bounds}\n" \
-               f"Initial values: {self.initial_values}\n"
+               f"Bounds: {self.bounds}\n"
 
     @ abstractmethod
     def get_params(self):

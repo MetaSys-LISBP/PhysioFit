@@ -22,9 +22,9 @@ class ChildModel(Model):
     def get_params(self):
 
         self.parameters_to_estimate = {
-            "X_0" : 1,
-            "mu" : 1,
-            "t_lag" : 1
+            "X_0" : self.vini,
+            "mu" : self.vini,
+            "t_lag" : self.vini
         }
         self.bounds = Bounds(
             X_0=(1e-3, 10),
@@ -34,8 +34,8 @@ class ChildModel(Model):
         for metabolite in self.metabolites:
             self.parameters_to_estimate.update(
                 {
-                    f"{metabolite}_q" : 1,
-                    f"{metabolite}_M0" : 1
+                    f"{metabolite}_q" : self.vini,
+                    f"{metabolite}_M0" : self.vini
                 }
             )
             self.bounds.update(
@@ -50,16 +50,12 @@ class ChildModel(Model):
             }
         }
 
-        self.initial_values = {
-            i: self.vini for i in self.parameters_to_estimate
-        }
-
     @staticmethod
     def simulate(
             params_opti: list,
             data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            params_non_opti: dict | list
+            params_non_opti: dict
     ):
         # Get end shape
         simulated_matrix = np.empty_like(data_matrix)
@@ -68,12 +64,6 @@ class ChildModel(Model):
         x_0 = params_opti[0]
         mu = params_opti[1]
         t_lag = params_opti[2]
-
-        # If degradation constants are in dict, broadcast to list
-        if isinstance(params_non_opti, dict):
-            params_non_opti = [
-                item[0] for item in params_non_opti.items()
-            ]
 
         # We get indices in time vector where time < t_lag
         idx = np.nonzero(time_vector < t_lag)
@@ -89,7 +79,7 @@ class ChildModel(Model):
         for i in range(1, int(len(params_opti) / 2)):
             q = params_opti[i * 2 + 1]
             m_0 = params_opti[i * 2 + 2]
-            k = params_non_opti[i-1]
+            k = params_non_opti["Degradation"][i-1]
             m_t_lag = np.full((len(idx) - 1,), m_0)
             mult_by_time = q * (x_0 / (mu + k)) * (np.exp(
                 mu * (time_vector - t_lag)
