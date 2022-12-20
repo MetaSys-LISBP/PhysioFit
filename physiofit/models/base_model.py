@@ -149,9 +149,12 @@ class StandardDevs(dict):
                 f"SD name field can only contain strings. Detected type {type(key)} for {key}"
             )
         if not isinstance(value, int) and not isinstance(value, float):
-            raise TypeError(
-                f"SD value must be a number. Detected type: {type(value)} for {key}"
-            )
+            try:
+                value = float(value)
+            except Exception:
+                raise TypeError(
+                    f"SD value must be a number. Detected type: {type(value)} for {key}"
+                )
         if value <= 0:
             raise ValueError(
                 f"SD value must be superior to 0. Detected value: {value} for {key}"

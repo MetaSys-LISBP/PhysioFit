@@ -13,8 +13,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame, read_csv
 import yaml
 
-import physiofit
+from physiofit import __file__
 from physiofit.base.fitter import PhysioFitter
+from physiofit.models.base_model import StandardDevs
 
 mod_logger = logging.getLogger("PhysioFit.base.io")
 
@@ -115,7 +116,7 @@ class IoHandler:
         :return: list containing the different model objects
         """
 
-        model_dir = Path(physiofit.__file__).parent / "models"
+        model_dir = Path(__file__).parent / "models"
         for file in os.listdir(str(model_dir)):
             if "model_" in file:
                 module = importlib.import_module(
@@ -717,6 +718,8 @@ class IoHandler:
 
 class ConfigParser:
 
+    allowed_keys = ["model", "sds", "mc", "iterations"]
+
     def __init__(
             self,
             model,
@@ -726,15 +729,29 @@ class ConfigParser:
     ):
 
         self.model = model
-        self.sds = sds
+        self.sds = StandardDevs(sds)
         self.mc = mc
         self.iterations = iterations
+
 
     @classmethod
     def from_file(cls, yaml_file):
         with open(yaml_file, "r") as file:
-            data = yaml.load(file, yaml.base_loader)
-            print(data)
+            data = yaml.load(file, yaml.BaseLoader)
+            data_keys = [key for key in data.keys()]
+            for key in cls.allowed_keys:
+                if key not in data_keys:
+                    raise ValueError(
+                        f"The key {key} is missing from the input config file"
+                    )
+            return ConfigParser(
+                model=data["model"],
+                sds = data["sds"],
+                mc = data["mc"],
+                iterations = data["iterations"]
+            )
+
+
 
 
 
