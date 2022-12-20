@@ -137,13 +137,30 @@ class StandardDevs(dict):
             )
 
         for key, value in mapping.items():
-            if not isinstance(key, str):
-                raise TypeError(
-                    f"SD name field can only contain strings. Detected type {type(key)} for {key}"
-                )
-            if not isinstance(value, int) and not isinstance(value, float):
-                pass
+            self._check_sd(key, value)
+
         super().__init__(mapping)
+
+    @staticmethod
+    def _check_sd(key, value):
+
+        if not isinstance(key, str):
+            raise TypeError(
+                f"SD name field can only contain strings. Detected type {type(key)} for {key}"
+            )
+        if not isinstance(value, int) and not isinstance(value, float):
+            raise TypeError(
+                f"SD value must be a number. Detected type: {type(value)} for {key}"
+            )
+        if value <= 0:
+            raise ValueError(
+                f"SD value must be superior to 0. Detected value: {value} for {key}"
+            )
+
+    def __setitem__(self, key, value):
+
+        self._check_sd(key, value)
+        super().__setitem__(key, value)
 
     @property
     def vector(self):
