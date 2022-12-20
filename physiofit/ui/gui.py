@@ -120,8 +120,7 @@ class App:
             self._get_data_from_session_state()
             # Initialize the fitter object
             if file_extension in ["tsv", "txt"]:
-                self.io_handler.names = self.io_handler.data.columns[
-                                        1:].to_list()
+                self.io_handler.names = self.io_handler.data.columns[1:].to_list()
                 kwargs = self._build_fitter_kwargs()
                 self.io_handler.initialize_fitter(kwargs)
             if file_extension == "json":
@@ -352,14 +351,17 @@ class App:
         sd_name_order = [key for key in self.sd.keys()]
         for name in sd_name_order:
             try:
-                # Get values from widgets
-                self.sd[name] = literal_eval(
-                    st.session_state[f"Fixed_{name}_sd_value"].lstrip("0")  # Strip leading zeroes to stop eval errors
-                )
+                if st.session_state[f"Fixed_{name}_sd_value"] == "0":
+                    self.sd[name] = 0 # will raise Value Error as expected
+                else:
+                    # Get values from widgets
+                    self.sd[name] = literal_eval(
+                        st.session_state[f"Fixed_{name}_sd_value"].lstrip("0")  # Strip leading zeroes to stop eval errors
+                    )
             except ValueError:
                 st.error(
                     f"ERROR: An error occurred while parsing the input for {name} (SDs). Please check that only numbers "
-                    f"have been entered."
+                    f"have been entered and that value is superior to 0."
                 )
                 raise
 
