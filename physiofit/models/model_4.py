@@ -16,7 +16,6 @@ class ChildModel(Model):
         self.model_name = "General model"
         self.vini = 1
         self.parameters_to_estimate = None
-        self.initial_values = None
 
     def get_params(self):
 

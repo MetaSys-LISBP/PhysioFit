@@ -17,7 +17,6 @@ class ChildModel(Model):
                           "degradation of metabolites "
         self.vini = 1
         self.parameters_to_estimate = None
-        self.initial_values = None
 
     def get_params(self):
 
@@ -76,10 +75,12 @@ class ChildModel(Model):
         simulated_matrix[:, 0] = np.concatenate((x_t_lag, mult_by_time),
                                                 axis=None)
 
+        fixed_params = [value for value in params_non_opti["Degradation"].values()]
+
         for i in range(1, int(len(params_opti) / 2)):
             q = params_opti[i * 2 + 1]
             m_0 = params_opti[i * 2 + 2]
-            k = params_non_opti["Degradation"][i-1]
+            k = fixed_params[i-1]
             m_t_lag = np.full((len(idx) - 1,), m_0)
             mult_by_time = q * (x_0 / (mu + k)) * (np.exp(
                 mu * (time_vector - t_lag)
