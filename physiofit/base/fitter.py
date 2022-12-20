@@ -241,7 +241,6 @@ class PhysioFitter:
         self.sd = np.array(sds)
         self._build_sd_matrix()
 
-    # TODO: add in model system
     def optimize(self):
         """
         Run optimization and build the simulated matrix
@@ -251,6 +250,7 @@ class PhysioFitter:
         self.logger.info("\nRunning optimization...\n")
         bounds = self.model.bounds()
         parameters = [param for param in self.model.parameters_to_estimate.values()]
+        self.logger.debug(f"Simulate function = {self.model.simulate}")
         self.optimize_results = self._run_optimization(
             params=parameters,
             func=self.model.simulate,
@@ -367,14 +367,14 @@ class PhysioFitter:
 
             # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(
-                opt_res.x, self.simulate, new_matrix, self.model.time_vector,
+                opt_res.x, self.model.simulate, new_matrix, self.model.time_vector,
                 self.model.fixed_parameters, self.sd, self.model.bounds(),
                 "L-BFGS-B"
             )
 
             # Store the new simulated matrix in list for later use
             matrices.append(
-                self.simulate(
+                self.model.simulate(
                     opt_res.x, new_matrix, self.model.time_vector,
                     self.model.fixed_parameters
                 )
@@ -449,7 +449,7 @@ class PhysioFitter:
         number_params = len(self.model.parameters_to_estimate)
         dof = number_measurements - number_params
         cost = self._calculate_cost(
-            self.optimize_results.x, self.simulate, self.experimental_matrix,
+            self.optimize_results.x, self.model.simulate, self.experimental_matrix,
             self.model.time_vector, self.model.fixed_parameters, self.sd
         )
         p_val = chi2.cdf(cost, dof)
