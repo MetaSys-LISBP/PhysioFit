@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "physiofit"
+version = "3.0.0dev1"
+description = "PhysioFit is a scientific tool designed to i) quantify exchange (production and consumption) fluxes and ii) cell growth rate during (batch) cultivations of microorganisms."
+authors = ["Loïc Le Gregam <legregam@insa-toulouse.fr>", "Pierre Millard <millard@insa-toulouse.fr>"]
+readme = "README.md"
+repository = "https://github.com/MetaSys-LISBP/PhysioFit"
+documentation = "physiofit.readthedocs.io"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+pandas = "^1.3.5"
+numpy = "^1.21.6"
+scipy = "^1.7.3"
+streamlit = "^1.15.0"
+matplotlib = "^3.5.2"
+openpyxl = "^3.0.9"
+pyyaml = "^6.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+physiofit = "physiofit.__main__:main"
