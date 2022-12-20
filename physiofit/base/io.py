@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame, read_csv
+import yaml
 
 import physiofit
 from physiofit.base.fitter import PhysioFitter
@@ -31,10 +32,9 @@ class IoHandler:
         "sd", "model", "iterations", "mc", "debug_mode"
     }
 
-    def __init__(self, source='local', model=None):
+    def __init__(self, source='local'):
 
         self.input_source = source
-        self.model = model
         self._output_type = []
         self._figures = []
         self.models = []
@@ -281,7 +281,13 @@ class IoHandler:
         # Get run parameters from the fitter
         for key, value in self.fitter.__dict__.items():
             if key in self.allowed_keys:
-                if isinstance(value, np.ndarray):
+                if key == "model":
+                    to_dump.update(
+                        {
+                            key : value.model_name
+                        }
+                    )
+                elif isinstance(value, np.ndarray):
                     to_dump.update({key: value.tolist()})
                 else:
                     to_dump.update({key: value})
@@ -393,7 +399,10 @@ class IoHandler:
         # Initialize fitter
         self.fitter = PhysioFitter(
             data=self.data,
-            model=kwargs["model"]
+            model=kwargs["model"],
+            mc=kwargs["mc"],
+            iterations=kwargs["iterations"],
+            sd=kwargs["sd"]
         )
 
         # Initialize fitter logger
@@ -418,7 +427,7 @@ class IoHandler:
                 stream_handle.setLevel(logging.DEBUG)
             else:
                 file_handle.setLevel(logging.INFO)
-                stream_handle.setLevel(logging.DEBUG)
+                stream_handle.setLevel(logging.INFO)
         except KeyError:
             file_handle.setLevel(logging.INFO)
             stream_handle.setLevel(logging.INFO)
@@ -443,7 +452,6 @@ class IoHandler:
 
             # Initialize fitter parameters from kwargs
             for key, value in kwargs.items():
-                self.fitter.logger.debug(f"Key: {key}, value: {value}\n")
                 if key in IoHandler.allowed_keys:
                     self.fitter.__dict__.update({key: value})
                 else:
@@ -547,7 +555,7 @@ class IoHandler:
                                        orient="columns")
 
         # Use IDs to clarify which parameter is described on each line
-        opt_data.index = self.fitter.ids
+        opt_data.index = [param for param in self.fitter.model.parameters_to_estimate.keys()]
         opt_data.to_csv(flux_path, sep="\t")
 
         if isinstance(self.fitter.khi2_res, DataFrame):
@@ -582,11 +590,11 @@ class IoHandler:
         """
 
         # Initialize vectors and data for plotting
-        if self.fitter.time_vector is not None:
-            x = self.fitter.time_vector
+        if self.fitter.model.time_vector is not None:
+            x = self.fitter.model.time_vector
         else:
             raise ValueError(
-                "PhysioFitter time_vector has not been initialized. "
+                "PhysioFitter model time_vector has not been initialized. "
                 "Have you loaded in the data correctly?"
             )
         if self.fitter.experimental_matrix is not None:
@@ -705,6 +713,29 @@ class IoHandler:
         x = self.simulated_data.index
         ax.fill_between(x, y1, y2, alpha=.3, linewidth=0, color="red")
         return ax
+
+
+class ConfigParser:
+
+    def __init__(
+            self,
+            model,
+            sds,
+            mc,
+            iterations
+    ):
+
+        self.model = model
+        self.sds = sds
+        self.mc = mc
+        self.iterations = iterations
+
+    @classmethod
+    def from_file(cls, yaml_file):
+        with open(yaml_file, "r") as file:
+            data = yaml.load(file, yaml.base_loader)
+            print(data)
+
 
 
 if __name__ == "__main__":
