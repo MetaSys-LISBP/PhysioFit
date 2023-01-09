@@ -1,15 +1,13 @@
 from ast import literal_eval
-import json
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from copy import copy
 
 import streamlit as st
-import pandas as pd
 
 import physiofit
-from physiofit.base.io import IoHandler
+from physiofit.base.io import IoHandler, ConfigParser
 from physiofit.models.base_model import StandardDevs
 
 
@@ -22,11 +20,13 @@ class App:
 
         self.defaults = {
             "iterations" : 100,
-            "sd" : StandardDevs()
+            "sd" : StandardDevs(),
+            "mc" : True
         }
         self.select_menu = None
         self.io_handler = None
         self.update_info = None
+        self.config_parser = None
 
     def start_app(self):
         """Launch the application"""
@@ -84,33 +84,31 @@ class App:
         # Check file extension and initialize defaults
         file_extension = self.data_file.name.split(".")[1]
         input_values = self.defaults
-        if file_extension == "json":
+        if file_extension in ["yaml", "yml"]:
             # Get parameters from json file
-            config = IoHandler.read_json_config(self.data_file)
-            input_values.update(config)
-        elif file_extension not in ["tsv", "txt"]:
-            raise KeyError(
-                f"Wrong input file format. Accepted formats are tsv for data "
-                f"files or json for configuration files. Detected file: "
-                f"{self.data_file.name}")
-        else:
+            self.config_parser = self.io_handler.read_yaml(self.data_file)
             # Load data into io_handler
-            data = pd.read_csv(self.data_file, sep="\t")
-            self.io_handler.data = data
-            self.io_handler.data = self.io_handler.data.sort_values(
-                "time", ignore_index=True
-            )
-
+            self.io_handler.data = self.io_handler._read_data(self.config_parser.path_to_data)
+        elif file_extension  in ["tsv", "txt"]:
+            self.io_handler.data = self.io_handler._read_data(self.data_file)
             # Initialize default SDs
             self.defaults["sd"].update({
-                "X" : 0.5
+                "X": 0.5
             })
             self.defaults["sd"].update({
                 col: 0.2 for col in self.io_handler.data.columns[2:]
             })
-            # Initialize the models
-            self.io_handler.get_models()
+        else:
+            raise KeyError(
+                f"Wrong input file format. Accepted formats are tsv for data "
+                f"files or json for configuration files. Detected file: "
+                f"{self.data_file.name}")
 
+        self.io_handler.data = self.io_handler.data.sort_values(
+            "time", ignore_index=True
+        )
+        # Initialize the list of available models
+        self.io_handler.get_models()
         # Build menu
         submitted = self._initialize_opt_menu_widgets(
             file_extension
@@ -118,17 +116,18 @@ class App:
 
         if submitted:
             self._get_data_from_session_state()
+            self.config_parser = ConfigParser(
+                path_to_data = self.io_handler.home_path / self.data_file.name,
+                model = self.model,
+                sds = self.sd,
+                mc = self.mc,
+                iterations = self.iterations
+            )
+
             # Initialize the fitter object
-            if file_extension in ["tsv", "txt"]:
-                self.io_handler.names = self.io_handler.data.columns[1:].to_list()
-                kwargs = self._build_fitter_kwargs()
-                self.io_handler.initialize_fitter(kwargs)
-            if file_extension == "json":
-                st.session_state.submitted = True
-                final_json = self._build_internal_json(
-                    input_values["path_to_data"]
-                )
-                self.io_handler.launch_from_json(final_json)
+            self.io_handler.names = self.io_handler.data.columns[1:].to_list()
+            kwargs = self._build_fitter_kwargs()
+            self.io_handler.initialize_fitter(kwargs)
             # Do the work and export results
             self.io_handler.fitter.optimize()
             if self.mc:
@@ -136,6 +135,7 @@ class App:
             self.io_handler.fitter.khi2_test()
             outputs = ["data", "plot", "pdf"]
             self.io_handler.local_out(*outputs)
+            self.config_parser.export_config(self.io_handler.res_path)
             st.success(
                 f"Run is finished. Check {self.io_handler.res_path} for "
                 f"the results."
@@ -152,6 +152,7 @@ class App:
             label="Model",
             options=model_options,
             key="model_selector",
+            # value = "--" if self.config_parser is None else self.config_parser.model["model_name"],
             help="Select the model to use for flux calculation"
         )
 
@@ -168,14 +169,16 @@ class App:
                 # Select model parameters
                 self.mc = st.checkbox(
                     "Sensitivity analysis (Monte Carlo)",
-                    value=True,
+                    value=self.defaults["mc"] if self.config_parser is None
+                    else self.config_parser.mc,
                     help="Determine the precision on estimated fluxes by "
                          "Monte Carlo sensitivity analysis."
                 )
                 enable_mc = False if self.mc else True
                 self.iterations = st.number_input(
                     "Number of iterations",
-                    value=self.defaults["iterations"],
+                    value=self.defaults["iterations"] if self.config_parser is None
+                    else self.config_parser.iterations ,
                     help="Number of iterations for the Monte Carlo analysis.",
                     disabled=enable_mc
                 )
@@ -188,6 +191,10 @@ class App:
                 if file_extension in ["tsv", "txt"]:
 
                     self._output_directory_selector()
+
+                else:
+                    self.io_handler.home_path = Path(self.config_parser.path_to_data).resolve().parent
+                    self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
 
             # Build the form for advanced parameters
             form = st.form("Parameter_form")
@@ -212,7 +219,8 @@ class App:
                             st.text_input(
                                 label="label", # Unused
                                 label_visibility = "collapsed",
-                                value=value,
+                                value=value if self.config_parser is None
+                                else self.config_parser.model["parameters_to_estimate"][key],
                                 key=f"Parameter_value_{key}"
                             )
                     with col3:
@@ -221,7 +229,8 @@ class App:
                             st.text_input(
                                 label="label",  # Unused
                                 label_visibility="collapsed",
-                                value=bound[0],
+                                value=bound[0] if self.config_parser is None
+                                else literal_eval(self.config_parser.model["bounds"][key])[0],
                                 key=f"Parameter_lower_{key}"
                             )
                     with col4:
@@ -230,7 +239,8 @@ class App:
                             st.text_input(
                                 label="label",  # Unused
                                 label_visibility="collapsed",
-                                value=bound[1],
+                                value=bound[1] if self.config_parser is None
+                                else literal_eval(self.config_parser.model["bounds"][key])[1],
                                 key=f"Parameter_upper_{key}"
                             )
 
@@ -254,15 +264,21 @@ class App:
                                     st.text_input(
                                         label="label", # Unused
                                         label_visibility="collapsed",
-                                        value=value,
+                                        value=value if self.config_parser is None
+                                        else self.config_parser.model["fixed_parameters"][key],
                                         key=f"Fixed_{param}_value_{key}"
                                     )
 
                 expand_sds = st.expander("Standard Deviations")
+                # Get origin of sds
+                if self.config_parser is None:
+                    self.sd = self.defaults["sd"]
+                else:
+                    self.sd = self.config_parser.sds
                 with expand_sds:
                     col1, col2 = st.columns(2)
                     with col1:
-                        for key in self.defaults["sd"].keys():
+                        for key in self.sd.keys():
                             st.text_input(
                                 label="label",  # Unused
                                 label_visibility="collapsed",
@@ -271,11 +287,12 @@ class App:
                                 disabled=True
                             )
                     with col2:
-                        for key, value in self.defaults["sd"].items():
+                        for key, value in self.sd.items():
                             st.text_input(
                                 label="label",  # Unused
                                 label_visibility="collapsed",
-                                value=value,
+                                value=value if self.config_parser is None
+                                else self.config_parser.sds[key],
                                 key=f"Fixed_{key}_sd_value"
                             )
 
@@ -347,7 +364,6 @@ class App:
                         raise
 
         # And finally do the same for Standard Deviations
-        self.sd = self.defaults["sd"]
         sd_name_order = [key for key in self.sd.keys()]
         for name in sd_name_order:
             try:
@@ -375,18 +391,6 @@ class App:
             "debug_mode": self.debug_mode,
         }
         return kwargs
-
-    def _build_internal_json(self, path_to_data):
-
-        final_json = json.dumps({
-            "sd": self.sd,
-            "model": self.model.model_name,
-            "mc": self.mc,
-            "iterations": self.iterations,
-            "debug_mode": self.debug_mode,
-            "path_to_data": path_to_data
-        })
-        return final_json
 
     def _output_directory_selector(self):
 

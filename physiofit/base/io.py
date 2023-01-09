@@ -6,6 +6,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from io import BytesIO
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,30 +53,38 @@ class IoHandler:
         self.has_config_been_read = False
 
     @staticmethod
-    def _read_data(path_to_data: str) -> DataFrame:
+    def _read_data(data: str) -> DataFrame:
         """
         Read initial data file (csv or tsv)
 
-        :param path_to_data: str containing the relative or
+        :param data: str containing the relative or
                              absolute path to the data
         :return: pandas DataFrame containing the data
         """
-
-        data_path = Path(path_to_data).resolve()
-
-        # .dat file type for galaxy implementation
-        if data_path.suffix in [".txt", ".tsv", ".dat"]:
-            data = read_csv(str(data_path), sep="\t")
-        elif data_path.suffix == ".csv":
-            data = read_csv(str(data_path), sep=";")
-        else:
-            if not data_path.exists():
-                raise ValueError(f"{data_path} is not a valid file")
+        try:
+            if isinstance(data, str):
+                data_path = Path(data).resolve()
+            # .dat file type for galaxy implementation
+                if data_path.suffix in [".txt", ".tsv", ".dat"]:
+                    data = read_csv(str(data_path), sep="\t")
+                elif data_path.suffix == ".csv":
+                    data = read_csv(str(data_path), sep=";")
+                else:
+                    if not data_path.exists():
+                        raise ValueError(f"{data_path} is not a valid file")
+                    else:
+                        raise TypeError(
+                            f"{data_path} is not a valid format. "
+                            f"Accepted formats are .csv, .txt or .tsv"
+                        )
+            elif issubclass(type(data), BytesIO):
+                data = read_csv(data, sep="\t")
             else:
-                raise TypeError(
-                    f"{data_path} is not a valid format. "
-                    f"Accepted formats are .csv, .txt or .tsv"
-                )
+                raise TypeError(f"Input data file is not of right type. Accepted types: file-like (bytes) or string")
+        except Exception:
+            raise IOError(
+                "Error while reading data. Please ensure you have the right file format (txt, tsv or bytes)"
+            )
 
         IoHandler._verify_data(data)
         return data
@@ -124,44 +133,6 @@ class IoHandler:
                 )
                 model_class = getattr(module, "ChildModel")
                 self.models.append(model_class(self.data))
-
-    @staticmethod
-    def generate_config_file(destination_path: str):
-        """
-        Generate the default configuration file
-
-        :param destination_path: path to configuration file
-        :return: None
-        """
-
-        # We initialize the keys from a set of allowed keys defined in
-        # the class variable "allowed_keys"
-        config = {
-            key: ""
-            for key in IoHandler.allowed_keys
-        }
-
-        # Set all to none for the empty config file. Defaults are handled
-        # by the user interface modules
-        config["vini"] = None
-        config["mc"] = None
-        config["iterations"] = None
-        config["conc_biom_bounds"] = None
-        config["flux_biom_bounds"] = None
-        config["conc_met_bounds"] = None
-        config["flux_met_bounds"] = None
-        config["sd"] = None
-        config["deg"] = None
-        config["t_lag"] = None
-        config["debug_mode"] = False
-        config.update(
-            {"path_to_data": None}
-        )
-
-        dest_path = Path(destination_path) / "config_file.json"
-
-        with open(str(dest_path), "w") as conf:
-            json.dump(config, conf, indent=4, sort_keys=False)
 
     def local_in(
             self,
@@ -216,7 +187,7 @@ class IoHandler:
         if not self.has_config_been_read:
             self._generate_run_config()
 
-    def galaxy_in(self, data_path: str, **kwargs: dict):
+    def galaxy_in(self, data_path: str | Path, **kwargs: dict):
         """
         Function for reading data and initializing the fitter object in a
         Galaxy instance
@@ -251,23 +222,23 @@ class IoHandler:
         self.res_path = self.home_path
         self.initialize_fitter(kwargs)
 
-    def galaxy_json_launch(self, json_file: str, data_path: str):
-        """
-        Launch the run using a json config file as input. In the context of a
-        Galaxy instance the path to the data file must also be given because
-        the user cannot know it beforehand and give it in the config file
-
-        :param json_file: path to json file
-        :param data_path: path to data
-        :return: None
-        """
-        config = self.read_json_config(json_file)
-        self.has_config_been_read = True
-
-        if "path_to_data" in config:
-            del config["path_to_data"]
-
-        self.galaxy_in(data_path, **config)
+    # def galaxy_json_launch(self, json_file: str, data_path: str):
+    #     """
+    #     Launch the run using a json config file as input. In the context of a
+    #     Galaxy instance the path to the data file must also be given because
+    #     the user cannot know it beforehand and give it in the config file
+    #
+    #     :param json_file: path to json file
+    #     :param data_path: path to data
+    #     :return: None
+    #     """
+    #     config = self.read_yaml(json_file)
+    #     self.has_config_been_read = True
+    #
+    #     if "path_to_data" in config:
+    #         del config["path_to_data"]
+    #
+    #     self.galaxy_in(data_path, **config)
 
     def _generate_run_config(self, export_path: str | Path = None):
         """
@@ -304,60 +275,46 @@ class IoHandler:
         self.fitter.logger.info(
             f"\nConfiguration file saved at: {export_path}")
 
-    def launch_from_json(self, json_file: str | bytes):
-        """
-        Launch the run using a json file as input
-
-        :param json_file: json file containing run parameters.
-                          Can be json string or file-like or path to file
-        :return: None
-        """
-
-        config = self.read_json_config(json_file)
-        self.has_config_been_read = True
-
-        # Get the data path and remove from config dict to ensure no wrong key
-        # errors are returned during fitter initialization
-        data_path = config["path_to_data"]
-        del config["path_to_data"]
-
-        self.local_in(data_path, **config)
+    # def launch_from_json(self, json_file: str | bytes):
+    #     """
+    #     Launch the run using a json file as input
+    #
+    #     :param json_file: json file containing run parameters.
+    #                       Can be json string or file-like or path to file
+    #     :return: None
+    #     """
+    #
+    #     config = self.read_yaml(json_file)
+    #     self.has_config_been_read = True
+    #
+    #     # Get the data path and remove from config dict to ensure no wrong key
+    #     # errors are returned during fitter initialization
+    #     data_path = config["path_to_data"]
+    #     del config["path_to_data"]
+    #
+    #     self.local_in(data_path, **config)
 
     @staticmethod
-    def read_json_config(json_file: str | bytes) -> dict:
+    def read_yaml(yaml_file: str | bytes) -> ConfigParser:
         """
-        Import json configuration file and parse keyword arguments
+        Import raml configuration file and parse keyword arguments
 
-        :param json_file: path to the json file or json file
-        :return config: Dictionnary containing arguments parsed from json file
+        :param yaml_file: path to the yaml file or json file
+        :return config_parser: Dictionary containing arguments parsed from yaml file
         """
 
         # Load config file
-        if isinstance(json_file, str):
-            try:
-                path = Path(json_file).resolve()
-                json_file = open(str(path))
-                config = json.load(json_file)
-            except OSError:
-                config = json.loads(json_file)
-        else:
-            config = json.load(json_file)
-
-        # Convert lists to tuples for the bounds
-        for key in [
-            "conc_biom_bounds", "conc_met_bounds",
-            "flux_met_bounds", "flux_biom_bounds"
-        ]:
-            if isinstance(config[key], list):
-                config[key] = tuple(config[key])
-
-        # Remove None values from config dict so that
-        # defaults are used on fitter init
-        keys_to_del = [key for key, value in config.items() if value is None]
-        for key in keys_to_del:
-            del config[key]
-
-        return config
+        try:
+            if isinstance(yaml_file, str) or issubclass(type(yaml_file), BytesIO):
+                config_parser = ConfigParser.from_file(yaml_file)
+            else:
+                raise TypeError(f"Trying to read object that is not a file or path to file: {yaml_file}")
+        except Exception as e:
+            raise IOError(
+                f"Error while reading yaml configuration file {yaml_file}. "
+                f"\nTraceback:\n\n{e}"
+                )
+        return config_parser
 
     def local_out(self, *args):
         """
@@ -722,37 +679,67 @@ class ConfigParser:
 
     def __init__(
             self,
+            path_to_data,
             model,
             sds,
             mc,
             iterations
     ):
 
+        self.path_to_data = path_to_data
         self.model = model
         self.sds = StandardDevs(sds)
         self.mc = mc
         self.iterations = iterations
 
-
-    @classmethod
-    def from_file(cls, yaml_file):
-        with open(yaml_file, "r") as file:
-            data = yaml.load(file, yaml.BaseLoader)
-            data_keys = [key for key in data.keys()]
-            for key in cls.allowed_keys:
-                if key not in data_keys:
-                    raise ValueError(
-                        f"The key {key} is missing from the input config file"
-                    )
-            return ConfigParser(
-                model=data["model"],
-                sds = data["sds"],
-                mc = data["mc"],
-                iterations = data["iterations"]
+        if not isinstance(self.mc, bool):
+            raise TypeError(
+                f"The MonteCarlo option must be given as a boolean (True or False). Detected input: {self.mc}, "
+                f"type: {type(self.mc)}"
+            )
+        if not isinstance(self.iterations, int):
+            raise TypeError(
+                f"Number of iterations must be an integer: Detected input: {self.mc}, type: {type(self.iterations)}"
             )
 
 
+    @classmethod
+    def from_file(cls, yaml_file):
 
+        # with open(yaml_file, 'r') as file:
+        data = yaml.safe_load(yaml_file)
+        data_keys = [key for key in data.keys()]
+        for key in cls.allowed_keys:
+            if key not in data_keys:
+                raise ValueError(
+                    f"The key {key} is missing from the input config file"
+                )
+        return ConfigParser(
+            path_to_data=data["path_to_data"],
+            model=data["model"],
+            sds = data["sds"],
+            mc = data["mc"],
+            iterations = data["iterations"]
+        )
+
+    def export_config(self, export_path):
+
+        with open(fr"{export_path}/config_file.yml", "w") as file:
+            data = {
+                "model" : {
+                    "name" : self.model.model_name,
+                    "parameters_to_estimate" : self.model.parameters_to_estimate,
+                    "bounds" : {name : f"{bounds[0], bounds[1]}" for name, bounds in self.model.bounds.items()}
+                },
+                "sds" : dict(self.sds),
+                "mc" : self.mc,
+                "iterations" : self.iterations,
+                "path_to_data" : str(self.path_to_data)
+            }
+            yaml.safe_dump(
+                data,
+                file
+            )
 
 
 if __name__ == "__main__":
