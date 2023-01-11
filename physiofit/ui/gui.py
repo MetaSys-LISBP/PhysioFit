@@ -85,19 +85,27 @@ class App:
         file_extension = self.data_file.name.split(".")[1]
         input_values = self.defaults
         if file_extension in ["yaml", "yml"]:
-            # Get parameters from json file
-            self.config_parser = self.io_handler.read_yaml(self.data_file)
-            # Load data into io_handler
-            self.io_handler.data = self.io_handler._read_data(self.config_parser.path_to_data)
+            try:
+                # Get parameters from json file
+                self.config_parser = self.io_handler.read_yaml(self.data_file)
+                # Load data into io_handler
+                self.io_handler.data = self.io_handler._read_data(self.config_parser.path_to_data)
+            except Exception:
+                st.error("There was an error while reading the yaml configuration file.")
+                raise
         elif file_extension  in ["tsv", "txt"]:
-            self.io_handler.data = self.io_handler._read_data(self.data_file)
-            # Initialize default SDs
-            self.defaults["sd"].update({
-                "X": 0.5
-            })
-            self.defaults["sd"].update({
-                col: 0.2 for col in self.io_handler.data.columns[2:]
-            })
+            try:
+                self.io_handler.data = self.io_handler._read_data(self.data_file)
+                # Initialize default SDs
+                self.defaults["sd"].update({
+                    "X": 0.5
+                })
+                self.defaults["sd"].update({
+                    col: 0.2 for col in self.io_handler.data.columns[2:]
+                })
+            except Exception:
+                st.error("There was an error while reading the data.")
+                raise
         else:
             raise KeyError(
                 f"Wrong input file format. Accepted formats are tsv for data "
@@ -107,15 +115,25 @@ class App:
         self.io_handler.data = self.io_handler.data.sort_values(
             "time", ignore_index=True
         )
-        # Initialize the list of available models
-        self.io_handler.get_models()
+        try:
+            # Initialize the list of available models
+            self.io_handler.get_models()
+        except Exception:
+            st.error(f"There was an error while getting list of models from the models folder situated at:"
+                     f"\n{Path(__file__).parent / 'models'}. Please deposit an issue at "
+                     f"github.com/MetaSys-LISBP/PhysioFit/issues")
+            raise
         # Build menu
         submitted = self._initialize_opt_menu_widgets(
             file_extension
         )
 
         if submitted:
-            self._get_data_from_session_state()
+            try:
+                self._get_data_from_session_state()
+            except Exception:
+                st.error("There was an error while initialising the model from given parameters")
+                raise
             self.config_parser = ConfigParser(
                 path_to_data = self.io_handler.home_path / self.data_file.name,
                 model = self.model,
@@ -124,18 +142,19 @@ class App:
                 iterations = self.iterations
             )
 
-            # Initialize the fitter object
-            self.io_handler.names = self.io_handler.data.columns[1:].to_list()
-            kwargs = self._build_fitter_kwargs()
-            self.io_handler.initialize_fitter(kwargs)
-            # Do the work and export results
-            self.io_handler.fitter.optimize()
-            if self.mc:
-                self.io_handler.fitter.monte_carlo_analysis()
-            self.io_handler.fitter.khi2_test()
-            outputs = ["data", "plot", "pdf"]
-            self.io_handler.local_out(*outputs)
-            self.config_parser.export_config(self.io_handler.res_path)
+            with st.spinner("Running Optimization..."):
+                # Initialize the fitter object
+                self.io_handler.names = self.io_handler.data.columns[1:].to_list()
+                kwargs = self._build_fitter_kwargs()
+                self.io_handler.initialize_fitter(kwargs)
+                # Do the work and export results
+                self.io_handler.fitter.optimize()
+                if self.mc:
+                    self.io_handler.fitter.monte_carlo_analysis()
+                self.io_handler.fitter.khi2_test()
+                outputs = ["data", "plot", "pdf"]
+                self.io_handler.local_out(*outputs)
+                self.config_parser.export_config(self.io_handler.res_path)
             st.success(
                 f"Run is finished. Check {self.io_handler.res_path} for "
                 f"the results."
@@ -152,7 +171,6 @@ class App:
             label="Model",
             options=model_options,
             key="model_selector",
-            # value = "--" if self.config_parser is None else self.config_parser.model["model_name"],
             help="Select the model to use for flux calculation"
         )
 
