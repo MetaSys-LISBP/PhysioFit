@@ -183,9 +183,9 @@ class IoHandler:
             )
 
         self.initialize_fitter(kwargs)
-
-        if not self.has_config_been_read:
-            self._generate_run_config()
+        #
+        # if not self.has_config_been_read:
+        #     self._generate_run_config()
 
     def galaxy_in(self, data_path: str | Path, **kwargs: dict):
         """
@@ -240,40 +240,40 @@ class IoHandler:
     #
     #     self.galaxy_in(data_path, **config)
 
-    def _generate_run_config(self, export_path: str | Path = None):
-        """
-        Generate configuration file from parameters of the last run
-
-        :param export_path: Path to export the run config file to. In local
-                            mode this is sent to the _res directory
-        :return: None
-        """
-
-        to_dump = {}
-        # Get run parameters from the fitter
-        for key, value in self.fitter.__dict__.items():
-            if key in self.allowed_keys:
-                if key == "model":
-                    to_dump.update(
-                        {
-                            key : value.model_name
-                        }
-                    )
-                elif isinstance(value, np.ndarray):
-                    to_dump.update({key: value.tolist()})
-                else:
-                    to_dump.update({key: value})
-
-        if self.input_source == "local":
-            to_dump.update(
-                {"path_to_data": str(self.data_path)}
-            )
-            export_path = str(self.res_path / "config_file.json")
-
-        with open(export_path, "w") as conf:
-            json.dump(to_dump, conf, indent=4, sort_keys=True)
-        self.fitter.logger.info(
-            f"\nConfiguration file saved at: {export_path}")
+    # def _generate_run_config(self, export_path: str | Path = None):
+    #     """
+    #     Generate configuration file from parameters of the last run
+    #
+    #     :param export_path: Path to export the run config file to. In local
+    #                         mode this is sent to the _res directory
+    #     :return: None
+    #     """
+    #
+    #     to_dump = {}
+    #     # Get run parameters from the fitter
+    #     for key, value in self.fitter.__dict__.items():
+    #         if key in self.allowed_keys:
+    #             if key == "model":
+    #                 to_dump.update(
+    #                     {
+    #                         key : value.model_name
+    #                     }
+    #                 )
+    #             elif isinstance(value, np.ndarray):
+    #                 to_dump.update({key: value.tolist()})
+    #             else:
+    #                 to_dump.update({key: value})
+    #
+    #     if self.input_source == "local":
+    #         to_dump.update(
+    #             {"path_to_data": str(self.data_path)}
+    #         )
+    #         export_path = str(self.res_path / "config_file.json")
+    #
+    #     with open(export_path, "w") as conf:
+    #         json.dump(to_dump, conf, indent=4, sort_keys=True)
+    #     self.fitter.logger.info(
+    #         f"\nConfiguration file saved at: {export_path}")
 
     # def launch_from_json(self, json_file: str | bytes):
     #     """
