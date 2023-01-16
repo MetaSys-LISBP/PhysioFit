@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from copy import copy
+import sys
 
 import streamlit as st
 
@@ -83,19 +84,18 @@ class App:
 
         # Check file extension and initialize defaults
         file_extension = self.data_file.name.split(".")[1]
-        input_values = self.defaults
         if file_extension in ["yaml", "yml"]:
             try:
                 # Get parameters from json file
                 self.config_parser = self.io_handler.read_yaml(self.data_file)
                 # Load data into io_handler
-                self.io_handler.data = self.io_handler._read_data(self.config_parser.path_to_data)
+                self.io_handler.data = self.io_handler.read_data(self.config_parser.path_to_data)
             except Exception:
                 st.error("There was an error while reading the yaml configuration file.")
                 raise
         elif file_extension  in ["tsv", "txt"]:
             try:
-                self.io_handler.data = self.io_handler._read_data(self.data_file)
+                self.io_handler.data = self.io_handler.read_data(self.data_file)
                 # Initialize default SDs
                 self.defaults["sd"].update({
                     "X": 0.5
@@ -112,9 +112,14 @@ class App:
                 f"files or json for configuration files. Detected file: "
                 f"{self.data_file.name}")
 
+        if self.io_handler.multiple_conditions:
+            to_sort = ["conditions", "time"]
+        else:
+            to_sort = "time"
         self.io_handler.data = self.io_handler.data.sort_values(
-            "time", ignore_index=True
+            to_sort, ignore_index=True
         )
+
         try:
             # Initialize the list of available models
             self.io_handler.get_models()
@@ -123,6 +128,7 @@ class App:
                      f"\n{Path(__file__).parent / 'models'}. Please deposit an issue at "
                      f"github.com/MetaSys-LISBP/PhysioFit/issues")
             raise
+
         # Build menu
         submitted = self._initialize_opt_menu_widgets(
             file_extension
@@ -136,29 +142,70 @@ class App:
                 raise
             self.config_parser = ConfigParser(
                 path_to_data = self.io_handler.home_path / self.data_file.name,
-                model = self.model,
+                selected_model= self.model,
                 sds = self.sd,
                 mc = self.mc,
                 iterations = self.iterations
             )
 
-            with st.spinner("Running Optimization..."):
-                # Initialize the fitter object
-                self.io_handler.names = self.io_handler.data.columns[1:].to_list()
-                kwargs = self._build_fitter_kwargs()
-                self.io_handler.initialize_fitter(kwargs)
-                # Do the work and export results
-                self.io_handler.fitter.optimize()
-                if self.mc:
-                    self.io_handler.fitter.monte_carlo_analysis()
-                self.io_handler.fitter.khi2_test()
-                outputs = ["data", "plot", "pdf"]
-                self.io_handler.local_out(*outputs)
-                self.config_parser.export_config(self.io_handler.res_path)
-            st.success(
-                f"Run is finished. Check {self.io_handler.res_path} for "
-                f"the results."
-            )
+            if self.io_handler.multiple_conditions:
+                full_dataframe = self.io_handler.data.copy()
+                results_path = copy(self.io_handler.res_path)
+                for condition in self.io_handler.conditions:
+                    with st.spinner(f"Running optimization for {condition}"):
+                        self.io_handler.data = full_dataframe[
+                            full_dataframe["conditions"] == condition].drop("conditions", axis=1).copy()
+                        self.model.data = self.io_handler.data
+                        self.io_handler.res_path = results_path / condition
+                        if not self.io_handler.res_path.is_dir():
+                            self.io_handler.res_path.mkdir()
+                        # Initialize the fitter object
+                        self.io_handler.names = self.io_handler.data.columns[1:].to_list()
+                        kwargs = self._build_fitter_kwargs()
+                        self.io_handler.initialize_fitter(kwargs)
+                        # Do the work and export results
+                        self.io_handler.fitter.optimize()
+                        if self.mc:
+                            self.io_handler.fitter.monte_carlo_analysis()
+                        self.io_handler.fitter.khi2_test()
+                        self.io_handler.output_report()
+                        self.io_handler.plot_data()
+                        self.io_handler.output_plots()
+                        with st.expander(f"{condition} plots"):
+                            for fig in self.io_handler._figures:
+                                st.pyplot(fig[1])
+                        self.io_handler.output_pdf()
+                        self.io_handler._figures = []
+                        # outputs = ["data", "plot", "pdf"]
+                        # self.io_handler.local_out(*outputs)
+                        self.config_parser.export_config(self.io_handler.res_path)
+
+                self.io_handler.data = full_dataframe
+                self.io_handler.res_path = results_path
+            else:
+                with st.spinner("Running Optimization..."):
+                    # Initialize the fitter object
+                    self.io_handler.names = self.io_handler.data.columns[1:].to_list()
+                    kwargs = self._build_fitter_kwargs()
+                    self.io_handler.initialize_fitter(kwargs)
+                    # Do the work and export results
+                    self.io_handler.fitter.optimize()
+                    if self.mc:
+                        self.io_handler.fitter.monte_carlo_analysis()
+                    self.io_handler.fitter.khi2_test()
+                    self.io_handler.output_report()
+                    self.io_handler.plot_data()
+                    self.io_handler.output_plots()
+                    with st.expander("Plots"):
+                        for fig in self.io_handler._figures:
+                            st.pyplot(fig[1])
+                    self.io_handler.output_pdf()
+                    self.io_handler._figures = []
+                    self.config_parser.export_config(self.io_handler.res_path)
+                st.success(
+                    f"Run is finished. Check {self.io_handler.res_path} for "
+                    f"the results."
+                )
 
     def _initialize_opt_menu_widgets(self, file_extension):
 

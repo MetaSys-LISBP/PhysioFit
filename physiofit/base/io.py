@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 import importlib
-import json
 import logging
 import os
 from pathlib import Path
@@ -51,9 +50,10 @@ class IoHandler:
         self.data_path = None
         self.res_path = None
         self.has_config_been_read = False
+        self.conditions = None
+        self.multiple_conditions = False
 
-    @staticmethod
-    def _read_data(data: str) -> DataFrame:
+    def read_data(self, data: str) -> DataFrame:
         """
         Read initial data file (csv or tsv)
 
@@ -86,11 +86,15 @@ class IoHandler:
                 "Error while reading data. Please ensure you have the right file format (txt, tsv or bytes)"
             )
 
-        IoHandler._verify_data(data)
+        # Check if multiple conditions are present
+        if "conditions" in data.columns:
+            self.multiple_conditions = True
+            self.conditions = tuple(data["conditions"].unique())
+
+        self._verify_data(data)
         return data
 
-    @staticmethod
-    def _verify_data(data: DataFrame):
+    def _verify_data(self, data: DataFrame):
         """
         Perform checks on DataFrame returned by the _read_data function
 
@@ -108,19 +112,23 @@ class IoHandler:
             if x not in data.columns:
                 raise ValueError(f"Column {x} is missing from the dataset")
 
-        if len(data.columns) <= 2:
-            raise ValueError(f"Data does not contain any metabolite columns")
+        if self.multiple_conditions:
+            if len(data.columns) <= 3:
+                raise ValueError(f"Data does not contain any metabolite columns")
+        else:
+            if len(data.columns) <= 2:
+                raise ValueError(f"Data does not contain any metabolite columns")
 
         for x in data.columns:
-            if data[x].dtypes != np.int64 and data[x].dtypes != np.float64:
+            if x != "conditions" and data[x].dtypes != np.int64 and data[x].dtypes != np.float64:
                 raise ValueError(
                     f"Column {x} has values that are not of numeric type"
                 )
 
+
     def get_models(self):
         """
-        Read modules containing the different models and add them to the
-        self.models
+        Read modules containing the different models and add them to models attribute
 
         :return: list containing the different model objects
         """
@@ -171,7 +179,7 @@ class IoHandler:
                 raise KeyError(
                     f"Input file does not exist. Path: {self.home_path}"
                 )
-            self.data = self._read_data(data_path)
+            self.data = self.read_data(str(data_path))
             self.data = self.data.sort_values("time", ignore_index=True)
             self.names = self.data.columns[1:].to_list()
 
@@ -210,7 +218,7 @@ class IoHandler:
                 f"\n{self.data}\nHome path: {self.home_path}"
             )
         if self.input_source == "galaxy":
-            self.data = IoHandler._read_data(data_path)
+            self.data = self.read_data(str(data_path))
             self.data = self.data.sort_values("time", ignore_index=True)
             self.names = self.data.columns[1:].to_list()
         else:
@@ -221,78 +229,6 @@ class IoHandler:
         self.home_path = Path(".")
         self.res_path = self.home_path
         self.initialize_fitter(kwargs)
-
-    # def galaxy_json_launch(self, json_file: str, data_path: str):
-    #     """
-    #     Launch the run using a json config file as input. In the context of a
-    #     Galaxy instance the path to the data file must also be given because
-    #     the user cannot know it beforehand and give it in the config file
-    #
-    #     :param json_file: path to json file
-    #     :param data_path: path to data
-    #     :return: None
-    #     """
-    #     config = self.read_yaml(json_file)
-    #     self.has_config_been_read = True
-    #
-    #     if "path_to_data" in config:
-    #         del config["path_to_data"]
-    #
-    #     self.galaxy_in(data_path, **config)
-
-    # def _generate_run_config(self, export_path: str | Path = None):
-    #     """
-    #     Generate configuration file from parameters of the last run
-    #
-    #     :param export_path: Path to export the run config file to. In local
-    #                         mode this is sent to the _res directory
-    #     :return: None
-    #     """
-    #
-    #     to_dump = {}
-    #     # Get run parameters from the fitter
-    #     for key, value in self.fitter.__dict__.items():
-    #         if key in self.allowed_keys:
-    #             if key == "model":
-    #                 to_dump.update(
-    #                     {
-    #                         key : value.model_name
-    #                     }
-    #                 )
-    #             elif isinstance(value, np.ndarray):
-    #                 to_dump.update({key: value.tolist()})
-    #             else:
-    #                 to_dump.update({key: value})
-    #
-    #     if self.input_source == "local":
-    #         to_dump.update(
-    #             {"path_to_data": str(self.data_path)}
-    #         )
-    #         export_path = str(self.res_path / "config_file.json")
-    #
-    #     with open(export_path, "w") as conf:
-    #         json.dump(to_dump, conf, indent=4, sort_keys=True)
-    #     self.fitter.logger.info(
-    #         f"\nConfiguration file saved at: {export_path}")
-
-    # def launch_from_json(self, json_file: str | bytes):
-    #     """
-    #     Launch the run using a json file as input
-    #
-    #     :param json_file: json file containing run parameters.
-    #                       Can be json string or file-like or path to file
-    #     :return: None
-    #     """
-    #
-    #     config = self.read_yaml(json_file)
-    #     self.has_config_been_read = True
-    #
-    #     # Get the data path and remove from config dict to ensure no wrong key
-    #     # errors are returned during fitter initialization
-    #     data_path = config["path_to_data"]
-    #     del config["path_to_data"]
-    #
-    #     self.local_in(data_path, **config)
 
     @staticmethod
     def read_yaml(yaml_file: str | bytes) -> ConfigParser:
@@ -342,7 +278,8 @@ class IoHandler:
         if "pdf" in self._output_type:
             self.output_pdf()
 
-        self._generate_run_config()
+        if self._figures:
+            self._figures = []
 
     def initialize_fitter(self, kwargs: dict = None):
         """
@@ -656,6 +593,7 @@ class IoHandler:
         if display:
             for _ in self._figures:
                 plt.show()
+        plt.close()
 
     def _add_sd_area(self, element: str, ax: plt.Axes):
         """
@@ -680,14 +618,14 @@ class ConfigParser:
     def __init__(
             self,
             path_to_data,
-            model,
+            selected_model,
             sds,
             mc,
             iterations
     ):
 
         self.path_to_data = path_to_data
-        self.model = model
+        self.model = selected_model
         self.sds = StandardDevs(sds)
         self.mc = mc
         self.iterations = iterations
@@ -716,7 +654,7 @@ class ConfigParser:
                 )
         return ConfigParser(
             path_to_data=data["path_to_data"],
-            model=data["model"],
+            selected_model=data["model"],
             sds = data["sds"],
             mc = data["mc"],
             iterations = data["iterations"]

@@ -22,7 +22,7 @@ class Model(ABC):
     def __init__(self, data: pd.DataFrame):
         self.data = data
         self.time_vector = self.data.time.to_numpy()
-        self.name_vector = self.data.drop("time", axis=1).columns.to_list()
+        self.name_vector = self.data.drop(["time", "conditions"], axis=1).columns.to_list()
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
         self.metabolites = self.name_vector[1:]
         self.model_name = None
@@ -40,6 +40,16 @@ class Model(ABC):
                f"Parameters to estimate: {self.parameters_to_estimate}\n" \
                f"Fixed parameters: {self.fixed_parameters}\n" \
                f"Bounds: {self.bounds}\n"
+
+    def __setattr__(self, key, value):
+        if key == "data":
+            self.__dict__["data"] = value
+            self.time_vector = self.data.time.to_numpy()
+            self.name_vector = self.data.drop("time", axis=1).columns.to_list()
+            self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
+            self.metabolites = self.name_vector[1:]
+        else:
+            self.__dict__[key] = value
 
     @ abstractmethod
     def get_params(self):
