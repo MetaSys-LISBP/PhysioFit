@@ -210,6 +210,7 @@ class IoHandler:
                 model = model_class(df)
                 print(model.model_name)
         return
+        
     def get_models(self, data=None):
         """
         Read modules containing the different models and add them to models attribute
@@ -231,6 +232,7 @@ class IoHandler:
 
     @staticmethod
     def read_yaml(yaml_file: str | bytes) -> ConfigParser:
+
         """
         Import raml configuration file and parse keyword arguments
 

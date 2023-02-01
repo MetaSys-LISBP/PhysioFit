@@ -124,6 +124,7 @@ def generate_config(args, data, logger):
             model_class = io.read_model(args.model)
             model = model_class(data)
             model.get_params()
+
         else:
             model = io.select_model(args.model, data)
             model.get_params()

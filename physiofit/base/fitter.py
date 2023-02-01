@@ -150,7 +150,7 @@ class PhysioFitter:
         logger.info("Initializing sd matrix...\n")
 
         # If sd is None, we generate the default matrix
-        if self.sd is None:
+        if self.sd is None or self.sd == {}:
             try:
                 self.sd = {"X": 0.2}
                 for col in self.data.columns[2:]:
@@ -187,8 +187,10 @@ class PhysioFitter:
         else:
             # If the array is not the right shape, we assume it is a vector
             # that needs to be tiled into a matrix
+
             logger.debug(f"SD matrix: {self.sd}\n")
             logger.debug(f"Type of SD matrix: {type(self.sd)}")
+
             if self.sd.shape != self.experimental_matrix.shape:
                 try:
                     self._build_sd_matrix()

@@ -13,6 +13,7 @@ from physiofit.base.io import IoHandler, ConfigParser
 from physiofit.models.base_model import StandardDevs
 
 
+
 class App:
     """
     Physiofit Graphical User Interface
