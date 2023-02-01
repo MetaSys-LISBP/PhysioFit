@@ -2,13 +2,13 @@
 Module containing the Command-Line Interface control logic.
 """
 import argparse
-from ast import literal_eval
-from copy import copy
+import logging
+from pathlib import Path
+import sys
 
-from physiofit.base.io import IoHandler
+from physiofit.base.io import IoHandler, StandardDevs, ConfigParser
 
-
-def parse_args():
+def args_parse():
     """
     Parse arguments from user input.
     :return: Argument Parser object
@@ -16,56 +16,36 @@ def parse_args():
     """
 
     parser = argparse.ArgumentParser(
-        "Physiofit: Extracellular flux estimation software")
+        "Physiofit: Extracellular flux estimation software"
+    )
 
     # Parse data arguments (tsv + json)
-    parser.add_argument("-t", "--data", type=str,
-                        help="Path to data file in tabulated format (txt or tsv)")
-    parser.add_argument("-c", "--config", type=str,
-                        help="Path to config file in json format")
-
-    # Parse basic parameters
-    parser.add_argument("-l", "--lag", action="store_true",
-                        help="Should lag phase be estimated. Add for True")
-    parser.add_argument("-d", "--deg", type=str,
-                        help="Should degradation constants be taken into "
-                             "consideration. Add for True. Constants should"
-                             " then be given in dictionary format")
-    parser.add_argument("-mc", "--montecarlo", type=int,
-                        help="Should sensitivity analysis be performed. Number of "
-                             "iterations should be given as an integer"
-                        )
-
-    # Parse advanced parameters
-    parser.add_argument("-i", "--vini", type=float,
-                        help="Select an initial value for fluxes to estimate")
-    parser.add_argument("-s", "--sd", type=str,
-                        help="Standard deviation on measurements. Give sds in "
-                             "dictionary format")
-    parser.add_argument("-cm", "--conc_met_bounds", type=str,
-                        help="Bounds on initial metabolite concentrations. "
-                             "Give bounds as a tuple."
-                        )
-    parser.add_argument("-fm", "--flux_met_bounds", type=str,
-                        help="Bounds on initial metabolite fluxes. "
-                             "Give bounds as a tuple."
-                        )
-    parser.add_argument("-cb", "--conc_biom_bounds", type=str,
-                        help="Bounds on initial biomass concentrations."
-                             "Give bounds as a tuple."
-                        )
-    parser.add_argument("-fb", "--flux_biom_bounds", type=str,
-                        help="Bounds on initial biomass fluxes. "
-                             "Give bounds as a tuple."
-                        )
+    parser.add_argument(
+        "-d", "--data", type=str,
+        help="Path to data file in tabulated format (txt or tsv)"
+    )
+    parser.add_argument(
+        "-c", "--config", type=str,
+        help="Path to config file in yaml format"
+    )
+    parser.add_argument(
+        "-m", "--model", type=str,
+        help="Which model should be chosen. Useful only if generating related config file"
+    )
 
     # Parse developer arguments
-    parser.add_argument("-g", "--galaxy", action="store_true",
-                        help="Is the CLI being used on the galaxy platform"
-                        )
-    parser.add_argument("-v", "--debug_mode", action="store_true",
-                        help="Activate the debug logs"
-                        )
+    parser.add_argument(
+        "-g", "--galaxy", action="store_true",
+        help="Is the CLI being used on the galaxy platform"
+    )
+    parser.add_argument(
+        "--list", action="store_true",
+        help="Return the list of models in model folder"
+    )
+    parser.add_argument(
+        "-v", "--debug_mode", action="store_true",
+        help="Activate the debug logs"
+    )
 
     # Parse selective output path arguments (for galaxy implementation mostly)
     parser.add_argument(
@@ -82,164 +62,143 @@ def parse_args():
     )
     parser.add_argument(
         "-oc", "--output_config", type=str,
-        help="Path to output the json config file"
+        help="Path to output the yaml config file"
     )
 
     return parser
 
+def run(data, args, logger, exp=None):
 
-class Cli:
-    """
-    Class to handle the io_handler initialization and CLI logic
-    """
+    io = IoHandler()
+    logger.info(f"Input Data: \n{io.data}")
+    io.home_path = Path(args.data).parent
+    logger.info(f"Home path: {io.home_path}")
+    logger.info(f"Reading configuration file at {args.config}")
+    io.configparser = io.read_yaml(args.config)
+    logger.info(f"Config File:\n{io.configparser}")
+    model = io.select_model(io.configparser.model["model_name"], data)
+    model.get_params()
+    logger.info(f"Selected Model:\n{model}")
+    model = io.configparser.update_model(model)
+    logger.info(f"Updated Model: \n{model}")
+    logger.info(f"Model Data: \n{model.data}")
+    fitter = io.initialize_fitter(
+        model.data,
+        model=model,
+        mc=io.configparser.mc,
+        iterations=io.configparser.iterations,
+        sd=io.configparser.sds,
+        debug_mode=args.debug_mode
+    )
+    fitter.optimize()
+    if fitter.mc:
+        fitter.monte_carlo_analysis()
+    fitter.khi2_test()
+    if exp is not None:
+        res_path = io.home_path / (io.home_path.name + "_res") / exp
+    else:
+        res_path = io.home_path / (io.home_path.name + "_res")
+    if not res_path.is_dir():
+        res_path.mkdir(parents=True)
+    io.output_report(fitter, res_path)
+    io.output_plots(fitter, res_path)
+    io.output_pdf(fitter, res_path)
+    io.figures = []
 
-    def __init__(self):
+def generate_config(args, data, logger):
 
-        self.parser = parse_args()
-        self.args = self.parser.parse_args()
-        self.io_handler = None
-
-        if not self.args.config or self.args.galaxy:
-            self.fitter_args = self._initialize_fitter_args()
-
-    def _initialize_fitter_args(self) -> dict:
-        """
-        Setup arguments that shall be fed to the fitter object
-
-        :return: fitter arguments
-        """
-
-        fitter_args = copy(vars(self.args))
-
-        # Remove args that where not passed in by the cli
-        for key in self.args.__dict__.keys():
-            if self.args.__dict__[key] is None:
-                del fitter_args[key]
-
-        # Clean up the arguments and give them fitter parameter names
-        if "lag" in fitter_args.keys():
-            fitter_args["t_lag"] = fitter_args.pop("lag")
-        if "montecarlo" in fitter_args.keys() \
-                and "config" not in fitter_args.keys():
-            fitter_args["mc"] = True
-            fitter_args["iterations"] = fitter_args.pop("montecarlo")
-
-        # Transform the strings into the right types
-        for arg in ["deg", "conc_met_bounds", "flux_met_bounds",
-                    "conc_biom_bounds", "flux_biom_bounds"]:
-            if arg in fitter_args.keys():
-                fitter_args[arg] = literal_eval(fitter_args.pop(arg))
-
-        # Remove arguments that are data or config files or output paths
-        for arg in [
-            "data", "config", "galaxy", "output_pdf",
-            "output_plots", "output_fluxes", "output_stats",
-            "output_config"
-        ]:
-            if arg in fitter_args.keys():
-                del fitter_args[arg]
-
-        return fitter_args
-
-    def start_cli(self):
-        """
-        Launch the Command Line Interface in local or Galaxy mode
-        :return: None
-        """
-
-        print("Starting CLI")
-        if not self.args.galaxy:
-            print("CLI started in local mode")
-            self.local_launch()
+    logger.info("Launching in configuration file generator mode")
+    # Run checks
+    if args.model is None:
+        # Must be path to model.py file or name of a model
+        raise ValueError(
+            f"Please select a model to generate the associated configuration file"
+        )
+    if args.output_config is None:
+        raise ValueError(
+            "Please select an output directory for the configuration file"
+        )
+    try:
+        io = IoHandler()
+        if Path(args.model).is_file():
+            model_class = io.read_model(args.model)
+            model = model_class(data)
+            model.get_params()
         else:
-            print("CLI started in Galaxy mode")
-            self.galaxy_launch()
+            model = io.select_model(args.model, data)
+            model.get_params()
+    except Exception:
+        logger.error("There was an error while initialising the model")
+        raise
 
-    def local_launch(self):
-        """
-        Logic to handle the Command Line Interface in local mode
-        :return: None
-        """
+    # Build config parser and export configuration file
+    default_sds = StandardDevs({col: 0.2 for col in model.name_vector})
+    configparser = ConfigParser(
+        path_to_data=args.data,
+        selected_model=model,
+        sds=default_sds,
+        mc=True,
+        iterations=100
+    )
+    configparser.export_config(args.output_config)
+    logger.info(f"Finished exporting the configuration file to {args.output_config}")
+    sys.exit()
 
-        self.io_handler = IoHandler("local")
+def process(args):
 
-        if self.args.config:
-            print("Json config file detected")
-            self.io_handler.launch_from_json(self.args.config)
-        elif self.args.data:
-            print("Data file detected")
-            self.io_handler.local_in(self.args.data, **self.fitter_args)
-        else:
-            raise DataError("No config file or data file detected")
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    out_stream = logging.StreamHandler()
+    formatter = logging.Formatter()
+    out_stream.setFormatter(formatter)
+    if args.debug_mode:
+        out_stream.setLevel(logging.DEBUG)
+    else:
+        out_stream.setLevel(logging.INFO)
+    logger.addHandler(out_stream)
 
-        print("Fitter initialized")
-        self.run()
+    if args.list:
+        IoHandler.get_model_list()
+        sys.exit()
 
-    def galaxy_launch(self):
-        """
-        Logic to handle the Command Line Interface in Galaxy mode
-        :return: None
-        """
+    if args.data is None:
+        raise ValueError("A path towards the data must be given")
 
-        self.io_handler = IoHandler("galaxy")
+    # Ensure that the path to data is correct
+    path_to_data = Path(args.data)
+    if not path_to_data.is_file():
+        raise ValueError(
+            f"The data path is not correct. Please check and try again. Input data path: \n{args.data}"
+        )
+    # Ensure that the input file is a tsv
+    if not path_to_data.suffix in [".tsv", ".txt"]:
+        raise TypeError(
+            f"The input data must be in tsv/txt format. Detected format: {path_to_data.suffix}"
+        )
 
-        # Ensure data is given through the galaxy UI with the config file
-        if self.args.config and not self.args.data:
-            raise DataError(
-                "To run on Galaxy using a config file, "
-                "Physiofit 2.0 needs the data to be given as well."
-            )
-        elif self.args.config and self.args.data:
-            print("Json config file detected")
-            self.io_handler.galaxy_json_launch(self.args.config,
-                                               self.args.data)
-        # Handle case where only data is given
-        elif self.args.data and not self.args.config:
-            print("Data file detected")
-            self.io_handler.galaxy_in(self.args.data, **self.fitter_args)
-        else:
-            raise DataError("No config file or data file detected")
+    # Read & check data
+    data = IoHandler.read_data(str(path_to_data))
 
-        print("Fitter initialized")
-        self.run()
+    # If no configuration file is present we assume the user wants to generate a default one
+    if args.config is None:
+        generate_config(args, data, logger)
 
-    def run(self):
-        """
-        Launch optimization, monte carlo analysis, stat test and output results
-        :return: None
-        """
-
-        print("Running optimization...")
-        self.io_handler.fitter.optimize()
-
-        if self.io_handler.fitter.mc:
-            print("Running sensitivity analysis...")
-            self.io_handler.fitter.monte_carlo_analysis()
-
-        print("Running khi2 test...")
-        self.io_handler.fitter.khi2_test()
-
-        print("Exporting results...")
-        if self.io_handler.input_source == "galaxy":
-            self.io_handler.output_pdf(self.args.output_pdf)
-            self.io_handler.output_report(
-                [self.args.output_stats, self.args.output_fluxes]
-            )
-            self.io_handler._generate_run_config(self.args.output_config)
-
-        else:
-            self.io_handler.local_out("data", "plot", "pdf")
-        print("Done!")
-
-
-class DataError(Exception):
-    pass
-
+    # If configuration file is present we launch the optimization
+    if "experiments" in data.columns:
+        experiments = list(data["experiments"].unique())
+        data = data.set_index("experiments")
+        for exp in experiments:
+            logger.info(f"Running optimization for {exp}")
+            run_data = data.loc[exp, :].sort_values("time").copy()
+            run(run_data, args, logger, exp)
+    else:
+        logger.info("Running optimization")
+        run_data = data.sort_values("time")
+        run(run_data, args, logger)
+    logger.info("Done!")
+    sys.exit()
 
 def main():
-    """
-    Main function to call CLI and launch CLI
-    :return: None
-    """
-    physiofit_cli = Cli()
-    physiofit_cli.start_cli()
+    parser = args_parse()
+    args = parser.parse_args()
+    process(args)

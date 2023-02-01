@@ -12,7 +12,8 @@ from scipy.stats import chi2
 from physiofit.logger import initialize_fitter_logger
 from physiofit.models.base_model import Model
 
-mod_logger = logging.getLogger("PhysioFit.base.fitter")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 # TODO: add estimate deg function (eq 6) with plot of best fit and measured values
@@ -71,8 +72,6 @@ class PhysioFitter:
         self.iterations = iterations
         self.sd = sd
         self.debug_mode = debug_mode
-        if not hasattr(self, "logger"):
-            self.logger = initialize_fitter_logger(self.debug_mode)
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
 
         self.simulated_matrix = None
@@ -104,7 +103,7 @@ class PhysioFitter:
     def _sd_dict_to_matrix(self):
         """Convert sd dictionary to matrix/vector"""
 
-        self.logger.debug("Initializing sd matrix from dict")
+        logger.debug("Initializing sd matrix from dict")
         # Perform checks
         for key in self.sd.keys():
             if key not in self.model.name_vector:
@@ -135,8 +134,8 @@ class PhysioFitter:
             matrix = np.column_stack(columns)
             self.sd = matrix
 
-        self.logger.debug(f"SD object type: {type(self.sd)}")
-        self.logger.debug(f"Array built from dict:\n{self.sd}")
+        logger.debug(f"SD object type: {type(self.sd)}")
+        logger.debug(f"Array built from dict:\n{self.sd}")
 
     def initialize_sd_matrix(self):
         """
@@ -148,7 +147,7 @@ class PhysioFitter:
 
         # This function can be optimized, if the input is a matrix we should
         # detect it directly
-        self.logger.info("Initializing sd matrix...\n")
+        logger.info("Initializing sd matrix...\n")
 
         # If sd is None, we generate the default matrix
         if self.sd is None:
@@ -165,7 +164,7 @@ class PhysioFitter:
         # in all positions
         if isinstance(self.sd, int) or isinstance(self.sd, float):
             self._build_sd_matrix()
-            self.logger.debug(f"SD matrix: {self.sd}\n")
+            logger.debug(f"SD matrix: {self.sd}\n")
             return
         if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd,
                                                                   list):
@@ -188,8 +187,8 @@ class PhysioFitter:
         else:
             # If the array is not the right shape, we assume it is a vector
             # that needs to be tiled into a matrix
-            self.logger.debug(f"SD matrix: {self.sd}\n")
-            self.logger.debug(f"Type of SD matrix: {type(self.sd)}")
+            logger.debug(f"SD matrix: {self.sd}\n")
+            logger.debug(f"Type of SD matrix: {type(self.sd)}")
             if self.sd.shape != self.experimental_matrix.shape:
                 try:
                     self._build_sd_matrix()
@@ -198,9 +197,9 @@ class PhysioFitter:
                 except RuntimeError:
                     raise
             else:
-                self.logger.debug(f"sd matrix: {self.sd}\n")
+                logger.debug(f"sd matrix: {self.sd}\n")
                 return
-        self.logger.info(f"sd Matrix:\n{self.sd}\n")
+        logger.info(f"sd Matrix:\n{self.sd}\n")
 
     def _build_sd_matrix(self):
         """
@@ -247,10 +246,10 @@ class PhysioFitter:
         from the optimized parameters
         """
 
-        self.logger.info("\nRunning optimization...\n")
+        logger.info("\nRunning optimization...\n")
         bounds = self.model.bounds()
         parameters = [param for param in self.model.parameters_to_estimate.values()]
-        self.logger.debug(f"Simulate function = {self.model.simulate}")
+        logger.debug(f"Simulate function = {self.model.simulate}")
         self.optimize_results = self._run_optimization(
             params=parameters,
             func=self.model.simulate,
@@ -264,18 +263,18 @@ class PhysioFitter:
         self.parameter_stats = {
             "optimal": self.optimize_results.x
         }
-        self.logger.info(f"Optimization results: \n{self.optimize_results}\n")
+        logger.info(f"Optimization results: \n{self.optimize_results}\n")
         for i, param in zip(
                 self.model.parameters_to_estimate, self.optimize_results.x
         ):
-            self.logger.info(f"\n{i} = {param}\n")
+            logger.info(f"\n{i} = {param}\n")
         self.simulated_matrix = self.model.simulate(
             self.optimize_results.x,
             self.experimental_matrix,
             self.model.time_vector,
             self.model.fixed_parameters
         )
-        self.logger.debug(f"simulated_matrix:\n{self.simulated_matrix}")
+        logger.debug(f"simulated_matrix:\n{self.simulated_matrix}")
         nan_sim_mat = np.copy(self.simulated_matrix)
         nan_sim_mat[np.isnan(self.experimental_matrix)] = np.nan
         self.simulated_data = DataFrame(
@@ -284,7 +283,7 @@ class PhysioFitter:
             columns=self.model.name_vector
         )
         self.simulated_data.index.name = "Time"
-        self.logger.info(f"Final Simulated Data: \n{self.simulated_data}\n")
+        logger.info(f"Final Simulated Data: \n{self.simulated_data}\n")
 
     @staticmethod
     def _calculate_cost(
@@ -320,15 +319,17 @@ class PhysioFitter:
         """
 
         if method == "differential_evolution":
+            logger.debug(f"Optimization method = {method}")
             optimize_results = differential_evolution(
                 PhysioFitter._calculate_cost, bounds=bounds,
                 args=(
                 func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
-                polish=True, x0=params
+                polish=True, x0=np.array(params)
             )
         elif method == "L-BFGS-B":
+            logger.debug(f"Optimization method = {method}")
             optimize_results = minimize(
-                PhysioFitter._calculate_cost, x0=params,
+                PhysioFitter._calculate_cost, x0=np.array(params),
                 args=(
                 func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
                 method="L-BFGS-B", bounds=bounds, options={'maxcor': 30}
@@ -351,7 +352,7 @@ class PhysioFitter:
                 "generate the initial simulated matrix"
             )
 
-        self.logger.info(
+        logger.info(
             f"Running monte carlo analysis. Number of iterations: "
             f"{self.iterations}\n"
         )
@@ -394,9 +395,9 @@ class PhysioFitter:
         # Compute the statistics on the list of parameters: means, sds,
         # medians and confidence interval
         self._compute_parameter_stats(opt_params_list)
-        self.logger.info(f"Optimized parameters statistics:")
+        logger.info(f"Optimized parameters statistics:")
         for key, value in self.parameter_stats.items():
-            self.logger.info(f"{key}: {value}")
+            logger.info(f"{key}: {value}")
 
         # Apply nan mask to be coherent with the experimental matrix
         nan_lower_ci = np.copy(self.matrices_ci['lower_ci'])
@@ -404,10 +405,10 @@ class PhysioFitter:
         nan_lower_ci[np.isnan(self.experimental_matrix)] = np.nan
         nan_higher_ci[np.isnan(self.experimental_matrix)] = np.nan
 
-        self.logger.info(
+        logger.info(
             f"Simulated matrix lower confidence interval:\n{nan_lower_ci}\n"
         )
-        self.logger.info(
+        logger.info(
             f"Simulated matrix higher confidence interval:\n{nan_higher_ci}\n"
         )
         return
@@ -465,7 +466,7 @@ class PhysioFitter:
             khi2_res, "index", columns=["Values"]
         )
 
-        self.logger.info(f"khi2 test results:\n"
+        logger.info(f"khi2 test results:\n"
                          f"khi2 value: {cost}\n"
                          f"Number of measurements: {number_measurements}\n"
                          f"Number of parameters to fit: {number_params}\n"
@@ -473,14 +474,14 @@ class PhysioFitter:
                          f"p-value = {p_val}\n")
 
         if p_val < 0.95:
-            self.logger.info(
+            logger.info(
                 f"At level of 95% confidence, the model fits the data good "
                 f"enough with respect to the provided measurement SD. "
                 f"Value: {p_val}"
             )
 
         else:
-            self.logger.info(
+            logger.info(
                 f"At level of 95% confidence, the model does not fit the data "
                 f"good enough with respect to the provided measurement SD. "
                 f"Value: {p_val}\n"

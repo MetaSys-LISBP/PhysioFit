@@ -22,13 +22,21 @@ class Model(ABC):
     def __init__(self, data: pd.DataFrame):
         self.data = data
         self.time_vector = self.data.time.to_numpy()
-        self.name_vector = self.data.drop(["time", "conditions"], axis=1).columns.to_list()
+        if "time" in self.data.columns and "experiments" in self.data.columns:
+            self.name_vector = self.data.drop(["time", "experiments"], axis=1).columns.to_list()
+        elif "time" in self.data.columns:
+            self.name_vector = self.data.drop(["time"], axis=1).columns.to_list()
+        else:
+            raise ValueError(
+                "Couldn't get column names from data. Is data loaded in properly and well formatted?"
+            )
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
         self.metabolites = self.name_vector[1:]
         self.model_name = None
         self.parameters_to_estimate = None
         self.fixed_parameters = None
         self.bounds = None
+
 
     def __repr__(self):
         return f"Selected model: {self.model_name}\n" \
@@ -182,6 +190,9 @@ class StandardDevs(dict):
             return self._vector
         self._vector = np.array([value for value in self.values])
         return self._vector
+
+class ModelError(Exception):
+    pass
 
 
 if __name__ == "__main__":

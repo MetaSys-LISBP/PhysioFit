@@ -3,8 +3,9 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from copy import copy
-import sys
 
+from numpy.random import rand
+from numpy import array
 import streamlit as st
 
 import physiofit
@@ -25,7 +26,7 @@ class App:
             "mc" : True
         }
         self.select_menu = None
-        self.io_handler = None
+        self.io = None
         self.update_info = None
         self.config_parser = None
 
@@ -42,7 +43,7 @@ class App:
              "Calculate degradation constant"]
         )
         if self.select_menu == "Calculate extracellular fluxes":
-            self.io_handler = IoHandler()
+            self.io = IoHandler()
             self._build_flux_menu()
         else:
             st.header("Implementation in progress...")
@@ -78,7 +79,7 @@ class App:
 
     def _initialize_opt_menu(self):
         """
-        Initialize all the options. If a json file is given as input, options
+        Initialize all the options. If a yaml file is given as input, options
         are parsed from it. If the input is tsv, the defaults are used instead.
         """
 
@@ -86,22 +87,22 @@ class App:
         file_extension = self.data_file.name.split(".")[1]
         if file_extension in ["yaml", "yml"]:
             try:
-                # Get parameters from json file
-                self.config_parser = self.io_handler.read_yaml(self.data_file)
+                # Get parameters from yaml file
+                self.config_parser = self.io.read_yaml(self.data_file)
                 # Load data into io_handler
-                self.io_handler.data = self.io_handler.read_data(self.config_parser.path_to_data)
+                self.io.data = self.io.read_data(self.config_parser.path_to_data)
             except Exception:
                 st.error("There was an error while reading the yaml configuration file.")
                 raise
         elif file_extension  in ["tsv", "txt"]:
             try:
-                self.io_handler.data = self.io_handler.read_data(self.data_file)
+                self.io.data = self.io.read_data(self.data_file)
                 # Initialize default SDs
                 self.defaults["sd"].update({
                     "X": 0.5
                 })
                 self.defaults["sd"].update({
-                    col: 0.2 for col in self.io_handler.data.columns[2:]
+                    col: 0.2 for col in self.io.data.columns[2:]
                 })
             except Exception:
                 st.error("There was an error while reading the data.")
@@ -112,17 +113,17 @@ class App:
                 f"files or json for configuration files. Detected file: "
                 f"{self.data_file.name}")
 
-        if self.io_handler.multiple_conditions:
-            to_sort = ["conditions", "time"]
+        if "experiments" in self.io.data.columns:
+            to_sort = ["experiments", "time"]
         else:
             to_sort = "time"
-        self.io_handler.data = self.io_handler.data.sort_values(
+        self.io.data = self.io.data.sort_values(
             to_sort, ignore_index=True
         )
 
         try:
             # Initialize the list of available models
-            self.io_handler.get_models()
+            self.io.get_models()
         except Exception:
             st.error(f"There was an error while getting list of models from the models folder situated at:"
                      f"\n{Path(__file__).parent / 'models'}. Please deposit an issue at "
@@ -141,77 +142,103 @@ class App:
                 st.error("There was an error while initialising the model from given parameters")
                 raise
             self.config_parser = ConfigParser(
-                path_to_data = self.io_handler.home_path / self.data_file.name,
+                path_to_data =self.io.home_path / self.data_file.name,
                 selected_model= self.model,
                 sds = self.sd,
                 mc = self.mc,
                 iterations = self.iterations
             )
 
-            if self.io_handler.multiple_conditions:
-                full_dataframe = self.io_handler.data.copy()
-                results_path = copy(self.io_handler.res_path)
-                for condition in self.io_handler.conditions:
-                    with st.spinner(f"Running optimization for {condition}"):
-                        self.io_handler.data = full_dataframe[
-                            full_dataframe["conditions"] == condition].drop("conditions", axis=1).copy()
-                        self.model.data = self.io_handler.data
-                        self.io_handler.res_path = results_path / condition
-                        if not self.io_handler.res_path.is_dir():
-                            self.io_handler.res_path.mkdir()
-                        # Initialize the fitter object
-                        self.io_handler.names = self.io_handler.data.columns[1:].to_list()
-                        kwargs = self._build_fitter_kwargs()
-                        self.io_handler.initialize_fitter(kwargs)
-                        # Do the work and export results
-                        self.io_handler.fitter.optimize()
-                        if self.mc:
-                            self.io_handler.fitter.monte_carlo_analysis()
-                        self.io_handler.fitter.khi2_test()
-                        self.io_handler.output_report()
-                        self.io_handler.plot_data()
-                        self.io_handler.output_plots()
-                        with st.expander(f"{condition} plots"):
-                            for fig in self.io_handler._figures:
-                                st.pyplot(fig[1])
-                        self.io_handler.output_pdf()
-                        self.io_handler._figures = []
-                        # outputs = ["data", "plot", "pdf"]
-                        # self.io_handler.local_out(*outputs)
-                        self.config_parser.export_config(self.io_handler.res_path)
+            if "experiments" in self.io.data.columns:
+                full_dataframe = self.io.data.copy()
+                results_path = copy(self.io.res_path)
+                experiments = list(self.io.data["experiments"].unique())
+                for experiment in experiments:
+                    with st.spinner(f"Running optimization for {experiment}"):
 
-                self.io_handler.data = full_dataframe
-                self.io_handler.res_path = results_path
+                        self.model.data = full_dataframe[
+                            full_dataframe["experiments"] == experiment
+                        ].drop("experiments", axis=1).copy()
+
+                        self.io.res_path = results_path / experiment
+                        if not self.io.res_path.is_dir():
+                            self.io.res_path.mkdir()
+                        # Initialize the fitter object
+                        self.io.names = self.io.data.columns[1:].to_list()
+                        kwargs = self._build_fitter_kwargs()
+                        fitter = self.io.initialize_fitter(
+                        self.model.data,
+                        model=kwargs["model"],
+                        mc=kwargs["mc"],
+                        iterations=kwargs["iterations"],
+                        sd=kwargs["sd"],
+                        debug_mode=kwargs["debug_mode"])
+                        # Do the work
+                        fitter.optimize()
+                        if self.mc:
+                            fitter.monte_carlo_analysis()
+                        fitter.khi2_test()
+                        # Export results
+                        self.io.output_report(fitter, self.io.res_path)
+                        self.io.plot_data(fitter)
+                        self.io.output_plots(fitter, self.io.res_path)
+                        with st.expander(f"{experiment} plots"):
+                            for fig in self.io.figures:
+                                st.pyplot(fig[1])
+                        self.io.output_pdf(fitter, self.io.res_path)
+                        # Reset figures to free memory
+                        self.io.figures = []
+                        self.config_parser.export_config(self.io.res_path)
+
+                self.io.data = full_dataframe
+                self.io.res_path = results_path
             else:
                 with st.spinner("Running Optimization..."):
                     # Initialize the fitter object
-                    self.io_handler.names = self.io_handler.data.columns[1:].to_list()
+                    self.io.names = self.io.data.columns[1:].to_list()
                     kwargs = self._build_fitter_kwargs()
-                    self.io_handler.initialize_fitter(kwargs)
+                    fitter = self.io.initialize_fitter(
+                        self.io.data,
+                        model=kwargs["model"],
+                        mc=kwargs["mc"],
+                        iterations=kwargs["iterations"],
+                        sd=kwargs["sd"],
+                        debug_mode=kwargs["debug_mode"]
+                    )
                     # Do the work and export results
-                    self.io_handler.fitter.optimize()
+                    fitter.optimize()
                     if self.mc:
-                        self.io_handler.fitter.monte_carlo_analysis()
-                    self.io_handler.fitter.khi2_test()
-                    self.io_handler.output_report()
-                    self.io_handler.plot_data()
-                    self.io_handler.output_plots()
+                        fitter.monte_carlo_analysis()
+                    fitter.khi2_test()
+                    self.io.output_report(fitter, self.io.res_path)
+                    self.io.plot_data(fitter)
+                    self.io.output_plots(fitter, self.io.res_path)
                     with st.expander("Plots"):
-                        for fig in self.io_handler._figures:
+                        for fig in self.io.figures:
                             st.pyplot(fig[1])
-                    self.io_handler.output_pdf()
-                    self.io_handler._figures = []
-                    self.config_parser.export_config(self.io_handler.res_path)
+                    self.io.output_pdf(fitter, self.io.res_path)
+                    # Reset figures to free memory
+                    self.io.figures = []
+                    self.config_parser.export_config(self.io.res_path)
                 st.success(
-                    f"Run is finished. Check {self.io_handler.res_path} for "
+                    f"Run is finished. Check {self.io.res_path} for "
                     f"the results."
                 )
+
+    def silent_sim(self):
+
+        self.model.simulate(
+            [param for param in self.model.parameters_to_estimate.values()],
+            self.model.experimental_matrix,
+            self.model.time_vector,
+            self.model.fixed_parameters
+        )
 
     def _initialize_opt_menu_widgets(self, file_extension):
 
         # Get model names and give as options to user
         model_options = [
-            model.model_name for model in self.io_handler.models
+            model.model_name for model in self.io.models
         ]
         model_options.insert(0, "--")
         model_name = st.selectbox(
@@ -223,11 +250,16 @@ class App:
 
         if model_name != "--":
             # Initialize selected model
-            for model in self.io_handler.models:
-                if model.model_name == model_name:
-                    self.model = model
-                    self.model.get_params()
-                    break
+            self.model = self.io.select_model(model_name)
+            self.model.get_params()
+            try:
+                self.silent_sim()
+            except Exception:
+                st.error("There is an error with the selected model")
+                raise
+            else:
+                st.success("Model loaded successfully")
+
             expand_basic_settings = st.expander("Basic settings",
                                                 expanded=True)
             with expand_basic_settings:
@@ -247,6 +279,8 @@ class App:
                     help="Number of iterations for the Monte Carlo analysis.",
                     disabled=enable_mc
                 )
+                if self.iterations < 0:
+                    st.error("ERROR: Number of Monte-Carlo iterations must be a positive integer")
                 self.debug_mode = st.checkbox(
                     "Verbose logs",
                     help="Useful in case of trouble. Join it to the "
@@ -258,8 +292,8 @@ class App:
                     self._output_directory_selector()
 
                 else:
-                    self.io_handler.home_path = Path(self.config_parser.path_to_data).resolve().parent
-                    self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
+                    self.io.home_path = Path(self.config_parser.path_to_data).resolve().parent
+                    self.io.res_path = self.io.home_path / (self.io.home_path.name + "_res")
 
             # Build the form for advanced parameters
             form = st.form("Parameter_form")
@@ -481,24 +515,24 @@ class App:
             if st.session_state.home_path == Path(".") \
                     or not st.session_state.home_path.exists():
                 raise RuntimeError("Please provide a valid path")
-            self.io_handler.home_path = copy(
+            self.io.home_path = copy(
                 st.session_state.home_path)
 
         elif hasattr(st.session_state, "home_path"):
 
-            self.io_handler.home_path = Path(st.text_input(
+            self.io.home_path = Path(st.text_input(
                 "Selected output data directory:",
                 st.session_state.home_path
             ))
-            if self.io_handler.home_path == Path(".") \
-                    or not self.io_handler.home_path.exists():
+            if self.io.home_path == Path(".") \
+                    or not self.io.home_path.exists():
                 raise RuntimeError("Please provide a valid path")
 
             # Initialize the result export directory
-            self.io_handler.res_path = self.io_handler.home_path / (self.io_handler.home_path.name + "_res")
+            self.io.res_path = self.io.home_path / (self.io.home_path.name + "_res")
             if not clicked:
-                if not self.io_handler.res_path.is_dir():
-                    self.io_handler.res_path.mkdir()
+                if not self.io.res_path.is_dir():
+                    self.io.res_path.mkdir()
 
 
 

@@ -13,9 +13,10 @@ class ChildModel(Model):
     def __init__(self, data):
 
         super().__init__(data)
-        self.model_name = "General model"
+        self.model_name = "General Model"
         self.vini = 1
         self.parameters_to_estimate = None
+        self.fixed_parameters = None
 
     def get_params(self):
 

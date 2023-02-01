@@ -45,6 +45,10 @@ class ChildModel(Model):
                     f"{metabolite}_M0": (1e-6, 50)
                 }
             )
+            self.fixed_parameters = {"Degradation": {
+                met: 0 for met in self.metabolites
+                }
+            }
 
     @staticmethod
     def simulate(
@@ -63,11 +67,12 @@ class ChildModel(Model):
         # Get X_0 values
         exp_mu_t = np.exp(mu * time_vector)
         simulated_matrix[:, 0] = x_0 * exp_mu_t
+        fixed_params = [value for value in params_non_opti["Degradation"].values()]
 
         for i in range(1, int(len(params_opti) / 2)):
             q = params_opti[i * 2]
             m_0 = params_opti[i * 2 + 1]
-            k = params_non_opti["Degradation"][i - 1]
+            k = fixed_params[i - 1]
             exp_k_t = np.exp(-k * time_vector)
             simulated_matrix[:, i] = q * (x_0 / (mu + k)) \
                                      * (exp_mu_t - exp_k_t) \

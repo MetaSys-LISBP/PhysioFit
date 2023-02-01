@@ -4,21 +4,26 @@ from __future__ import annotations
 import importlib
 import logging
 import os
+import sys
 from pathlib import Path
 from io import BytesIO
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+# Switch matplotlib logger to higher level to not get debug logs in root logger
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame, read_csv
 import yaml
 
 from physiofit import __file__
 from physiofit.base.fitter import PhysioFitter
-from physiofit.models.base_model import StandardDevs
+from physiofit.models.base_model import StandardDevs, Bounds
 
-mod_logger = logging.getLogger("PhysioFit.base.io")
-
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class IoHandler:
     """
@@ -26,18 +31,16 @@ class IoHandler:
     PhysioFitter component object. It is the preferred interface for
     interacting with the PhysioFit package.
 
-    :param source: Input source
     """
 
     allowed_keys = {
         "sd", "model", "iterations", "mc", "debug_mode"
     }
 
-    def __init__(self, source='local'):
+    def __init__(self):
 
-        self.input_source = source
         self._output_type = []
-        self._figures = []
+        self.figures = []
         self.models = []
         self.fitter = None
         self.output = None
@@ -50,10 +53,11 @@ class IoHandler:
         self.data_path = None
         self.res_path = None
         self.has_config_been_read = False
-        self.conditions = None
-        self.multiple_conditions = False
+        self.experiments = None
+        self.multiple_experiments = False
 
-    def read_data(self, data: str) -> DataFrame:
+    @staticmethod
+    def read_data(data: str) -> DataFrame:
         """
         Read initial data file (csv or tsv)
 
@@ -82,19 +86,84 @@ class IoHandler:
             else:
                 raise TypeError(f"Input data file is not of right type. Accepted types: file-like (bytes) or string")
         except Exception:
+            logger.exception("There was an error while reading the data")
             raise IOError(
                 "Error while reading data. Please ensure you have the right file format (txt, tsv or bytes)"
             )
 
-        # Check if multiple conditions are present
-        if "conditions" in data.columns:
-            self.multiple_conditions = True
-            self.conditions = tuple(data["conditions"].unique())
-
-        self._verify_data(data)
+        IoHandler._verify_data(data)
         return data
 
-    def _verify_data(self, data: DataFrame):
+    def local_in(self, path, model_str, **kwargs):
+        """
+        Load data or yaml file and create fitter
+
+        :param path: path to .tsv file or .yaml file
+        :param model_str: name of model to select or path to model file
+        :param kwargs: extra kwargs to pass on to the fitter
+        """
+
+        if not isinstance(path, str) and not isinstance(path, Path):
+            raise TypeError(
+                "The selected data path is not a string"
+            )
+        if not isinstance(model_str, str) and not isinstance(model_str, Path):
+            raise TypeError(
+                "The selected data path is not a string"
+            )
+
+        self.data = self.read_data(path)
+
+        if Path(model_str).is_file():
+            model_class = self.read_model(model_str)
+        else:
+            self.get_models()
+            for x in self.models:
+                if x.model_name == model_str:
+                    model_class = x
+
+        model = model_class(self.data)
+        model.get_params()
+        fitter = self.initialize_fitter(model = model, **kwargs)
+        return fitter
+
+    def select_model(self, model_name, data=None):
+        """
+        Select a model from the list of models in the model folder of the package src directory
+        """
+
+        self.get_models(data)
+        for x in self.models:
+            if x.model_name == model_name:
+                model = x
+        return model
+
+    def read_model(self, model_file):
+        """
+        Import and return the model class from .py file containing the model.
+
+        .. warning: ONLY USE THIS FUNCTION ON TRUSTED PYTHON FILES. Reading code from untrusted sources can lead to
+                    propagation of viruses and compromised security.
+
+        :param model_file: path to the model.py file to import
+        """
+
+        if not Path(model_file).is_file() or Path(model_file).suffix != ".py":
+            raise ValueError(
+                "The given path is not valid. The path must point to a .py file containing the module "
+                "from which the model will be loaded."
+            )
+
+        spec = importlib.util.spec_from_file_location("module_to_import", fr"{model_file}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["module_to_import"] = module
+        spec.loader.exec_module(module)
+        model_class = getattr(module, "ChildModel")
+
+        return model_class
+
+    @staticmethod
+    def _verify_data(data: DataFrame):
         """
         Perform checks on DataFrame returned by the _read_data function
 
@@ -112,7 +181,7 @@ class IoHandler:
             if x not in data.columns:
                 raise ValueError(f"Column {x} is missing from the dataset")
 
-        if self.multiple_conditions:
+        if "experiment" in data.columns:
             if len(data.columns) <= 3:
                 raise ValueError(f"Data does not contain any metabolite columns")
         else:
@@ -120,13 +189,28 @@ class IoHandler:
                 raise ValueError(f"Data does not contain any metabolite columns")
 
         for x in data.columns:
-            if x != "conditions" and data[x].dtypes != np.int64 and data[x].dtypes != np.float64:
+            if x != "experiments" and data[x].dtypes != np.int64 and data[x].dtypes != np.float64:
                 raise ValueError(
                     f"Column {x} has values that are not of numeric type"
                 )
 
-
-    def get_models(self):
+    @staticmethod
+    def get_model_list():
+        model_dir = Path(__file__).parent / "models"
+        # Make fake dataframe
+        df = DataFrame(
+            columns=["time", "X"],
+        )
+        for file in os.listdir(str(model_dir)):
+            if "model_" in file:
+                module = importlib.import_module(
+                    f"physiofit.models.{file[:-3]}"
+                )
+                model_class = getattr(module, "ChildModel")
+                model = model_class(df)
+                print(model.model_name)
+        return
+    def get_models(self, data=None):
         """
         Read modules containing the different models and add them to models attribute
 
@@ -140,95 +224,10 @@ class IoHandler:
                     f"physiofit.models.{file[:-3]}"
                 )
                 model_class = getattr(module, "ChildModel")
-                self.models.append(model_class(self.data))
-
-    def local_in(
-            self,
-            data_path: str | Path,
-            **kwargs: dict
-    ):
-        """
-        Function for reading data and initializing the fitter object in local
-        context
-
-        :param data_path: path to data
-        :param kwargs: supplementary keyword arguments are passed on to the
-                       PhysioFitter object
-        :return: None
-        """
-        # TODO: add model system into function
-
-        # Store the data path
-        data_path = Path(data_path).resolve()
-        if not data_path.is_absolute():
-            data_path = data_path.absolute()
-
-        # Initialize data and set up destination directory
-        if self.data is not None:
-            raise ValueError(
-                f"It seems data is already loaded in. "
-                f"Data: \n{self.data}\nHome path: {self.home_path}"
-            )
-        elif self.input_source == "local":
-            # Get the path from the data and initialize results directory
-            self.home_path = data_path.parent.resolve()
-            self.res_path = self.home_path / (self.home_path.name + "_res")
-            if not self.res_path.is_dir():
-                self.res_path.mkdir()
-            if not self.home_path.exists():
-                raise KeyError(
-                    f"Input file does not exist. Path: {self.home_path}"
-                )
-            self.data = self.read_data(str(data_path))
-            self.data = self.data.sort_values("time", ignore_index=True)
-            self.names = self.data.columns[1:].to_list()
-
-        # This function is only to be used in local mode, so raise an error
-        # if the input source is other than that
-        elif self.input_source != "local":
-            raise IOError(
-                f"Wrong input source selected. Source: {self.input_source}"
-            )
-
-        self.initialize_fitter(kwargs)
-        #
-        # if not self.has_config_been_read:
-        #     self._generate_run_config()
-
-    def galaxy_in(self, data_path: str | Path, **kwargs: dict):
-        """
-        Function for reading data and initializing the fitter object in a
-        Galaxy instance
-
-        :param data_path: path to data file
-        :param kwargs: supplementary keyword arguments are passed on to the
-                       PhysioFitter object
-        :return: None
-        """
-
-        # Store the data path
-        data_path = Path(data_path).resolve()
-        if not data_path.is_absolute():
-            data_path = data_path.absolute()
-
-        # Initialize data and set up destination directory
-        if self.data is not None:
-            raise ValueError(
-                "It seems data is already loaded in. Data: "
-                f"\n{self.data}\nHome path: {self.home_path}"
-            )
-        if self.input_source == "galaxy":
-            self.data = self.read_data(str(data_path))
-            self.data = self.data.sort_values("time", ignore_index=True)
-            self.names = self.data.columns[1:].to_list()
-        else:
-            raise IOError(
-                f"Wrong input source selected. Source: {self.input_source}"
-            )
-
-        self.home_path = Path(".")
-        self.res_path = self.home_path
-        self.initialize_fitter(kwargs)
+                if data is not None:
+                    self.models.append(model_class(data))
+                else:
+                    self.models.append(model_class(self.data))
 
     @staticmethod
     def read_yaml(yaml_file: str | bytes) -> ConfigParser:
@@ -278,10 +277,10 @@ class IoHandler:
         if "pdf" in self._output_type:
             self.output_pdf()
 
-        if self._figures:
-            self._figures = []
+        if self.figures:
+            self.figures = []
 
-    def initialize_fitter(self, kwargs: dict = None):
+    def initialize_fitter(self, data, **kwargs):
         """
         Initialize a PhysioFitter object
 
@@ -292,86 +291,34 @@ class IoHandler:
         wrong_keys = []
 
         # Initialize fitter
-        self.fitter = PhysioFitter(
-            data=self.data,
+        fitter = PhysioFitter(
+            data=data,
             model=kwargs["model"],
-            mc=kwargs["mc"],
-            iterations=kwargs["iterations"],
-            sd=kwargs["sd"]
+            mc=kwargs["mc"] if "mc" in kwargs else True,
+            iterations=kwargs["iterations"] if "iterations" in kwargs else 100,
+            sd=kwargs["sd"] if "sd" in kwargs else StandardDevs(),
+            debug_mode=kwargs["debug_mode"] if "debug_mode" in kwargs else False
         )
 
-        # Initialize fitter logger
-        if self.res_path is not None:
-            try:
-                file_handle = logging.FileHandler(
-                    self.res_path / "log.txt", "w+"
-                )
-                stream_handle = logging.StreamHandler()
-            except Exception:
-                raise ValueError(
-                    "An error has occurred while initializing the log file. "
-                    "Please check the 'Output data directory'."
-                )
-        else:
-            raise ValueError(
-                "Please select an 'Output data directory'."
+        if "sd" not in kwargs:
+            fitter.sd.update(
+                {"X" : 0.2}
             )
-        try:
-            if kwargs["debug_mode"]:
-                file_handle.setLevel(logging.DEBUG)
-                stream_handle.setLevel(logging.DEBUG)
-            else:
-                file_handle.setLevel(logging.INFO)
-                stream_handle.setLevel(logging.INFO)
-        except KeyError:
-            file_handle.setLevel(logging.INFO)
-            stream_handle.setLevel(logging.INFO)
-        except Exception:
-            raise "An error has occurred while initializing the log level"
-
-        file_handle.setFormatter(
-            logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        )
-        stream_handle.setFormatter(
-            logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        )
-
-        if not self.fitter.logger.handlers:
-            self.fitter.logger.addHandler(file_handle)
-            self.fitter.logger.addHandler(stream_handle)
-        self.fitter.logger.debug(
-            f"Logger handlers: {self.fitter.logger.handlers}"
-        )
-
-        if kwargs:
-
-            # Initialize fitter parameters from kwargs
-            for key, value in kwargs.items():
-                if key in IoHandler.allowed_keys:
-                    self.fitter.__dict__.update({key: value})
-                else:
-                    wrong_keys.append(key)
-            if wrong_keys:
-                raise KeyError(
-                    f"Some keyword arguments were not valid: {wrong_keys}"
+            for col in self.data.columns[2:]:
+                fitter.sd.update(
+                    {col : 0.2}
                 )
 
-        self._initialize_fitter_vars()
-        self.fitter.logger.debug(
-            f"Fitter attribute dictionary:\n{self.fitter.__dict__}"
+        fitter.initialize_sd_matrix()
+        fitter.verify_attrs()
+        logger.debug(
+            f"Fitter attribute dictionary:\n{fitter.__dict__}"
         )
 
+        return fitter
 
-    def _initialize_fitter_vars(self):
-        """
-        Initialize fitter variables
-        :return: None
-        """
 
-        self.fitter.initialize_sd_matrix()
-        self.fitter.verify_attrs()
-
-    def output_pdf(self, export_path: str | Path = None):
+    def output_pdf(self, fitter, export_path: str | Path = None):
         """
         Handle the creation and output of a pdf file containing fit results as
         a plot
@@ -381,46 +328,32 @@ class IoHandler:
         :return: None
         """
 
-        if not self.home_path:
-            raise RuntimeError(
-                "No home path detected. Was data loaded in correctly?"
-            )
-
-        if export_path:
-            res_path = export_path
-        else:
-            res_path = rf"{self.res_path}\plots.pdf"
-
-        if not self._figures:
-            self.plot_data()
+        if not self.figures:
+            self.plot_data(fitter)
 
         try:
-            with PdfPages(res_path) as pdf:
-                for fig in self._figures:
+            with PdfPages(rf"{export_path}\plots.pdf") as pdf:
+                for fig in self.figures:
                     pdf.savefig(fig[1])
         except Exception as e:
             raise IOError(f"Error while generating pdf:\n{e}")
 
-    def output_plots(self):
+    def output_plots(self, fitter, export_path):
         """
         Handle the creation and export of the different plots in svg format
         :return: None
         """
 
-        if not self.home_path:
-            raise RuntimeError(
-                "No home path detected. Was data loaded in correctly?"
-            )
-        if not self._figures:
-            self.plot_data()
+        if not self.figures:
+            self.plot_data(fitter)
 
         try:
-            for fig in self._figures:
-                fig[1].savefig(rf"{self.res_path}\{fig[0]}.svg")
+            for fig in self.figures:
+                fig[1].savefig(rf"{export_path}\{fig[0]}.svg")
         except Exception:
             raise RuntimeError("Unknown error while generating output")
 
-    def output_report(self, export_paths: list = None):
+    def output_report(self, fitter, export_path: str |list = None):
         """
         Handle creation and export of the report containing stats from monte
         carlo analysis of optimization parameters
@@ -429,46 +362,46 @@ class IoHandler:
                              is for stats and [1] for fluxes.
         """
 
-        if export_paths:
-            if len(export_paths) != 2:
+        if isinstance(export_path, list):
+            if len(export_path) != 2:
                 raise ValueError(
-                    f"Expected only 2 export paths and {len(export_paths)}"
+                    f"Expected only 2 export paths and {len(export_path)}"
                     f" were detected"
                 )
-            stat_path = export_paths[0]
-            flux_path = export_paths[1]
+            stat_path = export_path[0]
+            flux_path = export_path[1]
         else:
-            flux_path = fr"{self.res_path}\flux_results.tsv"
-            stat_path = fr"{self.res_path}\stat_results.tsv"
+            flux_path = fr"{export_path}\flux_results.tsv"
+            stat_path = fr"{export_path}\stat_results.tsv"
 
-        self.fitter.logger.debug(
-            f"Parameter Stats:\n{self.fitter.parameter_stats}"
+        logger.debug(
+            f"Parameter Stats:\n{fitter.parameter_stats}"
         )
 
         # Get optimization results as dataframe
-        opt_data = DataFrame.from_dict(self.fitter.parameter_stats,
+        opt_data = DataFrame.from_dict(fitter.parameter_stats,
                                        orient="columns")
 
         # Use IDs to clarify which parameter is described on each line
-        opt_data.index = [param for param in self.fitter.model.parameters_to_estimate.keys()]
+        opt_data.index = [param for param in fitter.model.parameters_to_estimate.keys()]
         opt_data.to_csv(flux_path, sep="\t")
 
-        if isinstance(self.fitter.khi2_res, DataFrame):
+        if isinstance(fitter.khi2_res, DataFrame):
             with open(stat_path, "w+") as stat_out:
                 stat_out.write("==================\n"
                                "Khi² test results\n"
                                "==================\n\n")
                 stat_out.write(
-                    self.fitter.khi2_res.to_string(
+                    fitter.khi2_res.to_string(
                         header=False, justify="center"
                     )
                 )
-                if self.fitter.khi2_res.at["p_val", "Values"] < 0.95:
+                if fitter.khi2_res.at["p_val", "Values"] < 0.95:
                     stat_out.write(
                         f"\n\nAt level of 95% confidence, the model fits the "
                         f"data good enough with respect to the provided "
                         f"measurement SD. Value: "
-                        f"{self.fitter.khi2_res.at['p_val', 'Values']}"
+                        f"{fitter.khi2_res.at['p_val', 'Values']}"
                     )
 
                 else:
@@ -476,72 +409,72 @@ class IoHandler:
                         f"\n\nAt level of 95% confidence, the model does not "
                         f"fit the data good enough with respect to the "
                         f"provided measurement SD. Value: "
-                        f"{self.fitter.khi2_res.at['p_val', 'Values']}\n"
+                        f"{fitter.khi2_res.at['p_val', 'Values']}\n"
                     )
 
-    def _get_plot_data(self):
+    def _get_plot_data(self, fitter):
         """
         Prepare data for plotting
         """
 
         # Initialize vectors and data for plotting
-        if self.fitter.model.time_vector is not None:
-            x = self.fitter.model.time_vector
+        if fitter.model.time_vector is not None:
+            x = fitter.model.time_vector
         else:
             raise ValueError(
                 "PhysioFitter model time_vector has not been initialized. "
                 "Have you loaded in the data correctly?"
             )
-        if self.fitter.experimental_matrix is not None:
-            exp_mat = self.fitter.experimental_matrix
+        if fitter.experimental_matrix is not None:
+            exp_mat = fitter.experimental_matrix
         else:
             raise ValueError(
                 "PhysioFitter object does not have experimental data loaded in"
             )
-        if self.fitter.simulated_matrix is not None:
-            sim_mat = self.fitter.simulated_matrix
+        if fitter.simulated_matrix is not None:
+            sim_mat = fitter.simulated_matrix
         else:
             raise ValueError("PhysioFitter simulated data does not exist yet")
-        if self.fitter.matrices_ci is not None:
-            sim_mat_ci = self.fitter.matrices_ci
+        if fitter.matrices_ci is not None:
+            sim_mat_ci = fitter.matrices_ci
             self.simulated_data_low_ci = DataFrame(
-                columns=self.names,
+                columns=fitter.model.name_vector,
                 index=x,
                 data=sim_mat_ci["lower_ci"]
             )
             self.simulated_data_high_ci = DataFrame(
-                columns=self.names,
+                columns=fitter.model.name_vector,
                 index=x,
                 data=sim_mat_ci["higher_ci"]
             )
         else:
-            self.fitter.logger.warning(
+            logger.warning(
                 "Monte Carlo analysis has not been done, "
                 "confidence intervals will not be computed"
             )
 
         self.experimental_data = DataFrame(
-            columns=self.names,
+            columns=fitter.model.name_vector,
             index=x,
             data=exp_mat
-        )
+        ).sort_index(level=0)
         self.simulated_data = DataFrame(
-            columns=self.names,
+            columns=fitter.model.name_vector,
             index=x,
             data=sim_mat
-        )
+        ).sort_index(level=0)
 
-    def plot_data(self, display: bool = False):
+    def plot_data(self, fitter, display: bool = False):
         """
         Plot the data
 
         :param display: should plots be displayed
         """
 
-        self._get_plot_data()
-        self._draw_plots(display)
+        self._get_plot_data(fitter)
+        self._draw_plots(fitter, display)
 
-    def _draw_plots(self, display: bool):
+    def _draw_plots(self, fitter, display: bool):
         """
         Draw plots and assign them to the _figures attribute for later access
         in pdf and plot generation functions
@@ -549,7 +482,7 @@ class IoHandler:
         :param display: Should plots be displayed or not on creation
         """
 
-        for element in self.names:
+        for element in fitter.model.name_vector:
 
             # Initialize figure object
             fig, ax = plt.subplots()
@@ -574,7 +507,7 @@ class IoHandler:
 
             # If monte carlo analysis has been done add the
             # corresponding sd to the plot as a red area
-            if self.fitter.matrices_ci is not None:
+            if fitter.matrices_ci is not None:
                 ax = self._add_sd_area(element, ax)
 
             # Finishing touches
@@ -588,10 +521,10 @@ class IoHandler:
 
             # Add the figure with the metabolite name as index
             # to the _figures attribute for later use
-            self._figures.append((element, fig))
+            self.figures.append((element, fig))
 
         if display:
-            for _ in self._figures:
+            for _ in self.figures:
                 plt.show()
         plt.close()
 
@@ -617,11 +550,11 @@ class ConfigParser:
 
     def __init__(
             self,
-            path_to_data,
             selected_model,
             sds,
             mc,
-            iterations
+            iterations,
+            path_to_data=None
     ):
 
         self.path_to_data = path_to_data
@@ -644,28 +577,61 @@ class ConfigParser:
     @classmethod
     def from_file(cls, yaml_file):
 
-        # with open(yaml_file, 'r') as file:
-        data = yaml.safe_load(yaml_file)
+        if isinstance(yaml_file, str):
+            with open(yaml_file, 'r') as file:
+                data = yaml.safe_load(file)
+        else:
+            data = yaml.safe_load(yaml_file)
         data_keys = [key for key in data.keys()]
         for key in cls.allowed_keys:
             if key not in data_keys:
                 raise ValueError(
                     f"The key {key} is missing from the input config file"
                 )
-        return ConfigParser(
-            path_to_data=data["path_to_data"],
-            selected_model=data["model"],
-            sds = data["sds"],
-            mc = data["mc"],
-            iterations = data["iterations"]
-        )
+
+        try:
+            return ConfigParser(
+                path_to_data=data["path_to_data"],
+                selected_model=data["model"],
+                sds = data["sds"],
+                mc = data["mc"],
+                iterations = data["iterations"]
+            )
+        except KeyError:
+            return ConfigParser(
+                selected_model=data["model"],
+                sds=data["sds"],
+                mc=data["mc"],
+                iterations=data["iterations"]
+            )
+
+    @classmethod
+    def from_galaxy(cls, galaxy_yaml):
+        pass
+
+    def get_kwargs(self):
+        return  {
+            "path_to_data" : self.path_to_data,
+            "model" : self.model,
+            "mc" : self.mc,
+            "iterations" : self.iterations,
+            "sd" : self.sds
+            }
+
+    def update_model(self, model):
+
+        if self.model["parameters_to_estimate"] is not None:
+            model.parameters_to_estimate.update(self.model["parameters_to_estimate"])
+        if self.model["bounds"] is not None:
+            model.bounds.update(Bounds(self.model["bounds"]))
+        return model
 
     def export_config(self, export_path):
 
         with open(fr"{export_path}/config_file.yml", "w") as file:
             data = {
                 "model" : {
-                    "name" : self.model.model_name,
+                    "model_name" : self.model.model_name,
                     "parameters_to_estimate" : self.model.parameters_to_estimate,
                     "bounds" : {name : f"{bounds[0], bounds[1]}" for name, bounds in self.model.bounds.items()}
                 },
