@@ -1,15 +1,17 @@
 from ast import literal_eval
-import json
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from copy import copy
 
+from numpy.random import rand
+from numpy import array
 import streamlit as st
-import pandas as pd
 
 import physiofit
-from physiofit.base.io import IoHandler, DEFAULTS
+from physiofit.base.io import IoHandler, ConfigParser
+from physiofit.models.base_model import StandardDevs
+
 
 
 class App:
@@ -19,10 +21,15 @@ class App:
 
     def __init__(self):
 
-        self.defaults = copy(DEFAULTS)
+        self.defaults = {
+            "iterations" : 100,
+            "sd" : StandardDevs(),
+            "mc" : True
+        }
         self.select_menu = None
-        self.io_handler = None
+        self.io = None
         self.update_info = None
+        self.config_parser = None
 
     def start_app(self):
         """Launch the application"""
@@ -37,7 +44,7 @@ class App:
              "Calculate degradation constant"]
         )
         if self.select_menu == "Calculate extracellular fluxes":
-            self.io_handler = IoHandler()
+            self.io = IoHandler()
             self._build_flux_menu()
         else:
             st.header("Implementation in progress...")
@@ -52,9 +59,11 @@ class App:
                 # change the next line to streamlit
                 self.update_info = st.info(
                     f'New version available ({lastversion}). '
-                    f'You can update PhysioFit with: "pip install --upgrade physiofit". '
-                    f'Check the documentation for more information.')
-        except:
+                    f'You can update PhysioFit with: "pip install --upgrade '
+                    f'physiofit". Check the documentation for more '
+                    f'information.'
+                )
+        except Exception:
             pass
 
     def _build_flux_menu(self):
@@ -71,215 +80,461 @@ class App:
 
     def _initialize_opt_menu(self):
         """
-        Initialize all the options. If a json file is given as input, options are parsed from it. If the input is
-        tsv, the defaults are used instead.
+        Initialize all the options. If a yaml file is given as input, options
+        are parsed from it. If the input is tsv, the defaults are used instead.
         """
 
+        # Check file extension and initialize defaults
         file_extension = self.data_file.name.split(".")[1]
-        input_values = self.defaults
-        if file_extension == "json":
-            config = IoHandler.read_json_config(self.data_file)
-            input_values.update(config)
-        elif file_extension not in ["tsv", "txt"]:
-            raise KeyError(
-                f"Wrong input file format. Accepted formats are tsv for data files or json for configuration "
-                f"files. Detected file: {self.data_file.name}")
-        else:
-            data = pd.read_csv(self.data_file, sep="\t")
+        if file_extension in ["yaml", "yml"]:
             try:
-                self.defaults["sd"].update({"X": 0.2})
-                for col in data.columns[2:]:
-                    self.defaults["sd"].update({col: 0.5})
+                # Get parameters from yaml file
+                self.config_parser = self.io.read_yaml(self.data_file)
+                # Load data into io_handler
+                self.io.data = self.io.read_data(self.config_parser.path_to_data)
             except Exception:
+                st.error("There was an error while reading the yaml configuration file.")
                 raise
+        elif file_extension  in ["tsv", "txt"]:
+            try:
+                self.io.data = self.io.read_data(self.data_file)
+                # Initialize default SDs
+                self.defaults["sd"].update({
+                    "X": 0.5
+                })
+                self.defaults["sd"].update({
+                    col: 0.2 for col in self.io.data.columns[2:]
+                })
+            except Exception:
+                st.error("There was an error while reading the data.")
+                raise
+        else:
+            raise KeyError(
+                f"Wrong input file format. Accepted formats are tsv for data "
+                f"files or json for configuration files. Detected file: "
+                f"{self.data_file.name}")
 
-        submitted = self._initialize_opt_menu_widgets(input_values,
-                                                      file_extension)
+        if "experiments" in self.io.data.columns:
+            to_sort = ["experiments", "time"]
+        else:
+            to_sort = "time"
+        self.io.data = self.io.data.sort_values(
+            to_sort, ignore_index=True
+        )
+
+        try:
+            # Initialize the list of available models
+            self.io.get_models()
+        except Exception:
+            st.error(f"There was an error while getting list of models from the models folder situated at:"
+                     f"\n{Path(__file__).parent / 'models'}. Please deposit an issue at "
+                     f"github.com/MetaSys-LISBP/PhysioFit/issues")
+            raise
+
+        # Build menu
+        submitted = self._initialize_opt_menu_widgets(
+            file_extension
+        )
 
         if submitted:
-            if file_extension in ["tsv", "txt"]:
-                self.io_handler.data = data
-                self.io_handler.data = self.io_handler.data.sort_values("time",
-                                                                        ignore_index=True)
-                self.io_handler.names = self.io_handler.data.columns[
-                                        1:].to_list()
-                kwargs = self._build_fitter_kwargs()
-                self.io_handler.initialize_fitter(kwargs)
-            if file_extension == "json":
-                st.session_state.submitted = True
-                final_json = self._build_internal_json(
-                    input_values["path_to_data"])
-                self.io_handler.launch_from_json(final_json)
-            self.io_handler.fitter.optimize()
-            if self.mc:
-                self.io_handler.fitter.monte_carlo_analysis()
-            self.io_handler.fitter.khi2_test()
-            outputs = ["data", "plot", "pdf"]
-            self.io_handler.local_out(*outputs)
-            st.success(
-                f"Run is finished. Check {self.io_handler.res_path} for the results.")
-
-    def _initialize_opt_menu_widgets(self, input_values, file_extension):
-
-        expand_basic_settings = st.expander("Basic settings", expanded=True)
-        with expand_basic_settings:
-            self.t_lag = st.checkbox(
-                "Lag",
-                key="lag_check"
-            )
-            self.deg_check = st.checkbox(
-                "Degradation",
-                key="deg_check"
-            )
-            enable_deg = False if self.deg_check else True
-            self.deg = st.text_input(
-                "Degradation constants",
-                value={},
-                help="Dictionary containing the (first-order) degradation constant of each metabolite. "
-                     "Format: {'met1': value, 'met2': value, ... 'metn': value}",
-                disabled=enable_deg
-            )
-            self.mc = st.checkbox(
-                "Sensitivity analysis (Monte Carlo)",
-                value=True,
-                help="Determine the precision on estimated fluxes by Monte Carlo sensitivity analysis."
-            )
-            enable_mc = False if self.mc else True
-            self.iterations = st.number_input(
-                "Number of iterations",
-                value=input_values["iterations"],
-                help="Number of iterations for the Monte Carlo analysis.",
-                disabled=enable_mc
+            try:
+                self._get_data_from_session_state()
+            except Exception:
+                st.error("There was an error while initialising the model from given parameters")
+                raise
+            self.config_parser = ConfigParser(
+                path_to_data =self.io.home_path / self.data_file.name,
+                selected_model= self.model,
+                sds = self.sd,
+                mc = self.mc,
+                iterations = self.iterations
             )
 
-            if file_extension in ["tsv", "txt"]:
+            if "experiments" in self.io.data.columns:
+                full_dataframe = self.io.data.copy()
+                results_path = copy(self.io.res_path)
+                experiments = list(self.io.data["experiments"].unique())
+                for experiment in experiments:
+                    with st.spinner(f"Running optimization for {experiment}"):
 
-                # Set up tkinter for directory chooser
-                root = tk.Tk()
-                root.withdraw()
+                        self.model.data = full_dataframe[
+                            full_dataframe["experiments"] == experiment
+                        ].drop("experiments", axis=1).copy()
 
-                # Make folder picker dialog appear on top of other windows
-                root.wm_attributes('-topmost', 1)
+                        self.io.res_path = results_path / experiment
+                        if not self.io.res_path.is_dir():
+                            self.io.res_path.mkdir()
+                        # Initialize the fitter object
+                        self.io.names = self.io.data.columns[1:].to_list()
+                        kwargs = self._build_fitter_kwargs()
+                        fitter = self.io.initialize_fitter(
+                        self.model.data,
+                        model=kwargs["model"],
+                        mc=kwargs["mc"],
+                        iterations=kwargs["iterations"],
+                        sd=kwargs["sd"],
+                        debug_mode=kwargs["debug_mode"])
+                        # Do the work
+                        fitter.optimize()
+                        if self.mc:
+                            fitter.monte_carlo_analysis()
+                        fitter.khi2_test()
+                        # Export results
+                        self.io.output_report(fitter, self.io.res_path)
+                        self.io.plot_data(fitter)
+                        self.io.output_plots(fitter, self.io.res_path)
+                        with st.expander(f"{experiment} plots"):
+                            for fig in self.io.figures:
+                                st.pyplot(fig[1])
+                        self.io.output_pdf(fitter, self.io.res_path)
+                        # Reset figures to free memory
+                        self.io.figures = []
+                        self.config_parser.export_config(self.io.res_path)
 
-                # Initialize folder picker button and add logic
-                clicked = st.button("Select output data directory",
-                                    key="clicker")
-                if clicked:
-
-                    # Initialize home path from directory selector and add to session state
-                    st.session_state.home_path = Path(st.text_input(
-                        "Selected output data directory:",
-                        filedialog.askdirectory(master=root)
-                    ))
-                    if st.session_state.home_path == Path(
-                            ".") or not st.session_state.home_path.exists():
-                        raise RuntimeError("Please provide a valid path")
-                    self.io_handler.home_path = copy(
-                        st.session_state.home_path)
-
-                elif hasattr(st.session_state, "home_path"):
-
-                    self.io_handler.home_path = Path(st.text_input(
-                        "Selected output data directory:",
-                        st.session_state.home_path
-                    ))
-                    if self.io_handler.home_path == Path(
-                            ".") or not self.io_handler.home_path.exists():
-                        raise RuntimeError("Please provide a valid path")
-
-                    # Initialize the result export directory
-                    self.io_handler.res_path = self.io_handler.home_path / (
-                                self.io_handler.home_path.name + "_res")
-                    if not clicked:
-                        if not self.io_handler.res_path.is_dir():
-                            self.io_handler.res_path.mkdir()
-
-        # Build the form for advanced parameters
-        form = st.form("Parameter_form")
-        with form:
-            expand_run_params = st.expander("Advanced settings")
-            with expand_run_params:
-                self.vini = st.text_input(
-                    "Initial flux values",
-                    value=input_values["vini"],
-                    key="vini",
-                    help="Select an initial value of fluxes to estimate. Default: 0.2"
+                self.io.data = full_dataframe
+                self.io.res_path = results_path
+            else:
+                with st.spinner("Running Optimization..."):
+                    # Initialize the fitter object
+                    self.io.names = self.io.data.columns[1:].to_list()
+                    kwargs = self._build_fitter_kwargs()
+                    fitter = self.io.initialize_fitter(
+                        self.io.data,
+                        model=kwargs["model"],
+                        mc=kwargs["mc"],
+                        iterations=kwargs["iterations"],
+                        sd=kwargs["sd"],
+                        debug_mode=kwargs["debug_mode"]
+                    )
+                    # Do the work and export results
+                    fitter.optimize()
+                    if self.mc:
+                        fitter.monte_carlo_analysis()
+                    fitter.khi2_test()
+                    self.io.output_report(fitter, self.io.res_path)
+                    self.io.plot_data(fitter)
+                    self.io.output_plots(fitter, self.io.res_path)
+                    with st.expander("Plots"):
+                        for fig in self.io.figures:
+                            st.pyplot(fig[1])
+                    self.io.output_pdf(fitter, self.io.res_path)
+                    # Reset figures to free memory
+                    self.io.figures = []
+                    self.config_parser.export_config(self.io.res_path)
+                st.success(
+                    f"Run is finished. Check {self.io.res_path} for "
+                    f"the results."
                 )
-                self.sd = st.text_input(
-                    "Standard deviation on measurements",
-                    value=input_values["sd"],
-                    help="Standard deviation on the measurements. If empty, default is 0.2 for biomass and"
-                         " 0.5 for metabolites"
+
+    def silent_sim(self):
+
+        self.model.simulate(
+            [param for param in self.model.parameters_to_estimate.values()],
+            self.model.experimental_matrix,
+            self.model.time_vector,
+            self.model.fixed_parameters
+        )
+
+    def _initialize_opt_menu_widgets(self, file_extension):
+
+        # Get model names and give as options to user
+        model_options = [
+            model.model_name for model in self.io.models
+        ]
+        model_options.insert(0, "--")
+        model_name = st.selectbox(
+            label="Model",
+            options=model_options,
+            key="model_selector",
+            help="Select the model to use for flux calculation"
+        )
+
+        if model_name != "--":
+            # Initialize selected model
+            self.model = self.io.select_model(model_name)
+            self.model.get_params()
+            try:
+                self.silent_sim()
+            except Exception:
+                st.error("There is an error with the selected model")
+                raise
+            else:
+                st.success("Model loaded successfully")
+
+            expand_basic_settings = st.expander("Basic settings",
+                                                expanded=True)
+            with expand_basic_settings:
+                # Select model parameters
+                self.mc = st.checkbox(
+                    "Sensitivity analysis (Monte Carlo)",
+                    value=self.defaults["mc"] if self.config_parser is None
+                    else self.config_parser.mc,
+                    help="Determine the precision on estimated fluxes by "
+                         "Monte Carlo sensitivity analysis."
                 )
-                self.conc_met_bounds = st.text_input(
-                    "Bounds on initial metabolite concentrations",
-                    value=input_values["conc_met_bounds"],
-                    help="Bounds for the initial concentrations of the metabolites (Mi0). "
-                         "These values correspond to the lowest and highest initial concentration of metabolites, "
-                         "this range should include the actual values. Defaults: [1e-06, 50]"
+                enable_mc = False if self.mc else True
+                self.iterations = st.number_input(
+                    "Number of iterations",
+                    value=self.defaults["iterations"] if self.config_parser is None
+                    else self.config_parser.iterations ,
+                    help="Number of iterations for the Monte Carlo analysis.",
+                    disabled=enable_mc
                 )
-                self.flux_met_bounds = st.text_input(
-                    "Bounds on fluxes",
-                    value=input_values["flux_met_bounds"],
-                    help="Bounds for metabolic fluxes (qM). "
-                         "These values correspond to the lowest and highest fluxes, this range should include the "
-                         "actual value. Defaults: [0.01, 50]"
-                )
-                self.conc_biom_bounds = st.text_input(
-                    "Bounds on initial biomass concentration",
-                    value=input_values["conc_biom_bounds"],
-                    help="Bounds for initial concentrations of the biomass (X0). "
-                         "These values correspond to the lowest and highest (initial) biomass concentration, this "
-                         "range should include the actual value. Defaults: [1e-06, 50]"
-                )
-                self.flux_biom_bounds = st.text_input(
-                    "Bounds on growth rate",
-                    value=input_values["flux_biom_bounds"],
-                    help="Bounds for growth rate (µ). "
-                         "These values correspond to the lowest and highest growth rates, this range should include "
-                         "the actual value. Defaults: [0.01, 2]"
-                )
+                if self.iterations < 0:
+                    st.error("ERROR: Number of Monte-Carlo iterations must be a positive integer")
                 self.debug_mode = st.checkbox(
                     "Verbose logs",
-                    help="Useful in case of trouble. Join it to the issue on github."
+                    help="Useful in case of trouble. Join it to the "
+                         "issue on github."
                 )
-            submitted = st.form_submit_button("Run flux calculation")
-        return submitted
+
+                if file_extension in ["tsv", "txt"]:
+
+                    self._output_directory_selector()
+
+                else:
+                    self.io.home_path = Path(self.config_parser.path_to_data).resolve().parent
+                    self.io.res_path = self.io.home_path / (self.io.home_path.name + "_res")
+
+            # Build the form for advanced parameters
+            form = st.form("Parameter_form")
+            with form:
+                expand_run_params = st.expander("Parameters")
+                with expand_run_params:
+                    st.subheader("Parameters to estimate")
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.write("Parameter Name")
+                        for key in self.model.parameters_to_estimate:
+                            st.text_input(
+                                label="label", # Unused
+                                label_visibility="collapsed",
+                                value=key,
+                                key=f"Parameter_name_{key}",
+                                disabled=True
+                            )
+                    with col2:
+                        st.write("Parameter Value")
+                        for key, value in self.model.parameters_to_estimate.items():
+                            st.text_input(
+                                label="label", # Unused
+                                label_visibility = "collapsed",
+                                value=value if self.config_parser is None
+                                else self.config_parser.model["parameters_to_estimate"][key],
+                                key=f"Parameter_value_{key}"
+                            )
+                    with col3:
+                        st.write("Lower Bound")
+                        for key, bound in self.model.bounds.items():
+                            st.text_input(
+                                label="label",  # Unused
+                                label_visibility="collapsed",
+                                value=bound[0] if self.config_parser is None
+                                else literal_eval(self.config_parser.model["bounds"][key])[0],
+                                key=f"Parameter_lower_{key}"
+                            )
+                    with col4:
+                        st.write("Upper Bound")
+                        for key, bound in self.model.bounds.items():
+                            st.text_input(
+                                label="label",  # Unused
+                                label_visibility="collapsed",
+                                value=bound[1] if self.config_parser is None
+                                else literal_eval(self.config_parser.model["bounds"][key])[1],
+                                key=f"Parameter_upper_{key}"
+                            )
+
+                    if self.model.fixed_parameters is not None:
+                        for param in self.model.fixed_parameters.keys():
+                            st.subheader(f"Fixed parameters: {param}")
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.write("Parameter Name")
+                                for key in self.model.fixed_parameters[param].keys():
+                                    st.text_input(
+                                        label="label", # Unused
+                                        label_visibility="collapsed",
+                                        value=key,
+                                        key=f"Fixed_{param}_{key}",
+                                        disabled=True
+                                    )
+                            with col2:
+                                st.write("Parameter Value")
+                                for key, value in self.model.fixed_parameters[param].items():
+                                    st.text_input(
+                                        label="label", # Unused
+                                        label_visibility="collapsed",
+                                        value=value if self.config_parser is None
+                                        else self.config_parser.model["fixed_parameters"][key],
+                                        key=f"Fixed_{param}_value_{key}"
+                                    )
+
+                expand_sds = st.expander("Standard Deviations")
+                # Get origin of sds
+                if self.config_parser is None:
+                    self.sd = self.defaults["sd"]
+                else:
+                    self.sd = self.config_parser.sds
+                with expand_sds:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        for key in self.sd.keys():
+                            st.text_input(
+                                label="label",  # Unused
+                                label_visibility="collapsed",
+                                value=key,
+                                key=f"{key}_sd",
+                                disabled=True
+                            )
+                    with col2:
+                        for key, value in self.sd.items():
+                            st.text_input(
+                                label="label",  # Unused
+                                label_visibility="collapsed",
+                                value=value if self.config_parser is None
+                                else self.config_parser.sds[key],
+                                key=f"Fixed_{key}_sd_value"
+                            )
+
+                submitted = st.form_submit_button("Run flux calculation")
+            return submitted
+
+    def _get_data_from_session_state(self):
+        """
+        Get the data from the widgets input
+        """
+
+        # Start with estimable parameters
+        # Get order of parameter names to build dict
+        estimable_parameter_name_order = [key for key in self.model.parameters_to_estimate.keys()]
+        for name in estimable_parameter_name_order:
+            try:
+                # Get values from widgets
+                if st.session_state[f"Parameter_value_{name}"] == "0":
+                    self.model.parameters_to_estimate[name] = 0
+                else:
+                    self.model.parameters_to_estimate[name] = literal_eval(
+                        st.session_state[f"Parameter_value_{name}"].lstrip("0") # Strip leading zeroes to stop eval errors
+                    )
+                # Get bounds
+                if st.session_state[f"Parameter_lower_{name}"] == "0":
+                    st.warning(
+                        f"WARNING: {name} has a lower bound at 0. Sometimes this might confuse the optimizer. It is "
+                        f"advised to replace 0 with a very small number, 1e-6 for example."
+                    )
+                    lower_bound = 0
+                else:
+                    lower_bound = literal_eval(st.session_state[f"Parameter_lower_{name}"].lstrip("0"))
+                if st.session_state[f"Parameter_upper_{name}"] == "0":
+                    st.warning(
+                        f"WARNING: {name} has an upper bound at 0. Sometimes this might confuse the optimizer. It is "
+                        f"advised to replace 0 with a very small number, 1e-6 for example."
+                    )
+                    upper_bound = 0
+                else:
+                    upper_bound = literal_eval(st.session_state[f"Parameter_upper_{name}"].lstrip("0"))
+                self.model.bounds[name] = (
+                    lower_bound,
+                    upper_bound
+                )
+            except ValueError:
+                st.error(
+                    f"ERROR: An error occurred while parsing the input for {name}. Please check that only numbers "
+                    f"have been entered."
+                )
+                raise
+
+        # Do the same for each fixed parameter class
+        if self.model.fixed_parameters is not None:
+            fixed_parameter_classes = [param for param in self.model.fixed_parameters]
+            for param in fixed_parameter_classes:
+                for key in self.model.fixed_parameters[param].keys():
+                    try:
+                        if st.session_state[f"Fixed_{param}_value_{key}"] == "0":
+                            self.model.fixed_parameters[param][key] = 0
+                        else:
+                            self.model.fixed_parameters[param][key] = literal_eval(
+                                st.session_state[f"Fixed_{param}_value_{key}"].lstrip("0")
+                            )
+                    except ValueError:
+                        st.error(
+                            f"ERROR: An error occurred while parsing the input in the fixed parameter class {param} for "
+                            f"{key}. Please check that only numbers have been entered."
+                        )
+                        raise
+
+        # And finally do the same for Standard Deviations
+        sd_name_order = [key for key in self.sd.keys()]
+        for name in sd_name_order:
+            try:
+                if st.session_state[f"Fixed_{name}_sd_value"] == "0":
+                    self.sd[name] = 0 # will raise Value Error as expected
+                else:
+                    # Get values from widgets
+                    self.sd[name] = literal_eval(
+                        st.session_state[f"Fixed_{name}_sd_value"].lstrip("0")  # Strip leading zeroes to stop eval errors
+                    )
+            except ValueError:
+                st.error(
+                    f"ERROR: An error occurred while parsing the input for {name} (SDs). Please check that only numbers "
+                    f"have been entered and that value is superior to 0."
+                )
+                raise
 
     def _build_fitter_kwargs(self):
 
         kwargs = {
-            "vini": float(self.vini),
-            "sd": literal_eval(self.sd),
-            "conc_met_bounds": tuple(literal_eval(self.conc_met_bounds)),
-            "flux_met_bounds": tuple(literal_eval(self.flux_met_bounds)),
-            "conc_biom_bounds": tuple(literal_eval(self.conc_biom_bounds)),
-            "flux_biom_bounds": tuple(literal_eval(self.flux_biom_bounds)),
-            "t_lag": self.t_lag,
-            "deg": literal_eval(self.deg),
+            "sd": self.sd,
+            "model": self.model,
             "mc": self.mc,
             "iterations": self.iterations,
             "debug_mode": self.debug_mode,
         }
         return kwargs
 
-    def _build_internal_json(self, path_to_data):
+    def _output_directory_selector(self):
 
-        final_json = json.dumps({
-            "vini": float(self.vini),
-            "sd": literal_eval(self.sd),
-            "conc_met_bounds": literal_eval(self.conc_met_bounds),
-            "flux_met_bounds": literal_eval(self.flux_met_bounds),
-            "conc_biom_bounds": literal_eval(self.conc_biom_bounds),
-            "flux_biom_bounds": literal_eval(self.flux_biom_bounds),
-            "t_lag": self.t_lag,
-            "deg": literal_eval(self.deg),
-            "mc": self.mc,
-            "iterations": self.iterations,
-            "debug_mode": self.debug_mode,
-            "path_to_data": path_to_data
-        })
-        return final_json
+        # Set up tkinter for directory chooser
+        root = tk.Tk()
+        root.withdraw()
+
+        # Make folder picker dialog appear on top of other windows
+        root.wm_attributes('-topmost', 1)
+
+        # Initialize folder picker button and add logic
+        clicked = st.button(
+            "Select output data directory", key="clicker"
+        )
+        if clicked:
+
+            # Initialize home path from directory selector and add
+            # to session state
+            st.session_state.home_path = Path(st.text_input(
+                "Selected output data directory:",
+                filedialog.askdirectory(master=root)
+            ))
+            if st.session_state.home_path == Path(".") \
+                    or not st.session_state.home_path.exists():
+                raise RuntimeError("Please provide a valid path")
+            self.io.home_path = copy(
+                st.session_state.home_path)
+
+        elif hasattr(st.session_state, "home_path"):
+
+            self.io.home_path = Path(st.text_input(
+                "Selected output data directory:",
+                st.session_state.home_path
+            ))
+            if self.io.home_path == Path(".") \
+                    or not self.io.home_path.exists():
+                raise RuntimeError("Please provide a valid path")
+
+            # Initialize the result export directory
+            self.io.res_path = self.io.home_path / (self.io.home_path.name + "_res")
+            if not clicked:
+                if not self.io.res_path.is_dir():
+                    self.io.res_path.mkdir()
+
 
 
 if __name__ == "__main__":

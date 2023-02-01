@@ -18,18 +18,17 @@ def get_last_version():
         latest_version = response.json()['info']['version']
         with open(str(Path(pf_path, "last_version.txt")), "w") as f:
             f.write(latest_version)
-    except:
+    except Exception:
         pass
 
 def main():
     """The main routine"""
 
-    thread = Thread(target=get_last_version)
-    thread.start()
-
     if len(sys.argv) > 1:
         physiofit.ui.cli.main()
     else:
+        thread = Thread(target=get_last_version)
+        thread.start()
         path_to_app = Path(physiofit.__file__).parent
         path_to_app = path_to_app / "ui/gui.py"
         run(["streamlit", "run", str(path_to_app)])
