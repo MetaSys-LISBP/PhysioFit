@@ -4,8 +4,6 @@ from tkinter import filedialog
 from pathlib import Path
 from copy import copy
 
-from numpy.random import rand
-from numpy import array
 import streamlit as st
 
 import physiofit
@@ -142,6 +140,8 @@ class App:
             except Exception:
                 st.error("There was an error while initialising the model from given parameters")
                 raise
+            if not self.io.home_path:
+                raise ValueError("No output directory selected")
             self.config_parser = ConfigParser(
                 path_to_data =self.io.home_path / self.data_file.name,
                 selected_model= self.model,
@@ -168,12 +168,13 @@ class App:
                         self.io.names = self.io.data.columns[1:].to_list()
                         kwargs = self._build_fitter_kwargs()
                         fitter = self.io.initialize_fitter(
-                        self.model.data,
-                        model=kwargs["model"],
-                        mc=kwargs["mc"],
-                        iterations=kwargs["iterations"],
-                        sd=kwargs["sd"],
-                        debug_mode=kwargs["debug_mode"])
+                            self.model.data,
+                            model=kwargs["model"],
+                            mc=kwargs["mc"],
+                            iterations=kwargs["iterations"],
+                            sd=kwargs["sd"],
+                            debug_mode=kwargs["debug_mode"]
+                        )
                         # Do the work
                         fitter.optimize()
                         if self.mc:
@@ -515,7 +516,7 @@ class App:
             ))
             if st.session_state.home_path == Path(".") \
                     or not st.session_state.home_path.exists():
-                raise RuntimeError("Please provide a valid path")
+                raise RuntimeError("Please provide a valid output directory")
             self.io.home_path = copy(
                 st.session_state.home_path)
 
@@ -527,7 +528,7 @@ class App:
             ))
             if self.io.home_path == Path(".") \
                     or not self.io.home_path.exists():
-                raise RuntimeError("Please provide a valid path")
+                raise RuntimeError("Please provide a valid output directory")
 
             # Initialize the result export directory
             self.io.res_path = self.io.home_path / (self.io.home_path.name + "_res")
