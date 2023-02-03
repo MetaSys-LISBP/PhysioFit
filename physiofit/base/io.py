@@ -94,39 +94,6 @@ class IoHandler:
         IoHandler._verify_data(data)
         return data
 
-    def local_in(self, path, model_str, **kwargs):
-        """
-        Load data or yaml file and create fitter
-
-        :param path: path to .tsv file or .yaml file
-        :param model_str: name of model to select or path to model file
-        :param kwargs: extra kwargs to pass on to the fitter
-        """
-
-        if not isinstance(path, str) and not isinstance(path, Path):
-            raise TypeError(
-                "The selected data path is not a string"
-            )
-        if not isinstance(model_str, str) and not isinstance(model_str, Path):
-            raise TypeError(
-                "The selected data path is not a string"
-            )
-
-        self.data = self.read_data(path)
-
-        if Path(model_str).is_file():
-            model_class = self.read_model(model_str)
-        else:
-            self.get_models()
-            for x in self.models:
-                if x.model_name == model_str:
-                    model_class = x
-
-        model = model_class(self.data)
-        model.get_params()
-        fitter = self.initialize_fitter(model = model, **kwargs)
-        return fitter
-
     def select_model(self, model_name, data=None):
         """
         Select a model from the list of models in the model folder of the package src directory
@@ -252,35 +219,6 @@ class IoHandler:
                 f"\nTraceback:\n\n{e}"
                 )
         return config_parser
-
-    def local_out(self, *args):
-        """
-        Function for coordinating exports in local context
-
-        :param args: type of output to generate (data, plot and/or pdf)
-        """
-
-        for arg in args:
-            if arg not in ["data", "plot", "pdf"]:
-                raise ValueError(
-                    f"Detected argument is not an output type: {arg}.\n"
-                    f"Accepted output types are: data, plot, pdf"
-                )
-            else:
-                self._output_type.append(arg)
-
-        if "data" in self._output_type:
-            self.output_report()
-
-        if "plot" in self._output_type:
-            self.plot_data()
-            self.output_plots()
-
-        if "pdf" in self._output_type:
-            self.output_pdf()
-
-        if self.figures:
-            self.figures = []
 
     def initialize_fitter(self, data, **kwargs):
         """
