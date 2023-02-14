@@ -9,7 +9,6 @@ from pandas import DataFrame
 from scipy.optimize import minimize, differential_evolution
 from scipy.stats import chi2
 
-from physiofit.logger import initialize_fitter_logger
 from physiofit.models.base_model import Model
 
 logger = logging.getLogger(__name__)
