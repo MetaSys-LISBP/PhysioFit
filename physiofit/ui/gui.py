@@ -154,7 +154,7 @@ class App:
                 full_dataframe = self.io.data.copy()
                 results_path = copy(self.io.res_path)
                 experiments = list(self.io.data["experiments"].unique())
-                final_dfs = []
+                self.io.multiple_experiments = []
                 for experiment in experiments:
                     with st.spinner(f"Running optimization for {experiment}"):
                         final_table_dict = {}
@@ -181,19 +181,13 @@ class App:
                         if self.mc:
                             fitter.monte_carlo_analysis()
                         fitter.khi2_test()
-                        #fitter.parameter_stats.update(
-                        #    {"headers" : [param for param in fitter.model.parameters_to_estimate.keys()]}
-                        #)
-                        #final_table_dict.update(
-                        #    {
-                        #        experiment : {
-                        #            "fluxes" : fitter.parameter_stats
-#                       #             "stat_test" : fitter.khi2_res
-                        #        }
-                        #    }
-                        #)
-                        #df = pd.DataFrame.from_dict(final_table_dict, orient="index")
-                        #final_dfs.append(df)
+                        df = pd.DataFrame.from_dict(
+                            fitter.parameter_stats,
+                            orient="columns"
+                        )
+                        df.index = [f"{experiment} {param}" for param in fitter.model.parameters_to_estimate.keys()]
+                        st.write(df)
+                        self.io.multiple_experiments.append(df)
 
                         # Export results
                         self.io.output_report(fitter, self.io.res_path)
@@ -208,6 +202,7 @@ class App:
                         self.config_parser.export_config(self.io.res_path)
                 self.io.data = full_dataframe
                 self.io.res_path = results_path
+                self.io.output_recap(results_path)
             else:
                 with st.spinner("Running Optimization..."):
                     # Initialize the fitter object

@@ -15,7 +15,7 @@ import numpy as np
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 from matplotlib.backends.backend_pdf import PdfPages
-from pandas import DataFrame, read_csv
+from pandas import DataFrame, read_csv, concat
 import yaml
 
 from physiofit import __file__
@@ -299,6 +299,27 @@ class IoHandler:
                 fig[1].savefig(rf"{export_path}\{fig[0]}.svg")
         except Exception:
             raise RuntimeError("Unknown error while generating output")
+
+    def output_recap(self, export_path: str):
+
+        if not isinstance(self.multiple_experiments, list):
+            raise TypeError(
+                "The multiple experiments attribute must be a list"
+            )
+        if not self.multiple_experiments:
+            raise ValueError(
+                f"It seems that the multiple experiments list is empty: {self.multiple_experiments}"
+            )
+        for idx, element in enumerate(self.multiple_experiments):
+            if not isinstance(element, DataFrame):
+                raise TypeError(
+                    f"All the elements of multiple_experiments must be DataFrames. Wrong element type"
+                    f"detected at indice {idx}"
+                )
+        final_df = concat(self.multiple_experiments)
+        final_df.to_csv(f"{str(Path(export_path))}/recap.csv")
+
+
 
     def output_report(self, fitter, export_path: str |list = None):
         """
