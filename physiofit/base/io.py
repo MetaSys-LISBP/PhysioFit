@@ -129,6 +129,7 @@ class IoHandler:
 
         return model_class
 
+
     @staticmethod
     def _verify_data(data: DataFrame):
         """
@@ -160,6 +161,10 @@ class IoHandler:
                 raise ValueError(
                     f"Column {x} has values that are not of numeric type"
                 )
+            if all(data[x].isnull()) or all(data[x].isna()):
+                raise ValueError(
+                f"The column {x} contains only null or NA values"
+            )
 
     @staticmethod
     def get_model_list():
@@ -212,7 +217,9 @@ class IoHandler:
             if isinstance(yaml_file, str) or issubclass(type(yaml_file), BytesIO):
                 config_parser = ConfigParser.from_file(yaml_file)
             else:
-                raise TypeError(f"Trying to read object that is not a file or path to file: {yaml_file}")
+                raise TypeError(
+                    f"Trying to read object that is not a file or path to file: {yaml_file}"
+                )
         except Exception as e:
             raise IOError(
                 f"Error while reading yaml configuration file {yaml_file}. "
