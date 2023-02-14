@@ -4,12 +4,12 @@ from tkinter import filedialog
 from pathlib import Path
 from copy import copy
 
+import pandas as pd
 import streamlit as st
 
 import physiofit
 from physiofit.base.io import IoHandler, ConfigParser
 from physiofit.models.base_model import StandardDevs
-
 
 
 class App:
@@ -154,9 +154,10 @@ class App:
                 full_dataframe = self.io.data.copy()
                 results_path = copy(self.io.res_path)
                 experiments = list(self.io.data["experiments"].unique())
+                final_dfs = []
                 for experiment in experiments:
                     with st.spinner(f"Running optimization for {experiment}"):
-
+                        final_table_dict = {}
                         self.model.data = full_dataframe[
                             full_dataframe["experiments"] == experiment
                         ].drop("experiments", axis=1).copy()
@@ -180,6 +181,20 @@ class App:
                         if self.mc:
                             fitter.monte_carlo_analysis()
                         fitter.khi2_test()
+                        #fitter.parameter_stats.update(
+                        #    {"headers" : [param for param in fitter.model.parameters_to_estimate.keys()]}
+                        #)
+                        #final_table_dict.update(
+                        #    {
+                        #        experiment : {
+                        #            "fluxes" : fitter.parameter_stats
+#                       #             "stat_test" : fitter.khi2_res
+                        #        }
+                        #    }
+                        #)
+                        #df = pd.DataFrame.from_dict(final_table_dict, orient="index")
+                        #final_dfs.append(df)
+
                         # Export results
                         self.io.output_report(fitter, self.io.res_path)
                         self.io.plot_data(fitter)
@@ -191,7 +206,6 @@ class App:
                         # Reset figures to free memory
                         self.io.figures = []
                         self.config_parser.export_config(self.io.res_path)
-
                 self.io.data = full_dataframe
                 self.io.res_path = results_path
             else:
