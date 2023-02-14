@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "physiofit"
-version = "3.0.0dev1"
+version = "3.0.0dev2"
 description = "PhysioFit is a scientific tool designed to i) quantify exchange (production and consumption) fluxes and ii) cell growth rate during (batch) cultivations of microorganisms."
 authors = ["Loïc Le Gregam <legregam@insa-toulouse.fr>", "Pierre Millard <millard@insa-toulouse.fr>"]
 readme = "README.md"
