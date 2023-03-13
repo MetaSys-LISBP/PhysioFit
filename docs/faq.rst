@@ -4,28 +4,35 @@ Frequently asked questions (FAQ)
 How are fluxes calculated?
 ------------------------------------------------------------------
 
-We provide details on the flux calculation approach implemented in PhysioFit in the :doc:`method` section.
+We provide details on the flux calculation approach implemented in PhysioFit in the :doc:`models` section.
 
 How many measurements should I use to calculate fluxes?
 ------------------------------------------------------------------
 
-As in any model-based fitting procedure, more data means more accurate and precise flux estimates. We recommend using at least 6 time points, which should provide reliable and meaningfull estimates in most situations. 
+As in any model-based fitting procedure, more data means more accurate and precise flux estimates. We recommend using
+at least 6 time points, which should provide reliable and meaningful estimates in most situations.
 
-Still, the exact answer to this question strongly depends on the uptake/production/growth rates of your (micro)organism in the conditions you are investigating, on the sampling time interval, on the questions you are addressing, and on many other parameters! You can make some tests by calculating fluxes from (published or theoretical) datasets similar to those you have in mind.
+Still, the exact answer to this question strongly depends on the uptake/production/growth rates of your (micro)organism
+in the conditions you are investigating, on the sampling time interval, on the questions you are addressing, and on
+many other parameters! You can make some tests by calculating fluxes from (published or theoretical) datasets similar
+to those you have in mind.
 
 Can I calculate fluxes in case of missing values?
 ------------------------------------------------------------------
 
-Yes, fluxes can still be calculated if some measurement(s) are missing. In this case, let empty the corresponding field of the input data file.
+Yes, fluxes can still be calculated if some measurement(s) are missing. In this case, let empty the corresponding field
+of the input data file.
 
 ..  _`conc units`:
 
 What units should be used for input data?
-------------------------------
+-----------------------------------------
 
-Input data (biomass concentration, metabolites concentrations, and time) can be provided to PhysioFit using any unit. Still, we recommand to use units for which values are as close to unity as
-possible to ensure numerical stability (e.g. 3 mM instead of 3e3 µM). Importantly, units of the estimated fluxes depend on units of time and metabolites and biomass concentrations. The concentration of different metabolites can 
-be provided using different units, but a single unit must be used for all measurements of a given metabolite.
+Input data (biomass concentration, metabolites concentrations, and time) can be provided to PhysioFit using any unit.
+Still, we recommand to use units for which values are as close to unity as possible to ensure numerical stability (e.g.
+3 mM instead of 3e3 µM). Importantly, units of the estimated fluxes depend on units of time and metabolites and biomass
+concentrations. The concentration of different metabolites can be provided using different units, but a single unit
+must be used for all measurements of a given metabolite.
 
 .. seealso:: :ref:`flux units` 
 
@@ -68,7 +75,7 @@ The quality of the fit can be evaluated based on:
 What is a χ² test?
 ------------------------------------------------------------------
 
-A χ² test describes how well a model fits a set of observations. Measures of goodness of fit typically summarize the discrepancy between observed values and the values expected under the model used in PhysioFit (see the :doc:`method` section). It is calculated as the sum of differences between measured and simulated values, each squared and divided by the simulated value. 
+A χ² test describes how well a model fits a set of observations. Measures of goodness of fit typically summarize the discrepancy between observed values and the values expected under the model used in PhysioFit (see the :doc:`models` section). It is calculated as the sum of differences between measured and simulated values, each squared and divided by the simulated value.
 A good fit corresponds to small differences between measured and simulated values, thereby the χ² value is low. In contrast, a bad fit corresponds to large differences between simulations and measurements, and the χ² value is high. 
 
 The resulting χ² value can then be compared with a χ² distribution to determine the goodness of fit. The p-value of one-tail χ² test is calculated by PhysioFit from the best fit and is given in the log file (have a look to the :doc:`usage` section). A p-value close to 0 means poor fitting, and a p-value close to 1 means good fitting (keeping in mind that a p-value very close to 1 can be an evidence that standard deviations might be overestimated). A 
@@ -91,7 +98,7 @@ If you believe the problem is in PhysioFit, we would greatly appreciate
 if you could open a new issue on our `issue tracker  <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_.
    
 I cannot start PhysioFit graphical user interface, can you help me?
-------------------------
+-------------------------------------------------------------------
 
 If you  installed PhysioFit following our standard procedure and that you are unable
 to start PhysioFit by opening a terminal and typing :samp:`physiofit`, then there is indeed
