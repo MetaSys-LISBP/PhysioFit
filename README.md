@@ -6,25 +6,31 @@
 
 
 ## What is PhysioFit?
-PhysioFit is a scientific tool designed to i) quantify exchange (production and consumption) fluxes and  ii) cell growth rate during (batch) cultivations of microorganisms.
+**PhysioFit is a scientific tool designed to quantify cell growth parameters and uptake & production fluxes**
 
-Fluxes are estimated from time-course measurements of extracellular metabolites and biomass concentrations. PhysioFit has been designed to calculate fluxes in batch experiments, assuming cells are in metabolic (pseudo) steady-state (i.e. fluxes are constant during the experiment).
+Fluxes are estimated using various mathematical models by fitting time-course measurements of the concentration of
+cells and extracellular substrates and products. PhysioFit v3 includes by default the most common growth models, and
+additional models can be implemented by users.
 
-It is one of the routine tools that we use at the [MetaSys team](http://www.lisbp.fr/en/research/molecular-physiology-and-metabolism/metasys.html) and [MetaToul platform](http://www.metatoul.fr) in functional studies of metabolic systems.
+It is one of the routine tools that we use at the [MetaSys team](http://www.lisbp.fr/en/research/molecular-physiology-and-metabolism/metasys.html) 
+and [MetaToul platform](http://www.metatoul.fr) in functional studies of metabolic systems.
 
-The code is open-source, and available under a GPLv3 license. Additional information can be found in the following [publication](https://doi.org/10.1128/aem.00768-19).
+The code is open-source, and available under a GPLv3 license. Additional information can be found in the following 
+[publication](https://doi.org/10.1128/aem.00768-19).
 
-Detailed documentation can be found online at Read the Docs ([https://physiofit.readthedocs.io/](https://physiofit.readthedocs.io/)).
+Detailed documentation can be found online at Read the Docs 
+([https://physiofit.readthedocs.io/](https://physiofit.readthedocs.io/)).
 
 ## Key features
-* **calculation of growth rate and extracellular (uptake and production) fluxes**.
-* if cell growth has some **lag** (e.g. due to adaptation to a novel environment), lag can be taken into account and lag time estimated.
-* **non-enzymatic degradation** of some metabolites (e.g. DHA or glutamine) can be estimated and taken into account when calculating fluxes.
-* sensitivity analyses are performed to **estimate the precision of the calculated fluxes**.
-* **evaluation of the goodness of fit and visual inspection of the fitted curves**.
-* shipped as a **library** with both a **graphical** and **command line** interface,
-* open-source, free and easy to install everywhere where Python 3 and pip run,
-* biologist-friendly.
+   * **calculation of growth rate and extracellular (uptake and production) fluxes**,
+   * default models for quantifying parameters in steady-state conditions (with and without lag & metabolite degradation
+     over time),
+   * **user-defined growth models**,
+   * Monte-Carlo sensitivity analysis to **estimate the precision of the calculated fluxes**,
+   * **evaluation of the goodness of fit and visual inspection of the fitted curves**,
+   * shipped as a **library** with both a **graphical** and **command line** interface,
+   * open-source, free and easy to install everywhere where Python 3 and pip run,
+   * **biologist-friendly**.
 
 ## Quick-start
 PhysioFit requires Python 3.7 or higher and run on all platforms.
@@ -74,7 +80,9 @@ The PDF documentation can be built locally by replacing `html` by `latexpdf`
 in the command above. You will need a recent latex installation.
 
 ## How to cite
-Peiro C., Millard P., de Simone A., Cahoreau E., Peyriga L., Enjalbert B., and Heux S. Chemical and metabolic controls on dihydroxyacetone metabolism lead to suboptimal growth of *Escherichia coli*. Appl Environ Microbiol, 2019, [doi: 10.1128/AEM.00768-19](https://doi.org/10.1128/AEM.00768-19)
+PhysioFit: quantifying cell growth parameters and uptake and production fluxes.
+Le Grégam L., Guitton Y., Bellvert F., Jourdan F., Portais J.C., Millard P.
+In preparation for publication
 
 ## Authors
 Loïc Le Grégam, Pierre Millard

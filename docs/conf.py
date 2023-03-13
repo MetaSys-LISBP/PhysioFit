@@ -33,6 +33,7 @@ release = __version__
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx_rtd_theme',
+    'sphinxarg.ext',
     'nbsphinx'
 ]
 
