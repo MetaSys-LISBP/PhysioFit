@@ -20,7 +20,7 @@ If you installed the package in a specific environment, make sure to activate th
 PhysioFit interface will open in a new browser window:
 
 .. image:: _static/interface.jpg
-   :scale: 100%
+   :scale: 60%
 
 Select an input file (which can be a .tsv file containing the data or a yaml configuration file containing the run
 parameters and a path towards the data, see :doc:`usage` for more details), select a model, modify the calculation parameters according
