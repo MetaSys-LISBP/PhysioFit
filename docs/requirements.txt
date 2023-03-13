@@ -2,3 +2,6 @@ ipykernel
 nbsphinx
 physiofit
 pandoc
+sphinx
+sphinx-argparse
+sphinx-rtd-theme
