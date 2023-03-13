@@ -185,7 +185,9 @@ class App:
                             fitter.parameter_stats,
                             orient="columns"
                         )
-                        df.index = [f"{experiment} {param}" for param in fitter.model.parameters_to_estimate.keys()]
+                        df.index = [
+                            f"{experiment} {param}" for param in fitter.model.parameters_to_estimate.keys()
+                        ]
                         st.write(df)
                         self.io.multiple_experiments.append(df)
 
