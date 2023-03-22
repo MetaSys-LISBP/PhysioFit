@@ -24,7 +24,7 @@ them together in the same table (with an empty value when no data is available).
 you must add an extra column containing the experiment name as such:
 
 +-------------+-------+-----+---------+
-|  experiment | time  |  X  | Glucose |
+|  experiments| time  |  X  | Glucose |
 +=============+=======+=====+=========+
 |  Condition1 | 1     | 0.4 |   13    |
 +-------------+-------+-----+---------+
@@ -35,10 +35,11 @@ you must add an extra column containing the experiment name as such:
 |  ...        | ...   | ... |  ...    |
 +-------------+-------+-----+---------+
 
-
 .. note:: Flux units depend on the units of time and concentrations (of biomass and metabolites) provided in the input
              data file. For instance, if biomass units are in grams of cell dry weight by liter (gDW/L), metabolite concentrations are in millimolar (mM) and time is
              in hours (h), the estimated fluxes will be in mmol/gDW/h. Units should thus be carefully selected, and calculated fluxes must be interpreted consistently with the concentration units.
+
+.. warning:: The "experiments" column must only contain letters (no numbers) and is case-sensitive!
 
 .. warning:: To limit any numerical instabilities, provide values in a range not too far from unity (e.g. if a metabolite
              concentration is 2 mM, provide the value directly in mM and not as 2e-3 M). The concentration of different metabolites can
