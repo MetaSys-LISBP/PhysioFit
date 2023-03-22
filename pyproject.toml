@@ -6,6 +6,9 @@ authors = ["llegregam <legregam@insa-toulouse.fr>"]
 license = "GNU General Public License (GPL)"
 readme = "README.md"
 
+[tool.poetry.scripts]
+physiofit = 'physiofit.__main__:main'
+
 [tool.poetry.dependencies]
 python = ">=3.8,<3.9.7 || >3.9.7,<3.12"
 pandas = "^1.5.3"
