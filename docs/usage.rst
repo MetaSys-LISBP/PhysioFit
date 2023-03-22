@@ -24,7 +24,7 @@ them together in the same table (with an empty value when no data is available).
 you must add an extra column containing the experiment name as such:
 
 +-------------+-------+-----+---------+
-|  experiment | time  |  X  | Glucose |
+|  experiments| time  |  X  | Glucose |
 +=============+=======+=====+=========+
 |  Condition1 | 1     | 0.4 |   13    |
 +-------------+-------+-----+---------+
