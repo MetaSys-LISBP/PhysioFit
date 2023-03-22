@@ -1,0 +1,23 @@
+model:
+  model_name: General model
+  parameters_to_estimate:
+    X_0 : 1
+    mu : 1
+    Glc_q : 1
+    Glc_M0 : 1
+    Ace_q : 1
+    Ace_M0 : 1
+  bounds:
+    X_0 : (0.001, 10)
+    mu : (0.001, 3)
+    Glc_q : (-50, 50)
+    Glc_M0: (0.001, 20)
+    Ace_q: (-50, 50)
+    Ace_M0: (0.001, 20)
+sds:
+  X : 0.2
+  Glc : 0.2
+  Ace : 0.2
+mc: true
+iterations: 100
+debug_mode: true
