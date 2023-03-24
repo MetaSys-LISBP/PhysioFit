@@ -91,7 +91,7 @@ class App:
                 # Load data into io_handler
                 self.io.data = self.io.read_data(self.config_parser.path_to_data)
             except Exception:
-                st.error("There was an error while reading the yaml configuration file.")
+                st.error("An error has occurred when reading the yaml configuration file.")
                 raise
         elif file_extension  in ["tsv", "txt"]:
             try:
@@ -104,7 +104,7 @@ class App:
                     col: 0.2 for col in self.io.data.columns[2:]
                 })
             except Exception:
-                st.error("There was an error while reading the data.")
+                st.error("An error has occurred when reading the data.")
                 raise
         else:
             raise KeyError(
@@ -124,8 +124,8 @@ class App:
             # Initialize the list of available models
             self.io.get_models()
         except Exception:
-            st.error(f"There was an error while getting list of models from the models folder situated at:"
-                     f"\n{Path(__file__).parent / 'models'}. Please deposit an issue at "
+            st.error(f"An error has occurred when listing models from the models folder: "
+                     f"\n{Path(__file__).parent / 'models'}. Please correct the model or submit an issue at "
                      f"github.com/MetaSys-LISBP/PhysioFit/issues")
             raise
 
@@ -138,7 +138,7 @@ class App:
             try:
                 self._get_data_from_session_state()
             except Exception:
-                st.error("There was an error while initialising the model from given parameters")
+                st.error("An error has occurred when initializing the model")
                 raise
             if not self.io.home_path:
                 raise ValueError("No output directory selected")
@@ -206,7 +206,7 @@ class App:
                 self.io.res_path = results_path
                 self.io.output_recap(results_path)
             else:
-                with st.spinner("Running Optimization..."):
+                with st.spinner("Running flux calculation..."):
                     # Initialize the fitter object
                     self.io.names = self.io.data.columns[1:].to_list()
                     kwargs = self._build_fitter_kwargs()
@@ -258,7 +258,7 @@ class App:
             label="Model",
             options=model_options,
             key="model_selector",
-            help="Select the model to use for flux calculation"
+            help="Select the flux calculation model"
         )
 
         #if model_name == "Dynamic system (only substrates)":
@@ -270,10 +270,10 @@ class App:
                 self.model.get_params()
                 self.silent_sim()
             except Exception as e:
-                st.error(f"The following error occured with the selected model:\n{e}")
+                st.error(f"The following error occurred with the selected model: {e}")
                 raise
             else:
-                st.success("Model loaded successfully")
+                st.success("Model successfully initialized")
 
             expand_basic_settings = st.expander("Basic settings",
                                                 expanded=True)
@@ -283,7 +283,7 @@ class App:
                     "Sensitivity analysis (Monte Carlo)",
                     value=self.defaults["mc"] if self.config_parser is None
                     else self.config_parser.mc,
-                    help="Determine the precision on estimated fluxes by "
+                    help="Determine the precision on estimated parameters by "
                          "Monte Carlo sensitivity analysis."
                 )
                 enable_mc = False if self.mc else True
@@ -291,7 +291,7 @@ class App:
                     "Number of iterations",
                     value=self.defaults["iterations"] if self.config_parser is None
                     else self.config_parser.iterations ,
-                    help="Number of iterations for the Monte Carlo analysis.",
+                    help="Number of iterations for Monte Carlo analysis.",
                     disabled=enable_mc
                 )
                 if self.iterations < 0:
@@ -433,16 +433,16 @@ class App:
                 # Get bounds
                 if st.session_state[f"Parameter_lower_{name}"] == "0":
                     st.warning(
-                        f"WARNING: {name} has a lower bound at 0. Sometimes this might confuse the optimizer. It is "
-                        f"advised to replace 0 with a very small number, 1e-6 for example."
+                        f"WARNING: {name} has a lower bound at 0. Sometimes this might confuse the optimizer. We "
+                        f"strongly recommend to set the lower bound at a non-zero value, 1e-6 for example."
                     )
                     lower_bound = 0
                 else:
                     lower_bound = literal_eval(st.session_state[f"Parameter_lower_{name}"].lstrip("0"))
                 if st.session_state[f"Parameter_upper_{name}"] == "0":
                     st.warning(
-                        f"WARNING: {name} has an upper bound at 0. Sometimes this might confuse the optimizer. It is "
-                        f"advised to replace 0 with a very small number, 1e-6 for example."
+                        f"WARNING: {name} has an upper bound at 0. Sometimes this might confuse the optimizer. We "
+                        f"strongly recommend to set the lower bound at a non-zero value, 1e-6 for example."
                     )
                     upper_bound = 0
                 else:
@@ -472,7 +472,7 @@ class App:
                             )
                     except ValueError:
                         st.error(
-                            f"ERROR: An error occurred while parsing the input in the fixed parameter class {param} for "
+                            f"ERROR: An error occurred when parsing the input in the fixed parameter class {param} for "
                             f"{key}. Please check that only numbers have been entered."
                         )
                         raise
@@ -490,7 +490,7 @@ class App:
                     )
             except ValueError:
                 st.error(
-                    f"ERROR: An error occurred while parsing the input for {name} (SDs). Please check that only numbers "
+                    f"ERROR: An error occurred when parsing the input for {name} (SDs). Please check that only numbers "
                     f"have been entered and that value is superior to 0."
                 )
                 raise

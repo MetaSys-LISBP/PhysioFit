@@ -13,7 +13,7 @@ class ChildModel(Model):
     def __init__(self, data):
 
         super().__init__(data)
-        self.model_name = "Dynamic model (1 substrate, 1 product)"
+        self.model_name = "Monod model (1 substrate, 1 product)"
         self.vini = 1
         self.parameters_to_estimate = None
 
@@ -21,12 +21,12 @@ class ChildModel(Model):
 
         self.parameters_to_estimate = {
             "X_0": self.vini,
-            "yld": self.vini
+            "yld_BM": self.vini
         }
 
         self.bounds = Bounds(
             X_0=(1e-3, 10),
-            yld=(1e-3, 3)
+            yld_BM=(1e-3, 3)
         )
 
         for metabolite in self.metabolites:
@@ -37,7 +37,6 @@ class ChildModel(Model):
                         f"{metabolite}_qsmax": self.vini,
                         f"{metabolite}_s_0": 100
                     }
-
                 )
                 self.bounds.update(
                     {
@@ -52,14 +51,14 @@ class ChildModel(Model):
             if metabolite.startswith("P_"):
                 self.parameters_to_estimate.update(
                     {
-                        f"{metabolite}_yldP": self.vini,
+                        f"{metabolite}_yld_P": self.vini,
                         f"{metabolite}_p_0": 100
                     }
 
                 )
                 self.bounds.update(
                     {
-                        f"{metabolite}_yldP": (1e-6, 50),
+                        f"{metabolite}_yld_P": (1e-6, 50),
                         f"{metabolite}_p_0": (1e-6, 150)
                     }
                 )
@@ -67,7 +66,6 @@ class ChildModel(Model):
 
         if len(self.parameters_to_estimate) != 7:
             raise ValueError("This model expect 2 metabolites in the datafile (1 substrate with name starting with 'S_' and 1 product with name starting with 'P_').")
-
 
 
     @staticmethod
@@ -78,24 +76,21 @@ class ChildModel(Model):
             params_non_opti: dict
     ):
 
-
         # Get initial params
         x_0 = params_opti[0]
         yld = params_opti[1]
-        yldP = params_opti[2]
-        km = params_opti[3]
-        qsmax = params_opti[4]
-        s_0 = params_opti[5]
+        km = params_opti[2]
+        qsmax = params_opti[3]
+        s_0 = params_opti[4]
+        yldP = params_opti[5]
         p_0 = params_opti[6]
         state = [x_0, s_0, p_0]
         params = (yld, yldP, km, qsmax)
-        #print(state)
 
         def calculate_derivative(t, state, yld, yldP, km, qsmax):
             
             s_t = state[0]
             x_t = state[1]
-            #p_t = state[2]
             qs_t = qsmax * (s_t / (km + s_t))
             mu_t = yld * qs_t
             qp_t = yldP * qs_t
@@ -106,19 +101,14 @@ class ChildModel(Model):
 
             return dx, ds, dp
 
-        method = "LSODA"
         sol = solve_ivp(
             fun=calculate_derivative,
             t_span=(np.min(time_vector),np.max(time_vector)),
             y0 = state,
             args=params,
-            method=method,
+            method="LSODA",
             t_eval = list(time_vector)
         )
-
-        #print(sol.y.T)
-        #print(sol.y.T.shape)
-        #print(data_matrix)
 
         return sol.y.T
 
