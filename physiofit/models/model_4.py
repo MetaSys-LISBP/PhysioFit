@@ -13,7 +13,7 @@ class ChildModel(Model):
     def __init__(self, data):
 
         super().__init__(data)
-        self.model_name = "General Model"
+        self.model_name = "Steady-state batch model"
         self.vini = 1
         self.parameters_to_estimate = None
         self.fixed_parameters = None

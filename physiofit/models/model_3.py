@@ -13,7 +13,7 @@ class ChildModel(Model):
     def __init__(self, data):
 
         super().__init__(data)
-        self.model_name = "General Model including degradation of metabolites"
+        self.model_name = "Steady-state batch model with degradation of metabolites"
         self.vini = 1
         self.parameters_to_estimate = None
         self.fixed_parameters = None

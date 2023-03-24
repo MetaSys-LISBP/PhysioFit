@@ -261,16 +261,16 @@ class App:
             help="Select the model to use for flux calculation"
         )
 
-        if model_name == "Dynamic system (only substrates)":
-            st.error("Not yet implemented...")
+        #if model_name == "Dynamic system (only substrates)":
+        #    st.error("Not yet implemented...")
         if model_name != "--":
             # Initialize selected model
             self.model = self.io.select_model(model_name)
-            self.model.get_params()
             try:
+                self.model.get_params()
                 self.silent_sim()
-            except Exception:
-                st.error("There is an error with the selected model")
+            except Exception as e:
+                st.error(f"The following error occured with the selected model:\n{e}")
                 raise
             else:
                 st.success("Model loaded successfully")
