@@ -13,7 +13,7 @@ class ChildModel(Model):
     def __init__(self, data):
 
         super().__init__(data)
-        self.model_name = "Monod model (1 substrate, 1 product)"
+        self.model_name = "Dynamic Monod model (1 substrate, 1 product)"
         self.vini = 1
         self.parameters_to_estimate = None
 
@@ -21,12 +21,12 @@ class ChildModel(Model):
 
         self.parameters_to_estimate = {
             "X_0": self.vini,
-            "yld_BM": self.vini
+            "y_BM": self.vini
         }
 
         self.bounds = Bounds(
             X_0=(1e-3, 10),
-            yld_BM=(1e-3, 3)
+            y_BM=(1e-3, 3)
         )
 
         for metabolite in self.metabolites:
@@ -40,9 +40,9 @@ class ChildModel(Model):
                 )
                 self.bounds.update(
                     {
-                        f"{metabolite}_km": (1e-6, 50),
-                        f"{metabolite}_qsmax": (1e-6, 50),
-                        f"{metabolite}_s_0": (1e-6, 150)
+                        f"{metabolite}_km": (1e-6, 100),
+                        f"{metabolite}_qsmax": (1e-6, 100),
+                        f"{metabolite}_s_0": (1e-6, 100)
                     }
                 )
                 break
@@ -51,21 +51,21 @@ class ChildModel(Model):
             if metabolite.startswith("P_"):
                 self.parameters_to_estimate.update(
                     {
-                        f"{metabolite}_yld_P": self.vini,
+                        f"{metabolite}_y_P": self.vini,
                         f"{metabolite}_p_0": 100
                     }
 
                 )
                 self.bounds.update(
                     {
-                        f"{metabolite}_yld_P": (1e-6, 50),
-                        f"{metabolite}_p_0": (1e-6, 150)
+                        f"{metabolite}_y_P": (1e-6, 100),
+                        f"{metabolite}_p_0": (1e-6, 100)
                     }
                 )
                 break
 
         if len(self.parameters_to_estimate) != 7:
-            raise ValueError("This model expect 2 metabolites in the datafile (1 substrate with name starting with 'S_' and 1 product with name starting with 'P_').")
+            raise ValueError("This model expects 2 metabolites in the data file (1 substrate with name starting with 'S_' and 1 product with name starting with 'P_').")
 
 
     @staticmethod
@@ -76,34 +76,41 @@ class ChildModel(Model):
             params_non_opti: dict
     ):
 
-        # Get initial params
+        # Get parameters
         x_0 = params_opti[0]
-        yld = params_opti[1]
+        y_BM = params_opti[1]
         km = params_opti[2]
         qsmax = params_opti[3]
         s_0 = params_opti[4]
-        yldP = params_opti[5]
+        y_P = params_opti[5]
         p_0 = params_opti[6]
-        state = [x_0, s_0, p_0]
-        params = (yld, yldP, km, qsmax)
+        params = (y_BM, y_P, km, qsmax)
 
-        def calculate_derivative(t, state, yld, yldP, km, qsmax):
+        # initialize variables at t=0
+        state = [x_0, s_0, p_0]
+        
+        def calculate_derivative(t, state, y_BM, y_P, km, qsmax):
             
+            # get substrate and biomass concentrations
             s_t = state[0]
             x_t = state[1]
-            qs_t = qsmax * (s_t / (km + s_t))
-            mu_t = yld * qs_t
-            qp_t = yldP * qs_t
 
+            # calculate fluxes
+            qs_t = qsmax * (s_t / (km + s_t))
+            mu_t = y_BM * qs_t
+            qp_t = y_P * qs_t
+
+            # calculate derivatives
             dx = mu_t * x_t
             ds = -qs_t * x_t
             dp = qp_t * x_t
 
             return dx, ds, dp
 
+        # simulate time-course concentrations
         sol = solve_ivp(
             fun=calculate_derivative,
-            t_span=(np.min(time_vector),np.max(time_vector)),
+            t_span=(np.min(time_vector), np.max(time_vector)),
             y0 = state,
             args=params,
             method="LSODA",
