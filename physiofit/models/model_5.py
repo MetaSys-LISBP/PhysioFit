@@ -109,7 +109,7 @@ class ChildModel(Model):
         method = "LSODA"
         sol = solve_ivp(
             fun=calculate_derivative,
-            t_span=(0,10),
+            t_span=(np.min(time_vector),np.max(time_vector)),
             y0 = state,
             args=params,
             method=method,
