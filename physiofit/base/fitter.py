@@ -468,11 +468,12 @@ class PhysioFitter:
         )
 
         logger.info(f"khi2 test results:\n"
-                         f"khi2 value: {cost}\n"
-                         f"Number of measurements: {number_measurements}\n"
-                         f"Number of parameters to fit: {number_params}\n"
-                         f"Degrees of freedom: {dof}\n"
-                         f"p-value = {p_val}\n")
+                     f"khi2 value: {cost}\n"
+                     f"Number of measurements: {number_measurements}\n"
+                     f"Number of parameters to fit: {number_params}\n"
+                     f"Degrees of freedom: {dof}\n"
+                     f"p-value = {p_val}\n"
+                    )
 
         if p_val < 0.95:
             logger.info(
