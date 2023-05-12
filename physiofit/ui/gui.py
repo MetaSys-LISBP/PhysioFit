@@ -143,7 +143,7 @@ class App:
             if not self.io.home_path:
                 raise ValueError("No output directory selected")
             self.config_parser = ConfigParser(
-                path_to_data =self.io.home_path / self.data_file.name,
+                path_to_data = self.io.home_path / self.data_file.name,
                 selected_model= self.model,
                 sds = self.sd,
                 mc = self.mc,
