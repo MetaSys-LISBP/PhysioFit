@@ -11,7 +11,7 @@ physiofit = 'physiofit.__main__:main'
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.9.7 || >3.9.7,<3.12"
-pandas = "^1.5.3"
+pandas = "^2.0.1"
 numpy = "^1.24.2"
 scipy = "^1.10.1"
 streamlit = "^1.20.0"
@@ -30,6 +30,7 @@ sphinx-rtd-theme = "^1.2.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.3.1"
+tox = "^4.5.1"
 
 [build-system]
 requires = ["poetry-core"]
