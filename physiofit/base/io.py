@@ -231,11 +231,12 @@ class IoHandler:
         """
         Initialize a PhysioFitter object
 
+        :param data: input data
         :param kwargs: Keyword arguments for fitter initialization
         :return: None
         """
-
-        wrong_keys = []
+        #
+        # wrong_keys = []
 
         # Initialize fitter
         fitter = PhysioFitter(
