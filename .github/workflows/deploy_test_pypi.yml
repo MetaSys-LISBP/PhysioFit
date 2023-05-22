@@ -1,9 +1,6 @@
 name: Build and publish python package to test pypi
 
-on:
-  release:
-    types: [ published ]
-
+on: [push]
 steps:
   - name: Checkout Repository # You must checkout your repository first.
     uses: actions/checkout@v3
