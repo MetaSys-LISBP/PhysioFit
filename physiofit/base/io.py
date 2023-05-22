@@ -321,7 +321,6 @@ class IoHandler:
         final_df.to_csv(f"{str(Path(export_path))}/summary.csv")
 
 
-
     def output_report(self, fitter, export_path: str |list = None):
         """
         Handle creation and export of the report containing stats from monte
