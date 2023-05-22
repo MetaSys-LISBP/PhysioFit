@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build_an_publish:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository # You must checkout your repository first.
         uses: actions/checkout@v3
