@@ -1,3 +1,3 @@
-import importlib.metadata
+"""Version changes handled by github action"""
 
-__version__ = importlib.metadata.version("physiofit")
+__version__ = "3.0.4"
