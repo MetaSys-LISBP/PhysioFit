@@ -4,15 +4,17 @@ on:
   release:
     types: [ published ]
 
-steps:
-  - name: Checkout Repository # You must checkout your repository first.
-    uses: actions/checkout@v3
+jobs:
+  build_an_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository # You must checkout your repository first.
+        uses: actions/checkout@v3
 
-  - name: Publish Package
-    uses: celsiusnarhwal/poetry-publish@v2
-    with:
-      python-version: 3.11
-      poetry-version: 1.3.1
-      token: ${{ secrets.TEST_PYPI_API_TOKEN }}
-      build: true
-      repo: "testpypi"
+      - name: Publish Package
+        uses: celsiusnarhwal/poetry-publish@v2
+        with:
+          python-version: 3.11
+          poetry-version: 1.3.1
+          token: ${{ secrets.PYPI_API_TOKEN }}
+          build: true
