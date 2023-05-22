@@ -1,8 +1,6 @@
 name: Build and publish python package to test pypi
 
-on:
-  release:
-    types: [ published ]
+on: [push]
 
 jobs:
   publish-service-client-package:
