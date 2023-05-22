@@ -318,7 +318,7 @@ class IoHandler:
                     f"detected at indice {idx}"
                 )
         final_df = concat(self.multiple_experiments)
-        final_df.to_csv(f"{str(Path(export_path))}/recap.csv")
+        final_df.to_csv(f"{str(Path(export_path))}/summary.csv")
 
 
 
