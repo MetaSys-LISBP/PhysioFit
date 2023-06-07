@@ -22,12 +22,12 @@ class ChildModel(Model):
 
         self.parameters_to_estimate = {
             "X_0" : self.vini,
-            "mu" : self.vini,
+            "growth_rate" : self.vini,
             "t_lag" : self.vini
         }
         self.bounds = Bounds({
             "X_0": (1e-3, 10),
-            "mu": (1e-3, 3),
+            "growth_rate": (1e-3, 3),
             "t_lag": (0, 0.5 * self.time_vector.max()),
         })
         for metabolite in self.metabolites:

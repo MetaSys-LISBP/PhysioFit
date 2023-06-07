@@ -65,7 +65,10 @@ class ChildModel(Model):
                 break
 
         if len(self.parameters_to_estimate) != 7:
-            raise ValueError("This model expects 2 metabolites in the data file (1 substrate with name starting with 'S_' and 1 product with name starting with 'P_').")
+            raise ValueError(
+                "This model expects 2 metabolites in the data file (1 substrate with name starting with 'S_' and 1 "
+                "product with name starting with 'P_')."
+            )
 
 
     @staticmethod

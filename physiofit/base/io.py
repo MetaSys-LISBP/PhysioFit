@@ -318,6 +318,10 @@ class IoHandler:
                     f"detected at indice {idx}"
                 )
         final_df = concat(self.multiple_experiments)
+        final_df = final_df.reset_index()
+        final_df[["experiments", "parameter name"]] = final_df["index"].str.split(" ", expand=True)
+        final_df.set_index(["experiments", "parameter name"], inplace=True)
+        final_df.drop("index", axis=1, inplace=True)
         final_df.to_csv(f"{str(Path(export_path))}/summary.csv")
 
 

@@ -112,12 +112,12 @@ class App:
                 f"files or json for configuration files. Detected file: "
                 f"{self.data_file.name}")
 
-        if "experiments" in self.io.data.columns:
-            to_sort = ["experiments", "time"]
-        else:
-            to_sort = "time"
+        if "experiments" not in self.io.data.columns:
+            raise ValueError(
+                "'experiments' column missing from dataset"
+            )
         self.io.data = self.io.data.sort_values(
-            to_sort, ignore_index=True
+            ["experiments", "time"], ignore_index=True
         )
 
         try:
@@ -150,93 +150,60 @@ class App:
                 iterations = self.iterations
             )
 
-            if "experiments" in self.io.data.columns:
-                full_dataframe = self.io.data.copy()
-                results_path = copy(self.io.res_path)
-                experiments = list(self.io.data["experiments"].unique())
-                self.io.multiple_experiments = []
-                for experiment in experiments:
-                    with st.spinner(f"Running optimization for {experiment}"):
-                        final_table_dict = {}
-                        self.model.data = full_dataframe[
-                            full_dataframe["experiments"] == experiment
-                        ].drop("experiments", axis=1).copy()
+            full_dataframe = self.io.data.copy()
+            results_path = copy(self.io.res_path)
+            experiments = list(self.io.data["experiments"].unique())
+            self.io.multiple_experiments = []
+            for experiment in experiments:
+                with st.spinner(f"Running optimization for {experiment}"):
+                    # final_table_dict = {}
+                    self.model.data = full_dataframe[
+                        full_dataframe["experiments"] == experiment
+                    ].drop("experiments", axis=1).copy()
 
-                        self.io.res_path = results_path / experiment
-                        if not self.io.res_path.is_dir():
-                            self.io.res_path.mkdir()
-                        # Initialize the fitter object
-                        self.io.names = self.io.data.columns[1:].to_list()
-                        kwargs = self._build_fitter_kwargs()
-                        fitter = self.io.initialize_fitter(
-                            self.model.data,
-                            model=kwargs["model"],
-                            mc=kwargs["mc"],
-                            iterations=kwargs["iterations"],
-                            sd=kwargs["sd"],
-                            debug_mode=kwargs["debug_mode"]
-                        )
-                        # Do the work
-                        fitter.optimize()
-                        if self.mc:
-                            fitter.monte_carlo_analysis()
-                        fitter.khi2_test()
-                        df = pd.DataFrame.from_dict(
-                            fitter.parameter_stats,
-                            orient="columns"
-                        )
-                        df.index = [
-                            f"{experiment} {param}" for param in fitter.model.parameters_to_estimate.keys()
-                        ]
-                        st.write(df)
-                        self.io.multiple_experiments.append(df)
-
-                        # Export results
-                        self.io.output_report(fitter, self.io.res_path)
-                        self.io.plot_data(fitter)
-                        self.io.output_plots(fitter, self.io.res_path)
-                        with st.expander(f"{experiment} plots"):
-                            for fig in self.io.figures:
-                                st.pyplot(fig[1])
-                        self.io.output_pdf(fitter, self.io.res_path)
-                        # Reset figures to free memory
-                        self.io.figures = []
-                        self.config_parser.export_config(self.io.res_path)
-                self.io.data = full_dataframe
-                self.io.res_path = results_path
-                self.io.output_recap(results_path)
-            else:
-                with st.spinner("Running flux calculation..."):
+                    self.io.res_path = results_path / experiment
+                    if not self.io.res_path.is_dir():
+                        self.io.res_path.mkdir()
                     # Initialize the fitter object
                     self.io.names = self.io.data.columns[1:].to_list()
                     kwargs = self._build_fitter_kwargs()
                     fitter = self.io.initialize_fitter(
-                        self.io.data,
+                        self.model.data,
                         model=kwargs["model"],
                         mc=kwargs["mc"],
                         iterations=kwargs["iterations"],
                         sd=kwargs["sd"],
                         debug_mode=kwargs["debug_mode"]
                     )
-                    # Do the work and export results
+                    # Do the work
                     fitter.optimize()
                     if self.mc:
                         fitter.monte_carlo_analysis()
                     fitter.khi2_test()
+                    df = pd.DataFrame.from_dict(
+                        fitter.parameter_stats,
+                        orient="columns"
+                    )
+                    df.index = [
+                        f"{experiment} {param}" for param in fitter.model.parameters_to_estimate.keys()
+                    ]
+                    st.write(df)
+                    self.io.multiple_experiments.append(df)
+
+                    # Export results
                     self.io.output_report(fitter, self.io.res_path)
                     self.io.plot_data(fitter)
                     self.io.output_plots(fitter, self.io.res_path)
-                    with st.expander("Plots"):
+                    with st.expander(f"{experiment} plots"):
                         for fig in self.io.figures:
                             st.pyplot(fig[1])
                     self.io.output_pdf(fitter, self.io.res_path)
                     # Reset figures to free memory
                     self.io.figures = []
                     self.config_parser.export_config(self.io.res_path)
-                st.success(
-                    f"Run is finished. Check {self.io.res_path} for "
-                    f"the results."
-                )
+            self.io.data = full_dataframe
+            self.io.res_path = results_path
+            self.io.output_recap(results_path)
 
     def silent_sim(self):
 
