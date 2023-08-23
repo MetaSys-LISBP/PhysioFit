@@ -24,10 +24,12 @@ class ChildModel(Model):
             "X_0" : self.vini,
             "growth_rate" : self.vini
         }
-        self.bounds = Bounds({
-            "X_0": (1e-3, 10),
-            "growth_rate": (1e-3, 3)
-        })
+        self.bounds = Bounds(
+            {
+                "X_0": (1e-3, 10),
+                "growth_rate": (1e-3, 3)
+            }
+        )
         for metabolite in self.metabolites:
             self.parameters_to_estimate.update(
                 {
