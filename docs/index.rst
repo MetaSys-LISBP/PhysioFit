@@ -41,10 +41,11 @@ and can be downloaded as a `PDF file <https://readthedocs.org/projects/physiofit
 
 .. toctree::
    :maxdepth: 2
-   :caption: Usage
+   :caption: User documentation
 
    installation.rst
    quickstart.rst
+   method.rst
    usage.rst
    models.rst
    cite.rst
