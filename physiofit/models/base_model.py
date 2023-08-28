@@ -44,7 +44,7 @@ class Model(ABC):
                f"Experimental matrix: \n{self.experimental_matrix}\n" \
                f"Time vector: {self.time_vector}\n" \
                f"Name vector: {self.name_vector}\n" \
-               f"Metabolites: {self.metabolites}\n" \
+               f"Biomass & Metabolites: {self.metabolites}\n" \
                f"Parameters to estimate: {self.parameters_to_estimate}\n" \
                f"Fixed parameters: {self.fixed_parameters}\n" \
                f"Bounds: {self.bounds}\n"
