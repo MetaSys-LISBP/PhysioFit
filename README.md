@@ -3,6 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/physiofit.svg)](https://badge.fury.io/py/physiofit)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/physiofit.svg)](https://pypi.python.org/pypi/physiofit/)
 [![Documentation Status](https://readthedocs.org/projects/physiofit/badge/?version=latest)](http://physiofit.readthedocs.io/?badge=latest)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/physiofit/README.html)
 
 
 ## What is PhysioFit?
@@ -41,6 +42,12 @@ Use `pip` to **install PhysioFit from PyPi**:
 
 ```bash
 $ pip install physiofit
+```
+
+Use `conda` to install from conda:
+
+```bash
+$ conda install physiofit -c bioconda
 ```
 
 Then, start the graphical interface with:
