@@ -30,38 +30,3 @@ This module serves as reference for the different classes and associated methods
     :members:
     :undoc-members:
     :show-inheritance:
-
-:file:`model_1.py`
-
-.. automodule:: physiofit.models.model_1
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:file:`model_2.py`
-
-.. automodule:: physiofit.models.model_2
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:file:`model_3.py`
-
-.. automodule:: physiofit.models.model_3
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:file:`model_4.py`
-
-.. automodule:: physiofit.models.model_4
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:file:`model_5.py`
-
-.. automodule:: physiofit.models.model_5
-    :members:
-    :undoc-members:
-    :show-inheritance:
