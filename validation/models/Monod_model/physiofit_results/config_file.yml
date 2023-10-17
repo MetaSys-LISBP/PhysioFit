@@ -18,7 +18,7 @@ model:
     S_GlcEq_s_0: 100
     X_0: 1
     y_BM: 1
-path_to_data: C:\Users\millard\Documents\GIT\PhysioFit\data_test\config_file.yml
+path_to_data: ..\data.tsv
 sds:
   P_ethanol: 3
   S_GlcEq: 7
