@@ -1,5 +1,14 @@
 """
 Module containing the Command-Line Interface control logic.
+
+The Command-Line Interface has two goals:
+
+    i) Have a local CLI that can be used to launch jobs in a concise and quick manner, without use of the Graphical
+    User Interface. This can help when testing many different parameter sets, and also permits easy pipelining of the
+    tool, as described below.
+    ii) Have a version compatible with an integration onto the Galaxy W4M platform to be used in automated flux
+    calculation workflows
+
 """
 import argparse
 import logging

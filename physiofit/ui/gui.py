@@ -163,7 +163,7 @@ class App:
 
                     self.io.res_path = results_path / experiment
                     if not self.io.res_path.is_dir():
-                        self.io.res_path.mkdir()
+                        self.io.res_path.mkdir(parents=True)
                     # Initialize the fitter object
                     self.io.names = self.io.data.columns[1:].to_list()
                     kwargs = self._build_fitter_kwargs()
@@ -220,17 +220,21 @@ class App:
         model_options = [
             model.model_name for model in self.io.models
         ]
-        model_options.insert(0, "--")
+        if self.config_parser.model:
+            idx = model_options.index(self.config_parser.model["model_name"])
+        else:
+            idx = None
         model_name = st.selectbox(
             label="Model",
             options=model_options,
             key="model_selector",
-            help="Select the flux calculation model"
+            help="Select the flux calculation model",
+            index=idx
         )
 
         #if model_name == "Dynamic system (only substrates)":
         #    st.error("Not yet implemented...")
-        if model_name != "--":
+        if model_name:
             # Initialize selected model
             self.model = self.io.select_model(model_name)
             try:
