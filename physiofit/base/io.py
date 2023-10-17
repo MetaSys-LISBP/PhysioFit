@@ -202,6 +202,19 @@ class IoHandler:
                 else:
                     self.models.append(model_class(self.data))
 
+    def get_local_model_folder(self) -> str:
+        """
+        Return the path towards the actual environment's used models folder
+        """
+
+        model_dir = Path(__file__).parent / "models"
+        return str(model_dir)
+
+    # TODO: Implement this function to add model to model folder and add button to GUI
+    @staticmethod
+    def add_model(model_file):
+        pass
+
     @staticmethod
     def read_yaml(yaml_file: str | bytes) -> ConfigParser:
 
@@ -227,7 +240,7 @@ class IoHandler:
                 )
         return config_parser
 
-    def initialize_fitter(self, data, **kwargs):
+    def initialize_fitter(self, data: pd.DataFrame, **kwargs) -> PhysioFitter:
         """
         Initialize a PhysioFitter object
 
@@ -266,7 +279,7 @@ class IoHandler:
         return fitter
 
 
-    def output_pdf(self, fitter, export_path: str | Path = None):
+    def output_pdf(self, fitter: PhysioFitter, export_path: str | Path = None):
         """
         Handle the creation and output of a pdf file containing fit results as
         a plot
