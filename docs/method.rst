@@ -87,11 +87,7 @@ Sensitivity Analysis
 *********************
 
 To quantify the sensitivity of the optimization process and determine the 95% confidence intervals on the fits of
-experimental data & the estimated parameters we use a Monte Carlo analysis in PhysioFit. This analysis generates a
-number of noisy datasets from the experimental data (i.e iterations option in the GUI) and carries out the computational
-analyses on them. This enables PhysioFit to calculate the Standard Deviation and other statistical values of the
-optimization process. It is recommended to always run a sensitivity analysis during flux calculation.
-
-.. note:: If the optimization process is too long, you can always reduce the number of iterations of Monte Carlo
-          analysis to speed the process up!
+experimental data & the estimated parameters, we use a Monte Carlo analysis. Briefly, PhysioFit generates a
+number of noisy datasets from the experimental data (i.e option "number of iterations" in the GUI) and calculate fluxes and other growth parameters for each of the synthetic datasets. This enables PhysioFit to calculate the standard deviation and confidence interval for 
+each parameter. We recommend to always run flux calculations with sensitivity analyses.
 
