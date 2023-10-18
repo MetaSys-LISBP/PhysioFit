@@ -7,12 +7,10 @@ User-made models
 Overview
 ---------
 
-Since PhysioFit 3.0.0, it is possible to create and implement models into the tool using your own python3 code. This
-section of documentation will explain how to write your first model, how to test your model and implement it
-into your local installation. A section will also describe how to submit your code for integration onto the
-`Workflow4Metabolomics <https://workflow4metabolomics.usegalaxy.fr/>`_ platform for use in fluxomics workflows for example.
-
-# TODO: In simulate part explain that you can use analytical functions or numerical differentiation (ODE) and adding extra functions in simulate
+Since PhysioFit 3.0.0, users can create and implement their own models to calculate fluxes and other growth parameters for any biological system. This
+section explains how to write your first model, how to test the model and how to implement it
+on your PhysioFit instance. We also detail how to submit your code for integration onto the
+`Workflow4Metabolomics <https://workflow4metabolomics.usegalaxy.fr/>`_ platform for use in tailor-made workflows.
 
 Creating your first model
 --------------------------
@@ -21,11 +19,11 @@ Build the template
 ^^^^^^^^^^^^^^^^^^
 
 To implement user-made models, PhysioFit leverages Python's object model to create classes that inherit from an Abstract
-Base Class and that handles all the heavy-lifting for implementation. This lets the user follow a simple set of rules
-to get their model working in the software.
+Base Class and that handles all the heavy-lifting for implementation. A simple set of rules enables
+users to use their model in PhysioFit.
 
-The model you implement will actually be a class situated in a separate module. Start by opening a text file
-using your IDE (Integrated Development Environment) of choice, and enter the following structure in the file::
+The model must be a class located in a dedicated module. Start by opening a text file
+using your IDE (Integrated Development Environment), and enter the following structure in the file::
 
     from physiofit.models.base_model import Model
 
@@ -44,12 +42,12 @@ using your IDE (Integrated Development Environment) of choice, and enter the fol
     if __name__ == "__main__":
         pass
 
-This will be the base template from which you will build your model.
+This is the base template to build your model. Methods *get_params* (to initialize and return model parameters) and *simulate* (to simulate metabolite dynamics for a given set of parameters) are mandatory. Additional methods are allowed if needed (e.g. to carry out intermediary steps for the simulation).
 
-Populating the template
+Populate the template
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The first attribute to add in your model's *__init__* method is the model name. This name can be anything you wish, but it is strongly advised
+The first attribute to add in your model's *__init__* method is the model name. We strongly advise
 to choose a name that helps the user understand what the model is destined to simulate. You must also add two other
 attributes: the parameters to estimate & the fixed parameters. Finally, you must also call the *super().init(data)*
 method to inherit the logic from the base class ::
@@ -77,7 +75,7 @@ method to inherit the logic from the base class ::
 .. note:: If your model does not contain fixed parameters, you must still initialize the attribute as None. This is
           considered good practice.
 
-We can now try testing that our model can be initialized properly. We shall use the block at the end of the file for
+We can now try testing that the model can be initialized properly. Use the block at the end of the file for
 testing purposes. Here is an example of how you can test the model::
 
     if __name__ == "__main__":
@@ -94,21 +92,20 @@ testing purposes. Here is an example of how you can test the model::
         model = ChildModel(data=test_data)
         print(model)
 
-If you now run the file, you shall have a standard output in your console that resembles the following:
+If you now run the file, you should have a standard output in your console that looks like:
 
 .. image:: _static/models/standard_out1.jpeg
    :scale: 100%
 
-The next step is to prepare the parameters for simulations. There are two types of parameters that can be implemented
-in a model: **parameters to estimate** and **fixed parameters**.
+The next step is to prepare the parameters for simulations. PhysioFit allows two types of parameters: **parameters to estimate** and **fixed parameters**.
 
 .. _parameters_to_estimate:
 
 Parameters to estimate
 """"""""""""""""""""""
 
-The parameters to estimate are the parameters that must be optimized, and thus that will need bounds and initial values
-to be initialized. We start by adding them to the get_params method, and giving them default starting values::
+The parameters to estimate are the parameters that must be estimated by PhysioFit, and thus that require bounds and initial values
+to be initialized. The list of parameters and their default (initial) values must be returned by the *get_params* method::
 
     from physiofit.models.base_model import Model
 
@@ -146,9 +143,11 @@ to be initialized. We start by adding them to the get_params method, and giving 
         def simulate():
             pass
 
-The next step is now to give the parameters to estimate default bounds for the optimization process. The bounds are a
+.. note:: For a given model, the number of metabolites may vary depending on the experiment, hence the metabolite-dependent parameters can be automatically defined in this function (as illustrated here using a for loop).
+
+The next step is to define the default bounds used for the optimization process (these bounds can be changed in the GUI). The bounds are a
 class of objects that handle the logic and checks. They are derived from the python dict base class, and as such
-implement the same methods such as update for example. Here is an example of how to implement them: ::
+implement the same methods (e.g. update). Here is an example of how to implement the bounds: ::
 
     from physiofit.models.base_model import Model
 
@@ -203,16 +202,16 @@ implement the same methods such as update for example. Here is an example of how
         def simulate():
             pass
 
-.. warning:: The keys in the bounds and in the parameters to estimate dictionary must correspond!
+.. warning:: The keys in the bounds and in the parameters to estimate dictionary must be the same!
 
 .. _fixed_parameters:
 
 Fixed parameters
 """"""""""""""""
 
-The fixed parameters are parameters that are given as constants in the model equations. For example, in the case of
+The fixed parameters are parameters that are given as constants in the model equations and are not estimated by PhysioFit. For example, in the case of
 steady-state models that account for non enymatic degradation (see :ref:`default_steady-state_models`.), we need to give
-the unstable metabolite a constant that will define it's rate of degradation ::
+the unstable metabolite(s) a degradation constant (measured independently) ::
 
     self.fixed_parameters = {"Degradation": {
             metabolite: 2 for metabolite in self.metabolites
@@ -221,16 +220,16 @@ the unstable metabolite a constant that will define it's rate of degradation ::
 
 The different fixed parameters are given in a dictionary of dictionaries, where the first level is the name of the
 parameter itself (here degradation) and the second level contains the mapping of metabolite-value pairs that will be
-the default values initialized on launch (here we give a default value of 0 for every metabolite for example). Each
-key of the first level will be used to initialize a panel to configure the values for the metabolites given in the
+the default values initialized (here we give a default value of 2 for every metabolite for example). Each
+key of the first level is used to initialize a widget in the GUI, thus allowing users to change the corresponding values for the metabolites given in the
 second level.
 
 Adding a simulation function
 """"""""""""""""""""""""""""
 
-Once the different parameter sections have been written, the next step is to implement the simulation function that
-will be called on each iteration of the optimization process (see :ref:`optimization_process` for more details).
-To do this, first write out the function definition and insert the following parameters: ::
+Once the *get_params* method has been implemented, the next step is to implement the simulation function that
+will be called on each iteration of the optimization process to simulate the metabolite dynamics that correspond to a given set of parameters (see :ref:`optimization_process` for more details).
+To do this, first write out the function definition: ::
 
     @staticmethod
     def simulate(
@@ -241,16 +240,17 @@ To do this, first write out the function definition and insert the following par
     ):
         pass
 
-As shown, the function accepts 4 different arguments:
-    * *params_opti*: a list containing the values for each parameter to estimate **in the order of apparition in the
+As shown above, this function takes four arguments:
+    * *params_opti*: list containing the values of each parameter to estimate **in the order of apparition in the
       associated parameters_to_estimate dictionary** (see :ref:`parameters_to_estimate`)
-    * *data_matrix*: the numpy array containing the experimental data (or data with the same shape)
-    * *time_vector*: the numpy array containing the time points
-    * *params_non_opti*: a dictionary containing the fixed parameters (see :ref:`fixed_parameters`)
+    * *data_matrix*: numpy array containing the experimental data (or data with the same shape)
+    * *time_vector*: numpy array containing the time points
+    * *params_non_opti*: dictionary containing the fixed parameters (see :ref:`fixed_parameters`)
 
-Next you can start writing the body of the function. It is highly suggested to unpack the values from the
-list of parameters to estimate into variables that possess the name of the associated parameter in the dictionary. To
-get the right shape for the simulated matrix, one can use the *empty_like* function from the numpy library: ::
+Now you can start writing the body of the function. For sake of clarity, we recommend unpacking parameters values from the 
+list of parameters to estimate into internal variables. Th function *simulate* must return a matrix containing the simulation results, with the same shape as 
+the matrix containing the experimental data. To initialize the simulated matrix, you can 
+use the *empty_like* function from the numpy library: ::
 
     @staticmethod
     def simulate(
@@ -283,12 +283,12 @@ get the right shape for the simulated matrix, one can use the *empty_like* funct
 
         return simulated_matrix
 
-The math explaining the above simulation function can be found :ref:`here <default_steady-state_models>` (equations
+The math corresponding to the simulation function provided above as example can be found :ref:`here <default_steady-state_models>` (equations
 5 and 6).
 
-The above example showcases the use of analytical functions to simulate the flux dynamics. It is also possible to use
-numerical differentiation functions (ODE). This may need the implementation of additional functions into the simulate
-function. This can be done within the body of the simulate function: ::
+This example showcases the use of analytical functions to simulate the flux dynamics. It is also possible to use
+numerical derivation to solve a system of ordinary differential equations (ODEs), which can be usefull when algebric derivation is not straightforward. This require the implementation of additional functions into the simulate
+function. The system of ODEs can be provided directly within the body of the simulate function: ::
 
     from scipy.integrate import solve_ivp
 
@@ -343,16 +343,16 @@ function. This can be done within the body of the simulate function: ::
 
         return sol.y.T
 
-As we can see, the solver needs a calculate derivative function to be passed in as an argument. This function is thus
-created within the body of the simulate function, before it's use in the solver. More information on the mathematics
+As we can see, the function *calculate_derivative* returns the derivatives of each metabolite concentration and is used by an ODEs solver that performs the simulations. This function is thus
+created within the body of the simulate function, before being called by the solver. More information on the mathematics
 behind this implementation can be found :ref:`here <default_dynamic_models>`.
 
 
-Adding the model to the GUI
+Testing the model
 ---------------------------
 
-One a model has been designed, it is time to test it out in the GUI. To integrate your model into the GUI, it is as
-simple as copying the .py file and pasting it in your installation "models" folder. You can get the path towards the
+One a model has been designed, it is time to test it! To integrate your model into the GUI, just copy the .py file 
+in the folder 'models' of PhysioFit. You can get the path towards the
 models folder by opening a python kernel in your dedicated environment and initializing an IoHandler ::
 
     from physiofit.base.io import IoHandler
