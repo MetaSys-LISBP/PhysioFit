@@ -1,4 +1,4 @@
-Method & Models
+Method
 ===============
 
 General principle
