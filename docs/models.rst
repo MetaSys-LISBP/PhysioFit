@@ -15,7 +15,7 @@ on your PhysioFit instance. We also detail how to submit your code for integrati
 Creating your first model
 --------------------------
 
-Build the template
+Building the template
 ^^^^^^^^^^^^^^^^^^
 
 To implement user-made models, PhysioFit leverages Python's object model to create classes that inherit from an Abstract
@@ -44,7 +44,7 @@ using your IDE (Integrated Development Environment), and enter the following str
 
 This is the base template to build your model. Methods *get_params* (to initialize and return model parameters) and *simulate* (to simulate metabolite dynamics for a given set of parameters) are mandatory. Additional methods are allowed if needed (e.g. to carry out intermediary steps for the simulation).
 
-Populate the template
+Adding equations and parameters
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The first attribute to add in your model's *__init__* method is the model name. We strongly advise
@@ -224,8 +224,8 @@ the default values initialized (here we give a default value of 2 for every meta
 key of the first level is used to initialize a widget in the GUI, thus allowing users to change the corresponding values for the metabolites given in the
 second level.
 
-Adding a simulation function
-""""""""""""""""""""""""""""
+Simulation function
+"""""""""""""""""""
 
 Once the *get_params* method has been implemented, the next step is to implement the simulation function that
 will be called on each iteration of the optimization process to simulate the metabolite dynamics that correspond to a given set of parameters (see :ref:`optimization_process` for more details).
@@ -361,3 +361,6 @@ models folder by opening a python kernel in your dedicated environment and initi
 
 .. note:: The model file name must follow the naming convention "model_[model number].py". If the last model in the list
           is the "model_5.py", the next one should be named "model_6.py".
+
+You can now launch PhysioFit's GUI, load a data file corresponding to the new model, select the model, and run flux calculation. In case of errors, 
+have a look to the error message and correct the code.
