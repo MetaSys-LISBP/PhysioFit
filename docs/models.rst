@@ -1,6 +1,57 @@
 Models
 =========
 
+
+Models provided with PhysioFit
+******************************
+
+.. _default_steady-state_models:
+
+Steady-state models
+----------------------------
+
+The steady state models implemented in PhysioFit may account for i) non enzymatic degradation of some metabolites and
+ii) growth lag. These models can be described using the following system of ordinary differential equations:
+
+.. image:: _static/equations/eq1.png
+
+.. image:: _static/equations/eq2.png
+
+with qMi being positive (negative) when M_i is produced (consumed). The sign of q_(M_i ) can thus be used to
+automatically identify products and substrates in high throughput workflows for automated functional analysis of
+metabolic systems.
+
+Integrating equations 1-2 provides the following analytical functions:
+
+.. image:: _static/equations/eq3.png
+
+.. image:: _static/equations/eq4.png
+
+In the absence of a lag phase (i.e. t_lag=0), equations 3-4 simplifies to:
+
+.. image:: _static/equations/eq5.png
+
+.. image:: _static/equations/eq6.png
+
+In the absence of degradation (i.e. k = 0), eq. 4 simplifies to:
+
+.. image:: _static/equations/eq7.png
+
+In the absence of both degradation and lag (i.e. t_lag=0 and k=0), equations 3-4 simplifies to:
+
+.. image:: _static/equations/eq8.png
+
+.. image:: _static/equations/eq9.png
+
+
+.. _default_dynamic_models:
+
+Dynamic model
+-----------------------
+
+To be implemented...
+
+
 User-made models
 *****************
 

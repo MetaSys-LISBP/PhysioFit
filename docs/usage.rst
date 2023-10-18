@@ -68,8 +68,8 @@ with metabolite degradation model is selected:
 
 .. image:: _static/usage/example1.JPG
 
-**Standard deviation** on measurements. A smaller value will augment the cost of the corresponding data during the
-optimization, thereby forcing an improvement of the fit accuracy for this data, but degrading the fit accuracy for the
+**Standard deviation** on measurements. As detailed in the methods section, reducing the standard deviation will increase the cost of the corresponding data during the
+optimization, thereby forcing an improvement of the fit accuracy for this measurements, but degrading the goodness-of-fit for the
 other measurements.
 
 Finally, **Verbose logs**: Should debug information be written in log file. Useful in case of trouble (please join it
