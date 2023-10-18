@@ -1,85 +1,6 @@
 Models
 =========
 
-Default models
-***************
-
-Overview
------------------
-
-Initial concentrations of species (i.e. biomass - X - and metabolites - M_i - at t=0) and fluxes
-(exchange fluxes - q_(M_i ) - and growth rate - µ -) are estimated by fitting time-course measurements of
-metabolite and biomass concentrations. Simulations, i.e. calculation of X(t) and M_i(t), are performed using analytical
-functions, as detailed below in the Model section.
-
-Concentrations of species (biomass and metabolites) at t=0 and exchange fluxes are estimated by fitting time-course
-measurements of metabolite and biomass concentrations. Different models are shipped by default with PhysioFit. This
-section of the documentation details each of these models.
-
-Flux values given by PhysioFit correspond the best fit. A global sensitivity analysis (Monte-Carlo approach) is
-available to evaluate the precision of the estimated fluxes (mean, median, standard deviation, 95% confidence
-intervals), plots are generated for visual inspection of the fitting quality, and a χ² test is performed to assess the
-statistical goodness of fit.
-
-.. _steady-state-models:
-
-Steady-state models
---------------------
-
-The steady state models implemented in PhysioFit may account for i) non enzymatic degradation of some metabolites and
-ii) growth lag. These models can be described using the following system of ordinary differential equations:
-
-.. image:: _static/equations/eq1.png
-
-.. image:: _static/equations/eq2.png
-
-with qMi being positive (negative) when M_i is produced (consumed). The sign of q_(M_i ) can thus be used to
-automatically identify products and substrates in high throughput workflows for automated functional analysis of
-metabolic systems.
-
-Integrating equations 1-2 provides the following analytical functions:
-
-.. image:: _static/equations/eq3.png
-
-.. image:: _static/equations/eq4.png
-
-In the absence of a lag phase (i.e. t_lag=0), equations 3-4 simplifies to:
-
-.. image:: _static/equations/eq5.png
-
-.. image:: _static/equations/eq6.png
-
-In the absence of degradation (i.e. k = 0), eq. 4 simplifies to:
-
-.. image:: _static/equations/eq7.png
-
-In the absence of both degradation and lag (i.e. t_lag=0 and k=0), equations 3-4 simplifies to:
-
-.. image:: _static/equations/eq8.png
-
-.. image:: _static/equations/eq9.png
-
-
-Dynamic models
-----------------
-
-To be implemented...
-
-Flux calculation
------------------
-
-A model containing all metabolites is constructed automatically by PhysioFit from the input data, as detailed above.
-Model parameters (i.e. fluxes, growth rate, and initial concentrations of biomass and metabolites) are estimated using
-Scipy's Differential evolution method, and the best solution is polished using the L-BFGS-B method (see
-`scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for more
-information on the optimization method), by minimizing the following cost function:
-
-.. image:: _static/equations/eq10.png
-
-where *sim* is the simulated data, *meas* denotes measurements, and *weight* is a weighting factor (typically, one standard
-deviation on measurements).
-
-
 User-made models
 *****************
 
@@ -91,11 +12,7 @@ section of documentation will explain how to write your first model, how to test
 into your local installation. A section will also describe how to submit your code for integration onto the
 `Workflow4Metabolomics <https://workflow4metabolomics.usegalaxy.fr/>`_ platform for use in fluxomics workflows for example.
 
-# TODO: Add method section for flux calculation & sensitivity analysis and have it be first
-# TODO: Change init growth rate to BM_0
 # TODO: In simulate part explain that you can use analytical functions or numerical differentiation (ODE) and adding extra functions in simulate
-
-
 
 Creating your first model
 --------------------------
@@ -185,6 +102,8 @@ If you now run the file, you shall have a standard output in your console that r
 The next step is to prepare the parameters for simulations. There are two types of parameters that can be implemented
 in a model: **parameters to estimate** and **fixed parameters**.
 
+.. _parameters_to_estimate:
+
 Parameters to estimate
 """"""""""""""""""""""
 
@@ -208,7 +127,7 @@ to be initialized. We start by adding them to the get_params method, and giving 
             # be the initial value for the optimization process
 
             self.parameters_to_estimate = {
-                "init_growth_rate": 1,
+                "BM_0": 1,
                 "growth_rate": 1
             }
 
@@ -248,7 +167,7 @@ implement the same methods such as update for example. Here is an example of how
             # be the initial value for the optimization process
 
             self.parameters_to_estimate = {
-                "init_growth_rate": 1,
+                "BM_0": 1,
                 "growth_rate": 1
             }
 
@@ -256,7 +175,7 @@ implement the same methods such as update for example. Here is an example of how
 
             self.bounds = Bounds(
                 {
-                    "init_growth_rate": (1e-3, 10),
+                    "BM_0": (1e-3, 10),
                     "growth_rate": (1e-3, 3)
                 }
             )
@@ -286,12 +205,13 @@ implement the same methods such as update for example. Here is an example of how
 
 .. warning:: The keys in the bounds and in the parameters to estimate dictionary must correspond!
 
+.. _fixed_parameters:
 
 Fixed parameters
 """"""""""""""""
 
 The fixed parameters are parameters that are given as constants in the model equations. For example, in the case of
-steady-state models that account for non enymatic degradation (see :ref:`steady-state-models`.), we need to give
+steady-state models that account for non enymatic degradation (see :ref:`default_steady-state_models`.), we need to give
 the unstable metabolite a constant that will define it's rate of degradation ::
 
     self.fixed_parameters = {"Degradation": {
@@ -299,8 +219,145 @@ the unstable metabolite a constant that will define it's rate of degradation ::
             }
         }
 
-The different fixed parameters are given in a dictionnary of dictionnaries, where the first level is the name of the
+The different fixed parameters are given in a dictionary of dictionaries, where the first level is the name of the
 parameter itself (here degradation) and the second level contains the mapping of metabolite-value pairs that will be
-the default values initialized on launch(here we give a default value of 0 for every metabolite for example).
+the default values initialized on launch (here we give a default value of 0 for every metabolite for example). Each
+key of the first level will be used to initialize a panel to configure the values for the metabolites given in the
+second level.
+
+Adding a simulation function
+""""""""""""""""""""""""""""
+
+Once the different parameter sections have been written, the next step is to implement the simulation function that
+will be called on each iteration of the optimization process (see :ref:`optimization_process` for more details).
+To do this, first write out the function definition and insert the following parameters: ::
+
+    @staticmethod
+    def simulate(
+            params_opti: list,
+            data_matrix: np.ndarray,
+            time_vector: np.ndarray,
+            params_non_opti: dict
+    ):
+        pass
+
+As shown, the function accepts 4 different arguments:
+    * *params_opti*: a list containing the values for each parameter to estimate **in the order of apparition in the
+      associated parameters_to_estimate dictionary** (see :ref:`parameters_to_estimate`)
+    * *data_matrix*: the numpy array containing the experimental data (or data with the same shape)
+    * *time_vector*: the numpy array containing the time points
+    * *params_non_opti*: a dictionary containing the fixed parameters (see :ref:`fixed_parameters`)
+
+Next you can start writing the body of the function. It is highly suggested to unpack the values from the
+list of parameters to estimate into variables that possess the name of the associated parameter in the dictionary. To
+get the right shape for the simulated matrix, one can use the *empty_like* function from the numpy library: ::
+
+    @staticmethod
+    def simulate(
+            params_opti: list,
+            data_matrix: np.ndarray,
+            time_vector: np.ndarray,
+            params_non_opti: dict
+    ):
+        # Get end shape
+        simulated_matrix = np.empty_like(data_matrix)
+
+        # Get initial params
+        x_0 = params_opti[0]
+        mu = params_opti[1]
+
+        # Get X_0 values
+        exp_mu_t = np.exp(mu * time_vector)
+        simulated_matrix[:, 0] = x_0 * exp_mu_t
+        fixed_params = [value for value in params_non_opti["Degradation"].values()]
+
+        # Get parameter names and run the calculations column by column
+        for i in range(1, int(len(params_opti) / 2)):
+            q = params_opti[i * 2]
+            m_0 = params_opti[i * 2 + 1]
+            k = fixed_params[i - 1]
+            exp_k_t = np.exp(-k * time_vector)
+            simulated_matrix[:, i] = q * (x_0 / (mu + k)) \
+                                     * (exp_mu_t - exp_k_t) \
+                                     + m_0 * exp_k_t
+
+        return simulated_matrix
+
+The math explaining the above simulation function can be found :ref:`here <default_steady-state_models>` (equations
+5 and 6).
+
+The above example showcases the use of analytical functions to simulate the flux dynamics. It is also possible to use
+numerical differentiation functions (ODE). This may need the implementation of additional functions into the simulate
+function. This can be done within the body of the simulate function: ::
+
+    from scipy.integrate import solve_ivp
+
+    @staticmethod
+    def simulate(
+            params_opti: list,
+            data_matrix: np.ndarray,
+            time_vector: np.ndarray,
+            params_non_opti: dict
+    ):
+
+        # Get parameters
+        x_0 = params_opti[0]
+        y_BM = params_opti[1]
+        km = params_opti[2]
+        qsmax = params_opti[3]
+        s_0 = params_opti[4]
+        y_P = params_opti[5]
+        p_0 = params_opti[6]
+        params = (y_BM, y_P, km, qsmax)
+
+        # initialize variables at t=0
+        state = [x_0, s_0, p_0]
+
+        def calculate_derivative(t, state, y_BM, y_P, km, qsmax):
+
+            # get substrate and biomass concentrations
+            s_t = state[0]
+            x_t = state[1]
+
+            # calculate fluxes
+            qs_t = qsmax * (s_t / (km + s_t))
+            mu_t = y_BM * qs_t
+            qp_t = y_P * qs_t
+
+            # calculate derivatives
+            dx = mu_t * x_t
+            ds = -qs_t * x_t
+            dp = qp_t * x_t
+
+            return dx, ds, dp
+
+        # simulate time-course concentrations
+        sol = solve_ivp(
+            fun=calculate_derivative,
+            t_span=(np.min(time_vector), np.max(time_vector)),
+            y0 = state,
+            args=params,
+            method="LSODA",
+            t_eval = list(time_vector)
+        )
+
+        return sol.y.T
+
+As we can see, the solver needs a calculate derivative function to be passed in as an argument. This function is thus
+created within the body of the simulate function, before it's use in the solver. More information on the mathematics
+behind this implementation can be found :ref:`here <default_dynamic_models>`.
 
 
+Adding the model to the GUI
+---------------------------
+
+One a model has been designed, it is time to test it out in the GUI. To integrate your model into the GUI, it is as
+simple as copying the .py file and pasting it in your installation "models" folder. You can get the path towards the
+models folder by opening a python kernel in your dedicated environment and initializing an IoHandler ::
+
+    from physiofit.base.io import IoHandler
+    io_handler = IoHandler()
+    print(io_handler.get_local_model_folder())
+
+.. note:: The model file name must follow the naming convention "model_[model number].py". If the last model in the list
+          is the "model_5.py", the next one should be named "model_6.py".
