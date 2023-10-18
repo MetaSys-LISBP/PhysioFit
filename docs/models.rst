@@ -2,7 +2,7 @@ Models
 =========
 
 
-Models provided with PhysioFit
+Models shipped with PhysioFit
 ******************************
 
 .. _default_steady-state_models:
@@ -10,8 +10,9 @@ Models provided with PhysioFit
 Steady-state models
 ----------------------------
 
-The steady state models implemented in PhysioFit may account for i) non enzymatic degradation of some metabolites and
-ii) growth lag. These models can be described using the following system of ordinary differential equations:
+A general steady state models implemented in PhysioFit may account for i) non enzymatic degradation of some metabolites and
+ii) growth lag. Three additional models are derived from this general model (without degradation, without lag phase, and without degradation nor lag phase). 
+The general model can be described using the following system of ordinary differential equations:
 
 .. image:: _static/equations/eq1.png
 
