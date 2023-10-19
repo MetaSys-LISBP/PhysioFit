@@ -416,3 +416,7 @@ models folder by opening a python kernel in your dedicated environment and initi
 
 You can now launch PhysioFit's GUI, load a data file corresponding to the new model, select the model, and run flux calculation. In case of errors, 
 have a look to the error message and correct the code.
+
+.. note:: We would be happy to broaden the types of models shipped with PhysioFit. If you have developed a new model, it might be 
+          usefull and valuable to the fluxomics community! Please, keep in touch with us to discuss on the model and see if we can include your 
+          model in the built-in models shipped with PhysioFit! :)
