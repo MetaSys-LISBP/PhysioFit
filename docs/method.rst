@@ -4,8 +4,8 @@ Method
 General principle
 *****************
 
-Fluxes (exchange fluxes - qM\ :sub:`i` - and growth rate - µ -), initial concentrations of species (i.e. biomass - X - and 
-metabolites - M_i - at t=0) and possibly other growth parameters (e.g. lag time) are estimated by fitting time-course measurements of
+Fluxes (exchange fluxes of a metabolite M\ :sub:`i` - qM\ :sub:`i` - and growth rate - µ -), initial concentrations of species (i.e. biomass - X - and 
+metabolites - M\ :sub:`i` -) and possibly other growth parameters (e.g. lag time) are estimated by fitting time-course measurements of
 metabolite and biomass concentrations, as detailed in this section.
 
 Flux values provided by PhysioFit correspond the best fit. A global sensitivity analysis (Monte-Carlo approach) is

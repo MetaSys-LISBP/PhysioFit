@@ -18,20 +18,20 @@ The input data must be a tabulated file (.tsv extension) with the following stru
 |  ...        | ...   | ... |  ...    |
 +-------------+-------+-----+---------+
 
-Columns **time** and **X** (biomass concentration) are mandatory, as is at least one metabolite column(**Glucose** in
+Columns **time** and **X** (biomass concentration) are mandatory, as is at least one metabolite column (**Glucose** in
 this example). If the biomass and metabolite concentrations were sampled at different moments, you can still group
-them together in the same table (with an empty value when no data is available). In the "experiments" column the
-name of the condition/ experiment must be given, even if only one condition is being analyzed.
+them together in the same table (with an empty value when no data is available). Column "experiments" contains the
+name of the condition/experiment, which must be provided even if only one condition/experiment is being analyzed.
 
 
 .. note:: Flux units depend on the units of time and concentrations (of biomass and metabolites) provided in the input
-             data file. For instance, if biomass units are in grams of cell dry weight by liter (gDW/L), metabolite concentrations are in millimolar (mM) and time is
-             in hours (h), the estimated fluxes will be in mmol/gDW/h. Units should thus be carefully selected, and calculated fluxes must be interpreted consistently with the concentration units.
+             data file. For instance, if biomass units are in grams of cell dry weight by liter (g\ :sub:`CDW`/L), metabolite concentrations are in millimolar (mM) and time is
+             in hours (h), the estimated fluxes will be in mmol/g\ :sub:`CDW`/h. Units should thus be carefully selected, and calculated fluxes must be interpreted consistently with the concentration units.
 
 .. warning:: The "experiments" column must only contain letters (no numbers) and is case-sensitive!
 
-.. warning:: To limit any numerical instabilities, provide values in a range not too far from unity (e.g. if a metabolite
-             concentration is 2 mM, provide the value directly in mM and not as 2e-3 M). The concentration of different metabolites can
+.. warning:: To limit any numerical instabilities, we recommend providing values in a range not too far from unity (e.g. if a metabolite
+             concentration is 2 mM, provide the value directly in mM and not as 0.002 M). The concentration of different metabolites can
              be provided using different units, but a single unit must be used for a given metabolite.
 
 .. _yaml_config:
@@ -55,13 +55,13 @@ For a description of all calculation parameters, check the section below.
 Flux calculation parameters
 ---------------------------
 
-The first run parameter to can modify is the **sensitivity analysis (Monte-Carlo)**, for which a check box signals if
-the tool should estimate (or not) the precision on calculated fluxes. If checked, PhysioFit will let you choose the
-number of monte carlo iterations. A higher number of iterations means more accurate confidence intervals on the
+The first parameter is related to the **sensitivity analysis (Monte-Carlo)**, for which a check box indicates whether 
+PhysioFit should estimate (or not) the precision on calculated fluxes. If checked, PhysioFit will let you select the
+number of Monte Carlo iterations. A higher number of iterations means more accurate confidence intervals on the
 estimated parameters, but will slow down calculations. The default number of iterations (100) is sufficient in most
 situations.
 
-Next, the list of run parameters that you can tweak is dependant on the model you have selected. There are two types of
+Next, the list of run parameters that you can tweak depends on the model you have selected. There are two types of
 parameters: i) **parameters to estimate**, for which you can change the solution space bounds and the initial values and
 ii) **fixed parameters** for which you can change the value. Here is an example when the steady-state without lag and
 with metabolite degradation model is selected:
@@ -75,7 +75,7 @@ other measurements.
 Finally, **Verbose logs**: Should debug information be written in log file. Useful in case of trouble (please join it
 to the issue on github). Default: False
 
-Other default values are model-based.
+Other default initial values are given by the model.
 
 .. note:: Initial values and bounds should be carefully chosen. Ideally, initial values should be in the range of values
             used in the experiment. Well-defined bounds will enhance robustness and speed of the flux calculation
