@@ -33,8 +33,6 @@ A model containing all metabolites provided in the input data is constructed by 
 Model parameters (such as fluxes, growth rate, and initial concentrations of biomass and metabolites) are estimated by fitting experimental metabolite and biomass dynamics, where 
 the following cost function is minimized:
 
-.. image:: _static/equations/eq10.png
-
 .. math:: residuum = \sum_{i} (\dfrac{sim_{i}-meas_{i}}{sd_{i}})^2
 
 where *sim* is the simulated data, *meas* denotes measurements, and *sd* is the 
