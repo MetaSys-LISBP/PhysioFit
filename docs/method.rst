@@ -35,10 +35,10 @@ the following cost function is minimized:
 
 .. image:: _static/equations/eq10.png
 
-$$residuum = \sum_{i} (\\frac{sim-meas}{sd})^2.$$
+.. math:: residuum = \sum_{i} (\\frac{sim_{i}-meas_{i}}{sd_{i}})^2
 
-where *sim* is the simulated data, *meas* denotes measurements, and *weight* is a weighting factor (typically, one
-standard deviation on measurements).
+where *sim* is the simulated data, *meas* denotes measurements, and *sd* is the 
+standard deviation on measurements.
 
 For this optimization step, PhysioFit uses the Scipy's Differential evolution method to approximate the solution, and the best solution is polished using the L-BFGS-B method (see
 `scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for more information on the optimization
