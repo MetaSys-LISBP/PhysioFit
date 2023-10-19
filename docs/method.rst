@@ -35,6 +35,8 @@ the following cost function is minimized:
 
 .. image:: _static/equations/eq10.png
 
+$$residuum = \sum_{i} (\\frac{sim-meas}{sd})^2.$$
+
 where *sim* is the simulated data, *meas* denotes measurements, and *weight* is a weighting factor (typically, one
 standard deviation on measurements).
 
