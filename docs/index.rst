@@ -13,14 +13,14 @@ Welcome to PhysioFit documentation!
 **PhysioFit is a scientific tool designed to quantify cell growth parameters and uptake & production fluxes**
 
 Fluxes are estimated using mathematical models by fitting time-course measurements of the concentration of
-cells and extracellular substrates and products. PhysioFit includes by default the most common growth models, and
-additional models can be implemented by users.
+cells and extracellular substrates and products. PhysioFit is shipped with some common growth models, and
+tailor-made models can be implemented by users.
 
 **PhysioFit includes the following features:**
 
    * **calculation of growth rate and extracellular (uptake and production) fluxes**,
-   * **a set of steady-state and dynamic models** are included by default,
-   * **tailor-made models** can be defined by users,
+   * **a set of steady-state and dynamic models** are shipped with PhysioFit,
+   * **tailor-made models** can be constructed by users,
    * Monte-Carlo sensitivity analysis to **estimate the precision of the calculated fluxes**,
    * **evaluation of the goodness of fit and visual inspection of the fitted curves**,
    * shipped as a **library** with both a **graphical** and a **command line** interface,
