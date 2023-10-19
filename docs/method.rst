@@ -35,7 +35,7 @@ the following cost function is minimized:
 
 .. image:: _static/equations/eq10.png
 
-.. math:: residuum = \sum_{i} (\\frac{sim_{i}-meas_{i}}{sd_{i}})^2
+.. math:: residuum = \sum_{i} (\dfrac{sim_{i}-meas_{i}}{sd_{i}})^2
 
 where *sim* is the simulated data, *meas* denotes measurements, and *sd* is the 
 standard deviation on measurements.
