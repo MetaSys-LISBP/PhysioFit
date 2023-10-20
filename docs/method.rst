@@ -35,7 +35,7 @@ the following cost function is minimized:
 
 .. math:: residuum = \sum_{i} (\dfrac{sim_{i}-meas_{i}}{sd_{i}})^2
 
-where *sim* is the simulated data, *meas* denotes measurements, and *sd* is the 
+where :math:`sim` is the simulated data, :math:`meas` denotes measurements, and :math:`sd` is the 
 standard deviation on measurements.
 
 For this optimization step, PhysioFit uses the Scipy's Differential evolution method to approximate the solution, and the best solution is polished using the L-BFGS-B method (see
@@ -45,9 +45,8 @@ method).
 Sensitivity analysis
 *********************
 
-To quantify the standard deviation and 95% confidence intervals on the fits of
-experimental data & on the estimated parameters (including fluxes), we use a Monte Carlo analysis. Briefly, PhysioFit generates a
+To determine the precision on the fit and on the estimated parameters (including fluxes), we use a Monte Carlo analysis. Briefly, PhysioFit generates a
 number of noisy datasets from the experimental data (i.e option "number of iterations" in the GUI) and calculate fluxes and other growth 
-parameters for each of the synthetic datasets. This enables PhysioFit to perform statistical analysis and estimate the standard deviation and confidence interval for 
+parameters for each of the synthetic datasets. This enables PhysioFit to compute statistics (such as standard deviation and confidence interval) for 
 each parameter. We recommend to always run flux calculations with sensitivity analyses.
 
