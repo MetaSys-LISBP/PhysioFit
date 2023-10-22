@@ -45,6 +45,14 @@ Integrating equations 1-2 provides the following analytical functions:
 
 .. image:: _static/equations/eq3.png
 
+.. math:: 
+  \begin{align}
+    \dfrac{dX}{dt} = \begin{cases}
+    0 & \text{if } t < t_{lag} \\
+    \mu \cdot X & \text{ow.}
+  \end{cases}    \label{eq1}    \tag{eq. 1} 
+  \end{align}
+
 .. image:: _static/equations/eq4.png
 
 Three additional models are derived from this general model (without degradation, without lag phase, and without degradation nor lag phase). 
