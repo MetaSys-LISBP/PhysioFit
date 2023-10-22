@@ -23,7 +23,7 @@ ii) growth lag. This model is described by the following system of ordinary diff
   \end{cases}    \label{eq1}    \tag{eq. 1} 
   \end{align}
 
-where :math:`µ` is growth rate, :math:`X` is the biomass concentration, and :math:`t_{lag}` is the lag time. 
+where :math:`\mu` is growth rate, :math:`X` is the biomass concentration, and :math:`t_{lag}` is the lag time. 
 
 .. image:: _static/equations/eq2.png
 
@@ -44,6 +44,14 @@ automatically identify products and substrates.
 Integrating equations 1-2 provides the following analytical functions:
 
 .. image:: _static/equations/eq3.png
+
+.. math:: 
+  \begin{align}
+    \dfrac{dX}{dt} = \begin{cases}
+    0 & \text{if } t < t_{lag} \\
+    \mu \cdot X & \text{ow.}
+  \end{cases}    \label{eq1}    \tag{eq. 1} 
+  \end{align}
 
 
 
@@ -103,7 +111,7 @@ substrate concentration is expressed by the following Monod kinetics:
     q_{S}=q^{max}_{S}\cdot \dfrac{S}{K_{M}+S}    \label{eq13}    \tag{eq. 13} 
   \end{align}
 
-where :math:`q^{max}_{S}` is the maximal substrate uptake rate and :math:`K_{M}` is the "half-velocity constant" (the value of :math:`S` at which :math:`\frac{µ}{µ_{max}}=0.5`).
+where :math:`q^{max}_{S}` is the maximal substrate uptake rate and :math:`K_{M}` is the "half-velocity constant" (the value of :math:`S` at which :math:`\frac{\mu}{\mu_{max}}=0.5`).
 
 
 User-made models
