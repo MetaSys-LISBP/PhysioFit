@@ -45,7 +45,7 @@ Integrating equations 1-2 provides the following analytical functions:
   \begin{align}
     X(t) = \begin{cases}
     X_{0} & \text{if } t < t_{lag} \\
-    X_{0} \cdot e_{0} & \text{ow.}
+    X_{0} \cdot e^{\mu \cdot (t - t_{lag})} & \text{ow.}
   \end{cases}    \label{eq3}    \tag{eq. 3} 
   \end{align}
 
