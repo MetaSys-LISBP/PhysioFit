@@ -15,17 +15,19 @@ ii) growth lag. This model is described by the following system of ordinary diff
 
 .. image:: _static/equations/eq1.png
 
-.. image:: _static/equations/eq2.png
-
 .. math:: 
   \begin{align}
     \dfrac{dX}{dt} = \begin{cases}
-    0 & \text{if } t \leq t\ :sub:`lag` \\
-    x(n - 1), & \text{for } 0 \leq n \leq 1
+    0 & \text{if } t < t_{lag} \\
+    µ{S}\cdot X & \text{ow.}
   \end{cases}    \label{eq1}    \tag{eq. 1} 
   \end{align}
 
-with qM\ :sub:`i` being positive (negative) when M\ :sub:`i` is produced (consumed). The sign of qM\ :sub:`i` can thus be used to
+where :math:`µ` is growth rate, :math:`X` is the biomass concentration, and :math:`t_{lag}` is the lag time. 
+
+.. image:: _static/equations/eq2.png
+
+The flux qM\ :sub:`i` is positive (negative) when M\ :sub:`i` is produced (consumed). The sign of qM\ :sub:`i` can thus be used to
 automatically identify products and substrates.
 
 Integrating equations 1-2 provides the following analytical functions:
