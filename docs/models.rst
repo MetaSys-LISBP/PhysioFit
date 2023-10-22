@@ -119,10 +119,9 @@ differential equations (ODEs):
     \dfrac{dP}{dt}=q_{S}\cdot yield_{product}    \label{eq12}    \tag{eq. 12} 
   \end{align}
 
-where :math:`yield_{biomass}` is the biomass yield and :math:`yield_{product}` is the product yield.
+where :math:`q_{S}` is is the substrate uptake flux, :math:`yield_{biomass}` is the biomass yield and :math:`yield_{product}` is the product yield.
 
-The dependence of the uptake rate (:math:`q_{S}`) on the 
-substrate concentration is expressed by the following Monod kinetics:
+The dependence of the substrate uptake flux on the substrate concentration is expressed in this model by the Monod rate law:
 
 .. math::
   \begin{align}
@@ -140,13 +139,12 @@ Overview
 
 Since PhysioFit 3.0.0, users can create and implement their own models to calculate fluxes and other growth parameters for any biological system. This
 section explains how to write your first model, how to test the model and how to implement it
-on your PhysioFit instance. We also detail how to submit your code for integration onto the
-`Workflow4Metabolomics <https://workflow4metabolomics.usegalaxy.fr/>`_ platform for use in tailor-made workflows.
+on your PhysioFit instance.
 
 Creating your first model
 --------------------------
 
-Building the template
+Building a template
 ^^^^^^^^^^^^^^^^^^
 
 To implement user-made models, PhysioFit leverages Python's object model to create classes that inherit from an Abstract
@@ -175,12 +173,12 @@ using your IDE (Integrated Development Environment), and enter the following str
 
 This is the base template to build your model. Methods :samp:`get_params` (to initialize and return model parameters) and :samp:`simulate` (to simulate metabolite dynamics for a given set of parameters) are mandatory. Additional methods are allowed if needed (e.g. to carry out intermediary steps for the simulation).
 
-Adding equations and parameters
-^^^^^^^^^^^^^^^^^^^^^^^
+Defining equations and parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first attribute to add in your model's :samp:`__init__` method is the model name. We strongly advise
 to choose a name that helps the user understand what the model is destined to simulate. You must also add two other
-attributes: the parameters to estimate & the fixed parameters. Finally, you must also call the :samp:`super().init(data)`
+attributes: the free parameters & the fixed parameters. Finally, you must also call the :samp:`super().init(data)`
 method to inherit the logic from the base class: ::
 
     from physiofit.models.base_model import Model
@@ -232,11 +230,11 @@ The next step is to prepare the parameters for simulations. PhysioFit supports t
 
 .. _parameters_to_estimate:
 
-Parameters to estimate
-""""""""""""""""""""""
+Free parameters
+"""""""""""""""
 
-The parameters to estimate are the free parameters that must be estimated by PhysioFit, and thus that require defining bounds and initial values
-to be initialized. The list of parameters and their default (initial) values must be returned by the :samp:`get_params` method: ::
+The free parameters are the parameters that will be estimated by PhysioFit, and thus that require defining bounds and initial values
+to be initialized. The list of parameters and their initial (default) values must be returned by the :samp:`get_params` method: ::
 
     from physiofit.models.base_model import Model
 
@@ -340,16 +338,16 @@ implement the same methods (e.g. :samp:`update`). Here is an example of how to i
 Fixed parameters
 """"""""""""""""
 
-The fixed parameters are parameters that are given as constants in the model equations and are not estimated by PhysioFit. For example, in the case of
-steady-state models that account for non enymatic degradation (see :ref:`default_steady-state_models`.), we need to give
-the unstable metabolite(s) a degradation constant (measured in an independent experiment, e.g. see Peiro et al., 2019): ::
+The fixed parameters are parameters that are known and are not estimated by PhysioFit. For example, in the case of
+steady-state models that account for non enymatic degradation (see :ref:`default_steady-state_models`.), we need to provide the
+degradation constant of all unstable metabolites (these constants must be measured in an independent experiment, e.g. see Peiro et al., 2019): ::
 
     self.fixed_parameters = {"Degradation": {
             metabolite: 2 for metabolite in self.metabolites
             }
         }
 
-The different fixed parameters are given in a dictionary of dictionaries, where the first level is the name of the
+The fixed parameters must be provided as a dictionary of dictionaries, where the first level is the name of the
 parameter itself (here degradation) and the second level contains the mapping of metabolite-value pairs that will be
 the default values initialized (here we give a default value of 2 for every metabolite for example). Each
 key of the first level is used to initialize a widget in the GUI, thus allowing users to change the corresponding 
@@ -484,7 +482,7 @@ behind this implementation can be found :ref:`here <default_dynamic_models>`.
 Testing the model
 ---------------------------
 
-One a model has been designed, it is time to test it! To integrate your model into the GUI, just copy the :file:`.py` file 
+One a model has been implemented, it is time to test it! To integrate your model into the GUI, just copy the :file:`.py` file 
 in the folder :file:`models` of PhysioFit directory. You can get the path towards this folder by opening a python kernel in your dedicated environment and initializing an IoHandler ::
 
     from physiofit.base.io import IoHandler
