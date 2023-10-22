@@ -58,9 +58,9 @@ biomass (:math:`X`), substrate (:math:`S`) and product (:math:`P`) are described
 differential equations (ODEs):
 
 .. math:: 
-    :label: eq 10
-
-    \dfrac{dS}{dt}=-X\cdot q_{S}
+  \begin{align}
+    \dfrac{dS}{dt}=-X\cdot q_{S}    \label{a}    \tag{eq. 10} 
+  \end{align}
 
 .. math:: \dfrac{dX}{dt}=q_{S}\cdot yield_{biomass}   (eq. 11)
 
