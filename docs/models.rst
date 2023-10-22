@@ -87,7 +87,7 @@ In the absence of both degradation and lag (i.e. :math:`t_{lag}=0` and :math:`k=
 
 .. math:: 
   \begin{align}
-    X(t) = X_{0} \cdot e^{\mu \cdot t}    \label{eq5}    \tag{eq. 5} 
+    X(t) = X_{0} \cdot e^{\mu \cdot t}    \label{eq8}    \tag{eq. 8} 
   \end{align}
 
 .. image:: _static/equations/eq9.png
