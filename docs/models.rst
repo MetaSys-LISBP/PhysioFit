@@ -59,10 +59,6 @@ Three additional models are derived from this general model (without degradation
 
 Indeed, without a lag phase (i.e. :math:`t_{lag}=0`), equations 3-4 simplifies to:
 
-.. image:: _static/equations/eq5.png
-
-.. image:: _static/equations/eq6.png
-
 .. math:: 
   \begin{align}
     X(t) = X_{0} \cdot e^{\mu \cdot t}    \label{eq5}    \tag{eq. 5} 
