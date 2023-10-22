@@ -77,7 +77,7 @@ In the absence of degradation (i.e. :math:`k=0`), equation 4 simplifies to:
   \begin{align}
     M_{i}(t) = \begin{cases}
     M_{i}^{0} & \text{if } t < t_{lag} \\
-    qM_{i} \cdot \dfrac{X_{0}}{\mu + k_{i}} \cdot (e^{\mu \cdot (t - t_{lag})} - 1}) + M_{i}^{0} & \text{ow.}
+    qM_{i} \cdot \dfrac{X_{0}}{\mu + k_{i}} \cdot (e^{\mu \cdot (t - t_{lag})} - 1) + M_{i}^{0} & \text{ow.}
   \end{cases}    \label{eq7}    \tag{eq. 7} 
   \end{align}
 
