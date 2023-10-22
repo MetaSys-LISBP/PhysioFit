@@ -57,7 +57,10 @@ Time course concentrations of
 biomass (:math:`X`), substrate (:math:`S`) and product (:math:`P`) are described by the following system of ordinary 
 differential equations (ODEs):
 
-.. math:: \dfrac{dS}{dt}=-X\cdot q_{S}   (eq. 10)
+.. math:: 
+    :label: eq 10
+
+    \dfrac{dS}{dt}=-X\cdot q_{S}
 
 .. math:: \dfrac{dX}{dt}=q_{S}\cdot yield_{biomass}   (eq. 11)
 
