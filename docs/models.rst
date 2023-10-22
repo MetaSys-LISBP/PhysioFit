@@ -50,7 +50,7 @@ Integrating equations 1-2 provides the following analytical functions:
 .. math:: 
   \begin{align}
     M_{i}(t) = \begin{cases}
-    M_{i}^{0} \cdot e^{-k \cdot t} & \text{if } t < t_{lag} \\
+    M_{i}^{0} \cdot e^{-k_{i} \cdot t} & \text{if } t < t_{lag} \\
     qM_{i} \cdot \dfrac{X_{0}}{\mu + k_{i}} \cdot (e^{\mu \cdot (t - t_{lag})} - e^{-k_{i} \cdot (t - t_{lag})}) + M_{i}^{0} \cdot e^{-k_{i} \cdot t} & \text{ow.}
   \end{cases}    \label{eq4}    \tag{eq. 4} 
   \end{align}
@@ -62,6 +62,16 @@ Indeed, without a lag phase (i.e. :math:`t_{lag}=0`), equations 3-4 simplifies t
 .. image:: _static/equations/eq5.png
 
 .. image:: _static/equations/eq6.png
+
+.. math:: 
+  \begin{align}
+    X(t) = X_{0} \cdot e^{\mu \cdot t}    \label{eq5}    \tag{eq. 5} 
+  \end{align}
+
+.. math:: 
+  \begin{align}
+    M_{i}(t) = qM_{i} \cdot \dfrac{X_{0}}{\mu + k_{i}} \cdot (e^{\mu \cdot t} - e^{-k_{i} \cdot t}) + M_{i}^{0} \cdot e^{-k_{i} \cdot t}    \label{eq6}    \tag{eq. 6} 
+  \end{align}
 
 In the absence of degradation (i.e. :math:`k=0`), equation 4 simplifies to:
 
