@@ -54,7 +54,7 @@ Integrating equations 1-2 provides the following analytical functions:
     M_{i}(t) = \begin{cases}
     M_{i}^{0} \cdot e^{-k \cdot t} & \text{if } t < t_{lag} \\
     qM_{i} \cdot \dfrac{X_{0}}{\mu + k_{i} \cdot (e^{\mu \cdot (t - t_{lag})} - e^{-k \cdot (t - t_{lag})}) + M_{i}^{0} \cdot e^{-k \cdot t} & \text{ow.}
-  \end{cases}    \label{eq3}    \tag{eq. 3} 
+  \end{cases}    \label{eq4}    \tag{eq. 4} 
   \end{align}
 
 Three additional models are derived from this general model (without degradation, without lag phase, and without degradation nor lag phase). 
