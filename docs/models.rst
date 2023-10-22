@@ -77,11 +77,29 @@ In the absence of degradation (i.e. :math:`k=0`), equation 4 simplifies to:
 
 .. image:: _static/equations/eq7.png
 
+.. math:: 
+  \begin{align}
+    M_{i}(t) = \begin{cases}
+    M_{i}^{0} & \text{if } t < t_{lag} \\
+    qM_{i} \cdot \dfrac{X_{0}}{\mu + k_{i}} \cdot (e^{\mu \cdot (t - t_{lag})} - 1}) + M_{i}^{0} & \text{ow.}
+  \end{cases}    \label{eq7}    \tag{eq. 7} 
+  \end{align}
+
 In the absence of both degradation and lag (i.e. :math:`t_{lag}=0` and :math:`k=0`), equations 3-4 simplifies to:
 
 .. image:: _static/equations/eq8.png
 
+.. math:: 
+  \begin{align}
+    X(t) = X_{0} \cdot e^{\mu \cdot t}    \label{eq5}    \tag{eq. 5} 
+  \end{align}
+
 .. image:: _static/equations/eq9.png
+
+.. math:: 
+  \begin{align}
+    M_{i}(t) = qM_{i} \cdot \dfrac{X_{0}}{\mu + k_{i}} \cdot (e^{\mu \cdot (t - t_{lag})} - 1}) + M_{i}^{0}    \label{eq9}    \tag{eq. 9} 
+  \end{align}
 
 
 .. _default_dynamic_models:
