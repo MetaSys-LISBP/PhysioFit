@@ -13,8 +13,6 @@ Steady-state models
 As detailed in Peiro et al. (2019), PhysioFit includes a steady-state model that accounts for i) non enzymatic degradation of some metabolites and
 ii) growth lag. This model is described by the following system of ordinary differential equations:
 
-.. image:: _static/equations/eq1.png
-
 .. math:: 
   \begin{align}
     \dfrac{dX}{dt} = \begin{cases}
@@ -25,8 +23,6 @@ ii) growth lag. This model is described by the following system of ordinary diff
 
 where :math:`\mu` is growth rate, :math:`X` is the biomass concentration, and :math:`t_{lag}` is the lag time. 
 
-.. image:: _static/equations/eq2.png
-
 .. math:: 
   \begin{align}
     \dfrac{dM_{i}}{dt} = \begin{cases}
@@ -35,10 +31,10 @@ where :math:`\mu` is growth rate, :math:`X` is the biomass concentration, and :m
   \end{cases}    \label{eq2}    \tag{eq. 2} 
   \end{align}
 
-where :math:`k_{i}` is the first order degradation constant of the 
+where :math:`k_{i}` is the first-order degradation constant of the 
 metabolite :math:`M_{i}` and :math:`qM_{i}` is its exchange (uptake or production) flux. 
 
-The flux qM\ :sub:`i` is positive (negative) when M\ :sub:`i` is produced (consumed). The sign of qM\ :sub:`i` can thus be used to
+The flux :math:`qM_{i}` is positive (negative) when :math:`M_{i}` is produced (consumed). The sign of :math:`qM_{i}` can thus be used to
 automatically identify products and substrates.
 
 Integrating equations 1-2 provides the following analytical functions:
@@ -47,10 +43,10 @@ Integrating equations 1-2 provides the following analytical functions:
 
 .. math:: 
   \begin{align}
-    \dfrac{dX}{dt} = \begin{cases}
-    0 & \text{if } t < t_{lag} \\
-    \mu \cdot X & \text{ow.}
-  \end{cases}    \label{eq1}    \tag{eq. 1} 
+    X(t) = \begin{cases}
+    X_{0} & \text{if } t < t_{lag} \\
+    X_{0} \cdot e_{0} & \text{ow.}
+  \end{cases}    \label{eq3}    \tag{eq. 3} 
   \end{align}
 
 
