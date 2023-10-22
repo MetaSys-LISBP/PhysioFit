@@ -19,13 +19,24 @@ ii) growth lag. This model is described by the following system of ordinary diff
   \begin{align}
     \dfrac{dX}{dt} = \begin{cases}
     0 & \text{if } t < t_{lag} \\
-    µ{S}\cdot X & \text{ow.}
+    µ\cdot X & \text{ow.}
   \end{cases}    \label{eq1}    \tag{eq. 1} 
   \end{align}
 
 where :math:`µ` is growth rate, :math:`X` is the biomass concentration, and :math:`t_{lag}` is the lag time. 
 
 .. image:: _static/equations/eq2.png
+
+.. math:: 
+  \begin{align}
+    \dfrac{dM_{i}}{dt} = \begin{cases}
+    -k_{i}\cdot M_{i} & \text{if } t < t_{lag} \\
+    -k_{i}\cdot M_{i}+X\cdot qM_{i} & \text{ow.}
+  \end{cases}    \label{eq2}    \tag{eq. 2} 
+  \end{align}
+
+where :math:`k_{i}` is the first order degradation constant of the 
+metabolite :math:`M_{i}` and :math:`qM_{i}` is its exchange (uptake or production) flux. 
 
 The flux qM\ :sub:`i` is positive (negative) when M\ :sub:`i` is produced (consumed). The sign of qM\ :sub:`i` can thus be used to
 automatically identify products and substrates.
