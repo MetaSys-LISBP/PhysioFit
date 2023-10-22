@@ -4,12 +4,13 @@ Frequently asked questions (FAQ)
 How are fluxes calculated?
 ------------------------------------------------------------------
 
-We provide details on the flux calculation approach implemented in PhysioFit in the :doc:`models` section.
+We provide details on the flux calculation approach implemented in PhysioFit in the :doc:`method` section.
 
 How many measurements should I use to calculate fluxes?
 ------------------------------------------------------------------
 
-As in any model-based fitting procedure, more data means more accurate and precise flux estimates. The minimal number of measurements depend on the model used for flux calculation. For steady-state built-in models, we recommend using
+As in any model-based fitting procedure, more data usually means more accurate and precise flux estimates. The minimal number of 
+measurements depend on the model used for flux calculation. For instance, for steady-state built-in models provided with PhysioFit, we recommend using
 at least 6 to 8 time points, which should provide reliable and meaningful estimates in most situations.
 
 Still, the exact answer to this question strongly depends on the uptake/production/growth rates of your (micro)organism
@@ -65,7 +66,7 @@ How can I check if my data have been fitted correctly?
 
 The quality of the fit can be evaluated based on:
 
-    * the plots of experimental vs simulated data for the best fit, which should be as close as possible.
+    * the plots of experimental vs simulated data for the best fit, which should be as close as possible,
     * the χ² statistical test results given in the log file (see below for help on interpreting the results).
 
 .. seealso:: :ref:`chi2 test` and :ref:`bad fit` 

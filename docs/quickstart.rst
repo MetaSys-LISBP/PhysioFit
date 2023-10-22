@@ -9,26 +9,26 @@ In this section we will explain how to launch your first job once PhysioFit has 
 Graphical user interface
 --------------------------------------
 
-To launch the Graphical User Interface, type in a terminal (e.g. Anaconda Prompt if installed on Windows):
+To open the Graphical User Interface, type in a terminal (e.g. Anaconda Prompt if installed on Windows):
 
 .. code-block:: bash
 
   physiofit
  
-If you installed the package in a specific environment, make sure to activate this environment before starting PhysioFit.
+If you have installed the package in a specific environment, make sure to activate this environment before starting PhysioFit.
 
 PhysioFit interface will open in a new browser window:
 
 .. image:: _static/interface.jpg
    :scale: 60%
 
-Select an input file (which can be a .tsv file containing the data or a yaml configuration file containing the run
+Select an input file (which can be a :file:`tsv` file containing the data or a :file:`yaml` configuration file containing the run
 parameters and a path towards the data, see :doc:`usage` for more details), select a model, modify the calculation parameters according
-to your experiment, and click on :samp:`Run flux calculation`. PhysioFit proceeds automatically to the flux calculation
-and display its progress and important messages. The output of the calculations (i.e. fluxes and associated confidence
-intervals) will be written in a text file as will the statistical test results, while plots will be generated in a
-multi-page pdf and individually as .svg files. If multiple experiments where included in the input data, a recap.csv
-file will also be generated. See :ref:`outputs_ref` for more details.
+to your data, and click on :samp:`Run flux calculation`. PhysioFit proceeds automatically to the flux calculation
+and display its progress and possibly important messages such as errors. The output of the calculations (i.e. fluxes and associated statistics) 
+will be written in a text file as will the statistical test results, while plots will be generated individually for each metabolite (:file:`svg` files) and combined in a 
+multi-page :file:`pdf` file. If multiple experiments were included in the input data, a summary (:file:`csv` file) 
+will also be generated. See :ref:`outputs_ref` for more details.
 
 Command line interface
 ----------------------

@@ -10,17 +10,15 @@ Models shipped with PhysioFit
 Steady-state models
 ----------------------------
 
-A general steady state models implemented in PhysioFit may account for i) non enzymatic degradation of some metabolites and
-ii) growth lag. Three additional models are derived from this general model (without degradation, without lag phase, and without degradation nor lag phase). 
-The general model can be described using the following system of ordinary differential equations:
+As detailed in Peiro et al. (2019), PhysioFit includes a steady-state model that accounts for i) non enzymatic degradation of some metabolites and
+ii) growth lag. This model is described by the following system of ordinary differential equations:
 
 .. image:: _static/equations/eq1.png
 
 .. image:: _static/equations/eq2.png
 
-with qMi being positive (negative) when M_i is produced (consumed). The sign of q_(M_i ) can thus be used to
-automatically identify products and substrates in high throughput workflows for automated functional analysis of
-metabolic systems.
+with qM\ :sub:`i` being positive (negative) when M\ :sub:`i` is produced (consumed). The sign of q_M\ :sub:`i` can thus be used to
+automatically identify products and substrates.
 
 Integrating equations 1-2 provides the following analytical functions:
 
@@ -28,17 +26,19 @@ Integrating equations 1-2 provides the following analytical functions:
 
 .. image:: _static/equations/eq4.png
 
-In the absence of a lag phase (i.e. t_lag=0), equations 3-4 simplifies to:
+Three additional models are derived from this general model (without degradation, without lag phase, and without degradation nor lag phase). 
+
+Indeed, without a lag phase (i.e. :math:`t_{lag}=0`), equations 3-4 simplifies to:
 
 .. image:: _static/equations/eq5.png
 
 .. image:: _static/equations/eq6.png
 
-In the absence of degradation (i.e. k = 0), eq. 4 simplifies to:
+In the absence of degradation (i.e. :math:`k=0`), eq. 4 simplifies to:
 
 .. image:: _static/equations/eq7.png
 
-In the absence of both degradation and lag (i.e. t_lag=0 and k=0), equations 3-4 simplifies to:
+In the absence of both degradation and lag (i.e. :math:`t_{lag}=0` and :math:`k=0`), equations 3-4 simplifies to:
 
 .. image:: _static/equations/eq8.png
 
@@ -50,7 +50,25 @@ In the absence of both degradation and lag (i.e. t_lag=0 and k=0), equations 3-4
 Dynamic model
 -----------------------
 
-To be implemented...
+We also implemented a dynamic model where fluxes and growth are represented 
+by Monod kinetics, for one substrate and one product.
+
+Time course concentrations of 
+biomass (:math:`X`), substrate (:math:`S`) and product (:math:`P`) are described by the following system of ordinary 
+differential equations (ODEs):
+
+.. math:: \dfrac{dS}{dt}=-X\cdot q_{S}
+
+.. math:: \dfrac{dX}{dt}=q_{S}\cdot yield_{biomass}
+
+.. math:: \dfrac{dP}{dt}=q_{S}\cdot yield_{product}
+
+The dependence of the uptake rate (:math:`q_{S}`) on the 
+substrate concentration is expressed by the following Monod kinetics:
+
+.. math:: q_{S}=q^{max}_{S}}\dfrac{S}{K_{M}+S}
+
+where :math:`q^{max}_{S}` is the maximal substrate uptake rate and :math:`K_{M}` is the "half-velocity constant" — the value of :math:`S`) at which :math:`\dfrac{µ}{µ_{max}}=0.5`).
 
 
 User-made models
@@ -94,15 +112,15 @@ using your IDE (Integrated Development Environment), and enter the following str
     if __name__ == "__main__":
         pass
 
-This is the base template to build your model. Methods *get_params* (to initialize and return model parameters) and *simulate* (to simulate metabolite dynamics for a given set of parameters) are mandatory. Additional methods are allowed if needed (e.g. to carry out intermediary steps for the simulation).
+This is the base template to build your model. Methods :samp:`get_params` (to initialize and return model parameters) and :samp:`simulate` (to simulate metabolite dynamics for a given set of parameters) are mandatory. Additional methods are allowed if needed (e.g. to carry out intermediary steps for the simulation).
 
 Adding equations and parameters
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The first attribute to add in your model's *__init__* method is the model name. We strongly advise
+The first attribute to add in your model's :samp:`__init__` method is the model name. We strongly advise
 to choose a name that helps the user understand what the model is destined to simulate. You must also add two other
-attributes: the parameters to estimate & the fixed parameters. Finally, you must also call the *super().init(data)*
-method to inherit the logic from the base class ::
+attributes: the parameters to estimate & the fixed parameters. Finally, you must also call the :samp:`super().init(data)`
+method to inherit the logic from the base class: ::
 
     from physiofit.models.base_model import Model
 
@@ -124,11 +142,11 @@ method to inherit the logic from the base class ::
     if __name__ == "__main__":
         pass
 
-.. note:: If your model does not contain fixed parameters, you must still initialize the attribute as None. This is
+.. note:: If your model does not contain fixed parameters, you must still initialize the attribute as :samp:`None`. This is
           considered good practice.
 
 We can now try testing that the model can be initialized properly. Use the block at the end of the file for
-testing purposes. Here is an example of how you can test the model::
+testing purposes. Here is an example of how you can test the model: ::
 
     if __name__ == "__main__":
 
@@ -149,15 +167,15 @@ If you now run the file, you should have a standard output in your console that 
 .. image:: _static/models/standard_out1.jpeg
    :scale: 100%
 
-The next step is to prepare the parameters for simulations. PhysioFit allows two types of parameters: **parameters to estimate** and **fixed parameters**.
+The next step is to prepare the parameters for simulations. PhysioFit supports two types of parameters (**parameters to estimate** and **fixed parameters**) which are detailed below.
 
 .. _parameters_to_estimate:
 
 Parameters to estimate
 """"""""""""""""""""""
 
-The parameters to estimate are the parameters that must be estimated by PhysioFit, and thus that require bounds and initial values
-to be initialized. The list of parameters and their default (initial) values must be returned by the *get_params* method::
+The parameters to estimate are the free parameters that must be estimated by PhysioFit, and thus that require defining bounds and initial values
+to be initialized. The list of parameters and their default (initial) values must be returned by the :samp:`get_params` method: ::
 
     from physiofit.models.base_model import Model
 
@@ -198,8 +216,8 @@ to be initialized. The list of parameters and their default (initial) values mus
 .. note:: For a given model, the number of metabolites may vary depending on the experiment, hence the metabolite-dependent parameters can be automatically defined in this function (as illustrated here using a for loop).
 
 The next step is to define the default bounds used for the optimization process (these bounds can be changed in the GUI). The bounds are a
-class of objects that handle the logic and checks. They are derived from the python dict base class, and as such
-implement the same methods (e.g. update). Here is an example of how to implement the bounds: ::
+class of objects that handle the logic and checks. They are derived from the python :samp:`dict` base class, and as such
+implement the same methods (e.g. :samp:`update`). Here is an example of how to implement the bounds: ::
 
     from physiofit.models.base_model import Model
 
@@ -263,7 +281,7 @@ Fixed parameters
 
 The fixed parameters are parameters that are given as constants in the model equations and are not estimated by PhysioFit. For example, in the case of
 steady-state models that account for non enymatic degradation (see :ref:`default_steady-state_models`.), we need to give
-the unstable metabolite(s) a degradation constant (measured independently) ::
+the unstable metabolite(s) a degradation constant (measured in an independent experiment, e.g. see Peiro et al., 2019): ::
 
     self.fixed_parameters = {"Degradation": {
             metabolite: 2 for metabolite in self.metabolites
@@ -273,14 +291,15 @@ the unstable metabolite(s) a degradation constant (measured independently) ::
 The different fixed parameters are given in a dictionary of dictionaries, where the first level is the name of the
 parameter itself (here degradation) and the second level contains the mapping of metabolite-value pairs that will be
 the default values initialized (here we give a default value of 2 for every metabolite for example). Each
-key of the first level is used to initialize a widget in the GUI, thus allowing users to change the corresponding values for the metabolites given in the
-second level.
+key of the first level is used to initialize a widget in the GUI, thus allowing users to change the corresponding 
+values for the metabolites given in the second level.
 
 Simulation function
 """""""""""""""""""
 
-Once the *get_params* method has been implemented, the next step is to implement the simulation function that
-will be called on each iteration of the optimization process to simulate the metabolite dynamics that correspond to a given set of parameters (see :ref:`optimization_process` for more details).
+Once the :samp:`get_params` method has been implemented, the next step is to implement the simulation function that
+will be called at each iteration of the optimization process to simulate the metabolite dynamics that correspond to a 
+given set of parameters (see :ref:`optimization_process` for more details).
 To do this, first write out the function definition: ::
 
     @staticmethod
@@ -293,16 +312,15 @@ To do this, first write out the function definition: ::
         pass
 
 As shown above, this function takes four arguments:
-    * *params_opti*: list containing the values of each parameter to estimate **in the order of apparition in the
-      associated parameters_to_estimate dictionary** (see :ref:`parameters_to_estimate`)
-    * *data_matrix*: numpy array containing the experimental data (or data with the same shape)
-    * *time_vector*: numpy array containing the time points
-    * *params_non_opti*: dictionary containing the fixed parameters (see :ref:`fixed_parameters`)
+    * :samp:`params_opti`: list containing the values of each parameter to estimate **in the same order as defined in the :samp:`parameters_to_estimate` dictionary** (see :ref:`parameters_to_estimate`)
+    * :samp:`data_matrix`: numpy array containing the experimental data (or data with the same shape)
+    * :samp:`time_vector`: numpy array containing the time points
+    * :samp:`params_non_opti`: dictionary containing the fixed parameters (see :ref:`fixed_parameters`)
 
 Now you can start writing the body of the function. For sake of clarity, we recommend unpacking parameters values from the 
 list of parameters to estimate into internal variables. Th function *simulate* must return a matrix containing the simulation results, with the same shape as 
 the matrix containing the experimental data. To initialize the simulated matrix, you can 
-use the *empty_like* function from the numpy library: ::
+use the :samp:`empty_like` function from the numpy library: ::
 
     @staticmethod
     def simulate(
@@ -395,24 +413,25 @@ function. The system of ODEs can be provided directly within the body of the sim
 
         return sol.y.T
 
-As we can see, the function *calculate_derivative* returns the derivatives of each metabolite concentration and is used by an ODEs solver that performs the simulations. This function is thus
+As we can see, the function :samp:`calculate_derivative` returns the derivatives of each metabolite concentration and is used by an ODEs solver that performs the simulations. This function is thus
 created within the body of the simulate function, before being called by the solver. More information on the mathematics
 behind this implementation can be found :ref:`here <default_dynamic_models>`.
+
+.. note:: The simulation function will be called a high number of times by the optimizer for parameter estimation, so optimize this function as much as possible. When possible, implement the model using analytical solution as calculations will be faster than solving numerically the corresponding ODEs.
 
 
 Testing the model
 ---------------------------
 
-One a model has been designed, it is time to test it! To integrate your model into the GUI, just copy the .py file 
-in the folder 'models' of PhysioFit. You can get the path towards the
-models folder by opening a python kernel in your dedicated environment and initializing an IoHandler ::
+One a model has been designed, it is time to test it! To integrate your model into the GUI, just copy the :file:`.py` file 
+in the folder :file:`models` of PhysioFit directory. You can get the path towards this folder by opening a python kernel in your dedicated environment and initializing an IoHandler ::
 
     from physiofit.base.io import IoHandler
     io_handler = IoHandler()
     print(io_handler.get_local_model_folder())
 
-.. note:: The model file name must follow the naming convention "model_[model number].py". If the last model in the list
-          is the "model_5.py", the next one should be named "model_6.py".
+.. note:: The model file name must follow the naming convention :file:`model_[model number].py`. If the last model in the list
+          is the :file:`model_5.py`, the next one should be named :file:`model_6.py`.
 
 You can now launch PhysioFit's GUI, load a data file corresponding to the new model, select the model, and run flux calculation. In case of errors, 
 have a look to the error message and correct the code.

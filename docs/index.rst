@@ -14,7 +14,7 @@ Welcome to PhysioFit documentation!
 
 Fluxes are estimated using mathematical models by fitting time-course measurements of the concentration of
 cells and extracellular substrates and products. PhysioFit is shipped with some common growth models, and
-tailor-made models can be implemented by users.
+additional tailor-made models can be implemented by users.
 
 **PhysioFit includes the following features:**
 
