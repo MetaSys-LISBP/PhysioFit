@@ -39,8 +39,6 @@ automatically identify products and substrates.
 
 Integrating equations 1-2 provides the following analytical functions:
 
-.. image:: _static/equations/eq3.png
-
 .. math:: 
   \begin{align}
     X(t) = \begin{cases}
@@ -49,9 +47,15 @@ Integrating equations 1-2 provides the following analytical functions:
   \end{cases}    \label{eq3}    \tag{eq. 3} 
   \end{align}
 
-
-
 .. image:: _static/equations/eq4.png
+
+.. math:: 
+  \begin{align}
+    M_{i}(t) = \begin{cases}
+    M_{i}^{0} \cdot e^{-k \cdot t} & \text{if } t < t_{lag} \\
+    qM_{i} \cdot \dfrac{X_{0}}{\mu + k_{i} \cdot (e^{\mu \cdot (t - t_{lag})} - e^{-k \cdot (t - t_{lag})}) + M_{i}^{0} \cdot e^{-k \cdot t} & \text{ow.}
+  \end{cases}    \label{eq3}    \tag{eq. 3} 
+  \end{align}
 
 Three additional models are derived from this general model (without degradation, without lag phase, and without degradation nor lag phase). 
 
