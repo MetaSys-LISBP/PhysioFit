@@ -57,18 +57,18 @@ Time course concentrations of
 biomass (:math:`X`), substrate (:math:`S`) and product (:math:`P`) are described by the following system of ordinary 
 differential equations (ODEs):
 
-.. math:: \dfrac{dS}{dt}=-X\cdot q_{S}
+.. math:: \dfrac{dS}{dt}=-X\cdot q_{S}   (eq. 10)
 
-.. math:: \dfrac{dX}{dt}=q_{S}\cdot yield_{biomass}
+.. math:: \dfrac{dX}{dt}=q_{S}\cdot yield_{biomass}   (eq. 11)
 
-.. math:: \dfrac{dP}{dt}=q_{S}\cdot yield_{product}
+.. math:: \dfrac{dP}{dt}=q_{S}\cdot yield_{product}   (eq. 12)
 
 The dependence of the uptake rate (:math:`q_{S}`) on the 
 substrate concentration is expressed by the following Monod kinetics:
 
-.. math:: q_{S}=q^{max}_{S}}\dfrac{S}{K_{M}+S}
+.. math:: q_{S}=q^{max}_{S}\cdot \dfrac{S}{K_{M}+S}   (eq. 13)
 
-where :math:`q^{max}_{S}` is the maximal substrate uptake rate and :math:`K_{M}` is the "half-velocity constant" — the value of :math:`S`) at which :math:`\dfrac{µ}{µ_{max}}=0.5`).
+where :math:`q^{max}_{S}` is the maximal substrate uptake rate and :math:`K_{M}` is the "half-velocity constant" — the value of :math:`S`) at which :math:`\frac{µ}{µ_{max}}=0.5`).
 
 
 User-made models
