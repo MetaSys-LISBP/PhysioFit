@@ -17,7 +17,16 @@ ii) growth lag. This model is described by the following system of ordinary diff
 
 .. image:: _static/equations/eq2.png
 
-with qM\ :sub:`i` being positive (negative) when M\ :sub:`i` is produced (consumed). The sign of q_M\ :sub:`i` can thus be used to
+.. math:: 
+  \begin{align}
+    \dfrac{dX}{dt} = \begin{cases}
+    x(n), & \text{for } 0 \leq n \leq 1 \\
+    x(n - 1), & \text{for } 0 \leq n \leq 1 \\
+    x(n - 1), & \text{for } 0 \leq n \leq 1
+  \end{cases}    \label{eq10}    \tag{eq. 10} 
+  \end{align}
+
+with qM\ :sub:`i` being positive (negative) when M\ :sub:`i` is produced (consumed). The sign of qM\ :sub:`i` can thus be used to
 automatically identify products and substrates.
 
 Integrating equations 1-2 provides the following analytical functions:
