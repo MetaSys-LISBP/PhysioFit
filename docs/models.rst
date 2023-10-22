@@ -134,18 +134,16 @@ where :math:`q^{max}_{S}` is the maximal substrate uptake rate and :math:`K_{M}`
 User-made models
 *****************
 
+
 Overview
----------
+--------
 
 Since PhysioFit 3.0.0, users can create and implement their own models to calculate fluxes and other growth parameters for any biological system. This
 section explains how to write your first model, how to test the model and how to implement it
 on your PhysioFit instance.
 
-Creating your first model
---------------------------
-
-Building a template
-^^^^^^^^^^^^^^^^^^
+Build a template
+----------------
 
 To implement user-made models, PhysioFit leverages Python's object model to create classes that inherit from an Abstract
 Base Class and that handles all the heavy-lifting for implementation. A simple set of rules enables
@@ -173,8 +171,8 @@ using your IDE (Integrated Development Environment), and enter the following str
 
 This is the base template to build your model. Methods :samp:`get_params` (to initialize and return model parameters) and :samp:`simulate` (to simulate metabolite dynamics for a given set of parameters) are mandatory. Additional methods are allowed if needed (e.g. to carry out intermediary steps for the simulation).
 
-Defining equations and parameters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Define equations and parameters
+-------------------------------
 
 The first attribute to add in your model's :samp:`__init__` method is the model name. We strongly advise
 to choose a name that helps the user understand what the model is destined to simulate. You must also add two other
@@ -231,7 +229,7 @@ The next step is to prepare the parameters for simulations. PhysioFit supports t
 .. _parameters_to_estimate:
 
 Free parameters
-"""""""""""""""
+^^^^^^^^^^^^^^^
 
 The free parameters are the parameters that will be estimated by PhysioFit, and thus that require defining bounds and initial values
 to be initialized. The list of parameters and their initial (default) values must be returned by the :samp:`get_params` method: ::
@@ -336,7 +334,7 @@ implement the same methods (e.g. :samp:`update`). Here is an example of how to i
 .. _fixed_parameters:
 
 Fixed parameters
-""""""""""""""""
+^^^^^^^^^^^^^^^^
 
 The fixed parameters are parameters that are known and are not estimated by PhysioFit. For example, in the case of
 steady-state models that account for non enymatic degradation (see :ref:`default_steady-state_models`.), we need to provide the
@@ -354,7 +352,7 @@ key of the first level is used to initialize a widget in the GUI, thus allowing 
 values for the metabolites given in the second level.
 
 Simulation function
-"""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^
 
 Once the :samp:`get_params` method has been implemented, the next step is to implement the simulation function that
 will be called at each iteration of the optimization process to simulate the metabolite dynamics that correspond to a 
@@ -479,8 +477,8 @@ behind this implementation can be found :ref:`here <default_dynamic_models>`.
 .. note:: The simulation function will be called a high number of times by the optimizer for parameter estimation, so optimize this function as much as possible. When possible, implement the model using analytical solution as calculations will be faster than solving numerically the corresponding ODEs.
 
 
-Testing the model
----------------------------
+Test the model
+--------------
 
 One a model has been implemented, it is time to test it! To integrate your model into the GUI, just copy the :file:`.py` file 
 in the folder :file:`models` of PhysioFit directory. You can get the path towards this folder by opening a python kernel in your dedicated environment and initializing an IoHandler ::
