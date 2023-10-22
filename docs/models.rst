@@ -171,12 +171,12 @@ using your IDE (Integrated Development Environment), and enter the following str
 
 This is the base template to build your model. Methods :samp:`get_params` (to initialize and return model parameters) and :samp:`simulate` (to simulate metabolite dynamics for a given set of parameters) are mandatory. Additional methods are allowed if needed (e.g. to carry out intermediary steps for the simulation).
 
-Define equations and parameters
--------------------------------
+Populate the template
+---------------------
 
 The first attribute to add in your model's :samp:`__init__` method is the model name. We strongly advise
 to choose a name that helps the user understand what the model is destined to simulate. You must also add two other
-attributes: the free parameters & the fixed parameters. Finally, you must also call the :samp:`super().init(data)`
+attributes: the free parameters that PhysioFit will estimate & the fixed parameters provided by users. Finally, you must also call the :samp:`super().init(data)`
 method to inherit the logic from the base class: ::
 
     from physiofit.models.base_model import Model
@@ -202,7 +202,7 @@ method to inherit the logic from the base class: ::
 .. note:: If your model does not contain fixed parameters, you must still initialize the attribute as :samp:`None`. This is
           considered good practice.
 
-We can now try testing that the model can be initialized properly. Use the block at the end of the file for
+We can now check that the model can be initialized properly. Use the block at the end of the file for
 testing purposes. Here is an example of how you can test the model: ::
 
     if __name__ == "__main__":
@@ -224,7 +224,7 @@ If you now run the file, you should have a standard output in your console that 
 .. image:: _static/models/standard_out1.jpeg
    :scale: 100%
 
-The next step is to prepare the parameters for simulations. PhysioFit supports two types of parameters (**parameters to estimate** and **fixed parameters**) which are detailed below.
+The next step is to define the parameters (used for simulationsand optimization). PhysioFit supports two types of parameters (**parameters to estimate** and **fixed parameters**) which are detailed below.
 
 .. _parameters_to_estimate:
 
