@@ -59,19 +59,28 @@ differential equations (ODEs):
 
 .. math:: 
   \begin{align}
-    \dfrac{dS}{dt}=-X\cdot q_{S}    \label{a}    \tag{eq. 10} 
+    \dfrac{dS}{dt}=-X\cdot q_{S}    \label{eq10}    \tag{eq. 10} 
   \end{align}
 
-.. math:: \dfrac{dX}{dt}=q_{S}\cdot yield_{biomass}   (eq. 11)
+.. math::
+  \begin{align}
+    \dfrac{dX}{dt}=q_{S}\cdot yield_{biomass}    \label{eq11}    \tag{eq. 11} 
+  \end{align}
 
-.. math:: \dfrac{dP}{dt}=q_{S}\cdot yield_{product}   (eq. 12)
+.. math::
+  \begin{align}
+    \dfrac{dP}{dt}=q_{S}\cdot yield_{product}    \label{eq12}    \tag{eq. 12} 
+  \end{align}
 
 The dependence of the uptake rate (:math:`q_{S}`) on the 
 substrate concentration is expressed by the following Monod kinetics:
 
-.. math:: q_{S}=q^{max}_{S}\cdot \dfrac{S}{K_{M}+S}   (eq. 13)
+.. math::
+  \begin{align}
+    q_{S}=q^{max}_{S}\cdot \dfrac{S}{K_{M}+S}    \label{eq13}    \tag{eq. 13} 
+  \end{align}
 
-where :math:`q^{max}_{S}` is the maximal substrate uptake rate and :math:`K_{M}` is the "half-velocity constant" — the value of :math:`S`) at which :math:`\frac{µ}{µ_{max}}=0.5`).
+where :math:`q^{max}_{S}` is the maximal substrate uptake rate and :math:`K_{M}` is the "half-velocity constant" (the value of :math:`S` at which :math:`\frac{µ}{µ_{max}}=0.5`).
 
 
 User-made models
