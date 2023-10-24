@@ -128,7 +128,7 @@ Please follow this simple procedure:
      if you could open a new issue on our `issue tracker  <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_.
      
 I have develop a new model, can you include it in PhysioFit distribution?
-------------------------------------------------------------------
+--------------------------------------------------------------------------
 
 If you have developed a new flux model, we would be happy to include it in PhysioFit! Open a new issue on our `issue tracker  <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_, 
 and let's discuss about your model and how we could include it! :)
