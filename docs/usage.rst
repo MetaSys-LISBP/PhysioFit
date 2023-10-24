@@ -43,10 +43,31 @@ The :file:`yaml` configuration file contains all parameters required to calculat
 thus key to ensure **reproducibility** of the flux calculation process. A configuration file is generated automatically by 
 PhysioFit during flux calculation; it can also be created or edited manually.
 
-Here is an example of a configuration file:
+Here is an example of a configuration file: ::
 
-.. image:: _static/usage/config_example.JPG
-   :scale: 80%
+    iterations: 100
+    mc: true
+    model:
+      bounds:
+        Ace_M0: (1e-06, 50)
+        Ace_q: (-50, 50)
+        Glc_M0: (1e-06, 50)
+        Glc_q: (-50, 50)
+        X_0: (0.001, 10)
+        growth_rate: (0.001, 3)
+      model_name: Steady-state batch model
+      parameters_to_estimate:
+        Ace_M0: 1
+        Ace_q: 1
+        Glc_M0: 1
+        Glc_q: 1
+        X_0: 1
+        growth_rate: 1
+    path_to_data: ..\data\test-data_single_exp.tsv
+    sds:
+      Ace: 0.2
+      Glc: 0.2
+      X: 0.2
 
 For a description of all calculation parameters, check the section below.
 
