@@ -28,8 +28,8 @@ additional tailor-made models can be implemented by users.
    * **biologist-friendly**.
 
 It is one of the routine tools that we use at the
-`MetaSys team <http://www.toulouse-biotechnology-institute.fr/en/research/molecular-physiology-and-metabolism/metasys.html>`_
-and `MetaToul platform <http://www.metatoul.fr>`_ to calculate fluxes.
+`MetaSys team <https://www.toulouse-biotechnology-institute.fr/en/poles/equipe-metasys/>`_
+and `MetaToul platform <https://mth-metatoul.com/>`_ to calculate fluxes.
 
 The code is open-source, and available on `GitHub <https://github.com/MetaSys-LISBP/PhysioFit/>`_ under a
 :ref:`GPLv3 license <license>`.

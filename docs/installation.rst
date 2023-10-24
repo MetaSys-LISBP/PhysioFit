@@ -14,12 +14,6 @@ To install PhysioFit using Python's built-in installer, you can just run the fol
 
     pip install physiofit
 
-Use :samp:`conda` to install from conda:
-
-.. code-block:: bash
-
-    conda install physiofit -c bioconda
-
 .. tip::  We recommend the creation of isolated environments for each python tool you install in your system using the python built-in `venv <https://docs.python.org/3/library/venv.html>`_ package or `Anaconda <https://www.anaconda.com/products/individual>`_.
 
 If this method does not work, you should ask your local system administrator or

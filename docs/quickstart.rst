@@ -57,4 +57,4 @@ scripts:
 
   import physiofit
 
-.. seealso::  Have a look at our :ref:`library showcase <Library documentation>` if you are interested in this feature.
+.. seealso::  Have a look at our :ref:`API <Library documentation>` if you are interested in this feature.

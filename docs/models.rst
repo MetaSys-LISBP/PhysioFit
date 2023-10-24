@@ -210,7 +210,7 @@ testing purposes. Here is an example of how you can test the model: ::
         test_data = pd.DataFrame(
             {
                 "time": [0, 1, 2, 3],
-                "experiment": ["A", "A", "A", "A"],
+                "experiments": ["A", "A", "A", "A"],
                 "X": [0.5, 0.8, 1.2, 1.8],
                 "Glucose": [12, 11.6, 11, 10.2]
             }
@@ -411,7 +411,7 @@ use the :samp:`empty_like` function from the numpy library: ::
         return simulated_matrix
 
 The math corresponding to the simulation function provided above as example can be found :ref:`here <default_steady-state_models>` (equations
-5 and 6).
+5 and 6). See :ref:`here <testing_the_model>` for information on how to test the completed model.
 
 This example showcases the use of analytical functions to simulate the flux dynamics. It is also possible to use
 numerical derivation to solve a system of ordinary differential equations (ODEs), which can be usefull when algebric derivation is not straightforward. This require the implementation of additional functions into the simulate
@@ -476,12 +476,48 @@ behind this implementation can be found :ref:`here <default_dynamic_models>`.
 
 .. note:: The simulation function will be called a high number of times by the optimizer for parameter estimation, so optimize this function as much as possible. When possible, implement the model using analytical solution as calculations will be faster than solving numerically the corresponding ODEs.
 
+.. _testing_the_model:
 
 Test the model
 --------------
 
-One a model has been implemented, it is time to test it! To integrate your model into the GUI, just copy the :file:`.py` file 
-in the folder :file:`models` of PhysioFit directory. You can get the path towards this folder by opening a python kernel in your dedicated environment and initializing an IoHandler ::
+Once you have completely populated your model file, you can now launch a round of simulations and optimizations in a
+programmatic way: ::
+
+    if __name__ == "__main__":
+        from physiofit.base.io import IoHandler
+        from physiofit.models.base_model import StandardDevs
+
+        test_data = pd.DataFrame(
+            {
+                "time": [0, 1, 2, 3],
+                "experiments": ["A", "A", "A", "A"],
+                "X": [0.5, 0.8, 1.2, 1.8],
+                "Glucose": [12, 11.6, 11, 10.2]
+            }
+        )
+
+        io = IoHandler()
+        model = ChildModel(data=test_data)
+        model.get_params()
+        fitter = io.initialize_fitter(
+            model.data,
+            model=model,
+            mc=True,
+            iterations=100,
+            sd=StandardDevs({"X": 1, "Glucose": 1}),
+            debug_mode=True
+        )
+        fitter.optimize()
+        fitter.monte_carlo_analysis()
+        fitter.khi2_test()
+        print(fitter.parameter_stats)
+
+This will return the calculated flux values and associated statistics.
+
+To test the integration of the model into the GUI, copy the :file:`.py` file
+in the folder :file:`models` of PhysioFit directory. You can get the path towards this folder by opening a python
+kernel in your dedicated environment and initializing an IoHandler ::
 
     from physiofit.base.io import IoHandler
     io_handler = IoHandler()
