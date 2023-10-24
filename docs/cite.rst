@@ -7,4 +7,4 @@ Thank you for using PhysioFit and citing us in your work! It means a lot to us a
   
   Le Grégam L., Guitton Y., Bellvert F., Jourdan F., Portais J.C., Millard P.
   
-  In preparation for publication
+  **doi**: https://doi.org/10.1101/2023.10.12.561695
