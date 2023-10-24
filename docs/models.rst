@@ -219,10 +219,26 @@ testing purposes. Here is an example of how you can test the model: ::
         model = ChildModel(data=test_data)
         print(model)
 
-If you now run the file, you should have a standard output in your console that looks like:
+If you now run the file, you should have a standard output in your console that looks like: ::
 
-.. image:: _static/models/standard_out1.jpeg
-   :scale: 100%
+    Selected model: Tutorial model
+    Model data:
+       time experiments    X  Glucose
+    0     0           A  0.5     12.0
+    1     1           A  0.8     11.6
+    2     2           A  1.2     11.0
+    3     3           A  1.8     10.2
+    Experimental matrix:
+    [['A' 0.5 12.0]
+     ['A' 0.8 11.6]
+     ['A' 1.2 11.0]
+     ['A' 1.8 10.2]]
+    Time vector: [0 1 2 3]
+    Name vector: ['X', 'Glucose']
+    Biomass & Metabolites: ['Glucose']
+    Parameters to estimate: None
+    Fixed parameters: None
+    Bounds: None
 
 The next step is to define the parameters (used for simulationsand optimization). PhysioFit supports two types of parameters (**parameters to estimate** and **fixed parameters**) which are detailed below.
 
