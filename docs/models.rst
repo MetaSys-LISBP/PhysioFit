@@ -531,6 +531,9 @@ programmatic way: ::
 
 This will return the calculated flux values and associated statistics.
 
+.. note:: The test data and calculation parameters (e.g. standard deviations) defined in the test function must correspond to those expected for the new model.
+
+
 To test the integration of the model into the GUI, copy the :file:`.py` file
 in the folder :file:`models` of PhysioFit directory. You can get the path towards this folder by opening a python
 kernel in your dedicated environment and initializing an IoHandler ::
