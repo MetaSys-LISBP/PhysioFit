@@ -314,7 +314,7 @@ class IoHandler:
         except Exception:
             raise RuntimeError("Unknown error while generating output")
 
-    def output_recap(self, export_path: str):
+    def output_recap(self, export_path: str, galaxy=False):
 
         if not isinstance(self.multiple_experiments, list):
             raise TypeError(
@@ -335,7 +335,10 @@ class IoHandler:
         final_df[["experiments", "parameter name"]] = final_df["index"].str.split(" ", expand=True)
         final_df.set_index(["experiments", "parameter name"], inplace=True)
         final_df.drop("index", axis=1, inplace=True)
-        final_df.to_csv(f"{str(Path(export_path))}/summary.csv")
+        if galaxy:
+            final_df.to_csv(str(Path(export_path)))
+        else:
+            final_df.to_csv(f"{str(Path(export_path))}/summary.csv")
 
 
     def output_report(self, fitter, export_path: str |list = None):
