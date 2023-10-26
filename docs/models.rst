@@ -1,6 +1,12 @@
 Models
 =========
 
+Some common flux calculation models are provided with PhysioFit, and users can also build their own models.
+
+.. note:: We would be happy to broaden the types of models shipped with PhysioFit. If you have developed a new model, it might be 
+          usefull and valuable to the fluxomics community! Please, keep in touch with us to discuss and see if we can include your 
+          model in the built-in models shipped with PhysioFit! :)
+
 
 Models shipped with PhysioFit
 ******************************
