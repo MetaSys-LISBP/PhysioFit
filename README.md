@@ -9,32 +9,32 @@
 ## What is PhysioFit?
 **PhysioFit is a scientific tool designed to quantify cell growth parameters and uptake & production fluxes**
 
-Fluxes are estimated using various mathematical models by fitting time-course measurements of the concentration of
-cells and extracellular substrates and products. PhysioFit v3 includes by default the most common growth models, and
-additional models can be implemented by users.
+Fluxes are estimated using mathematical models by fitting time-course measurements of the concentration of
+cells and extracellular substrates and products. PhysioFit is shipped with some common growth models, and
+additional tailor-made models can be implemented by users.
 
-It is one of the routine tools that we use at the [MetaSys team](http://www.lisbp.fr/en/research/molecular-physiology-and-metabolism/metasys.html) 
-and [MetaToul platform](http://www.metatoul.fr) in functional studies of metabolic systems.
+It is one of the routine tools that we use at the [MetaSys team](https://www.toulouse-biotechnology-institute.fr/en/poles/equipe-metasys/) 
+and [MetaToul platform](https://www.metabohub.fr/home.html) in functional studies of metabolic systems.
 
 The code is open-source, and available under a GPLv3 license. Additional information can be found in the following 
-[publication](https://doi.org/10.1128/aem.00768-19).
+[publication](https://doi.org/10.1101/2023.10.12.561695).
 
 Detailed documentation can be found online at Read the Docs 
 ([https://physiofit.readthedocs.io/](https://physiofit.readthedocs.io/)).
 
 ## Key features
+
    * **calculation of growth rate and extracellular (uptake and production) fluxes**,
-   * default models for quantifying parameters in steady-state conditions (with and without lag & metabolite degradation
-     over time),
-   * **user-defined growth models**,
-   * Monte-Carlo sensitivity analysis to **estimate the precision of the calculated fluxes**,
+   * **a set of steady-state and dynamic models** are shipped with PhysioFit,
+   * **tailor-made models** can be constructed by users,
+   * Monte-Carlo sensitivity analysis to **estimate the precision on the calculated fluxes**,
    * **evaluation of the goodness of fit and visual inspection of the fitted curves**,
-   * shipped as a **library** with both a **graphical** and **command line** interface,
-   * open-source, free and easy to install everywhere where Python 3 and pip run,
+   * shipped as a **library** with both a **graphical** and a **command line** interface,
+   * **open-source, free and easy to install** everywhere where Python 3 and pip run,
    * **biologist-friendly**.
 
 ## Quick-start
-PhysioFit requires Python 3.8 or higher and run on all platforms.
+PhysioFit requires Python 3.9 or higher and run on all platforms.
 Please check [the documentation](https://physiofit.readthedocs.io/en/latest/quickstart.html) for complete
 installation and usage instructions.
 
@@ -42,12 +42,6 @@ Use `pip` to **install PhysioFit from PyPi**:
 
 ```bash
 $ pip install physiofit
-```
-
-Use `conda` to install from conda:
-
-```bash
-$ conda install physiofit -c bioconda
 ```
 
 Then, start the graphical interface with:
@@ -87,9 +81,9 @@ The PDF documentation can be built locally by replacing `html` by `latexpdf`
 in the command above. You will need a recent latex installation.
 
 ## How to cite
-PhysioFit: quantifying cell growth parameters and uptake and production fluxes.
+PhysioFit: a software to quantify cell growth parameters and extracellular fluxes.
 Le Grégam L., Guitton Y., Bellvert F., Jourdan F., Portais J.C., Millard P.
-In preparation for publication
+bioRxiv preprint, [doi: 10.1101/2023.10.12.561695](https://doi.org/10.1101/2023.10.12.561695)
 
 ## Authors
 Loïc Le Grégam, Pierre Millard
