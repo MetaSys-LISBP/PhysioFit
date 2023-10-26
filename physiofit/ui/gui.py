@@ -34,6 +34,7 @@ class App:
 
         st.set_page_config(page_title=f"PhysioFit (v{physiofit.__version__})")
         st.title(f"Welcome to PhysioFit (v{physiofit.__version__})")
+        st.write("Documentation available at [https://physiofit.readthedocs.io](https://physiofit.readthedocs.io).")
         self.update_info = st.empty()
         self.check_uptodate()
         self.select_menu = st.selectbox(
