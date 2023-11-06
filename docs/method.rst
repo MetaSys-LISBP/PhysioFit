@@ -52,8 +52,8 @@ more details on the interpretation of the khi2 test results.
 Sensitivity analysis
 *********************
 
-To determine the precision on the fit and on the estimated parameters (including fluxes), PhysioFit performs a Monte Carlo analysis. Briefly, several 
-noisy datasets are generated from the simulated dynamics of the best fit (i.e defined in parameter :samp:`number of iterations` of the GUI) and calculate fluxes and other growth 
+To determine the precision on the fit and on the estimated parameters (including fluxes), PhysioFit performs a Monte Carlo analysis. Briefly, PhysioFit generates several 
+datasets by adding noise to the dynamics simulated from the best fit, and calculated fluxes and other growth 
 parameters for each of these synthetic datasets. This enables PhysioFit to compute statistics (mean, median, standard deviation and 95% confidence interval) for 
-each parameter. We recommend always running a sensitivity analysis when using PhysioFit.
+each parameter (including fluxes). We recommend always running a sensitivity analysis when using PhysioFit.
 

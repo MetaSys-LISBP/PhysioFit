@@ -34,6 +34,7 @@ class App:
 
         st.set_page_config(page_title=f"PhysioFit (v{physiofit.__version__})")
         st.title(f"Welcome to PhysioFit (v{physiofit.__version__})")
+        st.write("Documentation available at [https://physiofit.readthedocs.io](https://physiofit.readthedocs.io).")
         self.update_info = st.empty()
         self.check_uptodate()
         self.select_menu = st.selectbox(
@@ -220,8 +221,13 @@ class App:
         model_options = [
             model.model_name for model in self.io.models
         ]
-        if self.config_parser.model:
-            idx = model_options.index(self.config_parser.model["model_name"])
+        if self.config_parser:
+            if self.config_parser.model:
+                try:
+                    idx = model_options.index(self.config_parser.model["model_name"])
+                except Exception:
+                    st.error("Error while reading model name from configuration file")
+                    raise
         else:
             idx = None
         model_name = st.selectbox(
