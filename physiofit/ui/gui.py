@@ -220,8 +220,13 @@ class App:
         model_options = [
             model.model_name for model in self.io.models
         ]
-        if self.config_parser.model:
-            idx = model_options.index(self.config_parser.model["model_name"])
+        if self.config_parser:
+            if self.config_parser.model:
+                try:
+                    idx = model_options.index(self.config_parser.model["model_name"])
+                except Exception:
+                    st.error("Error while reading model name from configuration file")
+                    raise
         else:
             idx = None
         model_name = st.selectbox(
