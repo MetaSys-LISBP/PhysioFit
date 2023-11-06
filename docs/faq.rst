@@ -76,7 +76,7 @@ The quality of the fit can be evaluated based on:
 What is a χ² test?
 ------------------------------------------------------------------
 
-A χ² test describes how well a model fits a set of observations. Measures of goodness of fit typically summarize the discrepancy between observed values and the values expected under the model used in PhysioFit (see the :doc:`models` section). It is calculated as the sum of differences between measured and simulated values, each squared and divided by the simulated value.
+A χ² test describes how well a model fits a set of observations. Measures of goodness of fit typically summarize the discrepancy between observed values and the values expected under the model used in PhysioFit (see the :doc:`method` section). It is calculated as the sum of differences between measured and simulated values, each squared and divided by the simulated value.
 A good fit corresponds to small differences between measured and simulated values, thereby the χ² value is low. In contrast, a bad fit corresponds to large differences between simulations and measurements, and the χ² value is high. 
 
 The resulting χ² value can then be compared with a χ² distribution to determine the goodness of fit. The p-value of one-tail χ² test is calculated by PhysioFit from the best fit and is given in the log file (have a look to the :doc:`usage` section). A p-value close to 0 means poor fitting, and a p-value close to 1 means good fitting (keeping in mind that a p-value very close to 1 can be an evidence that standard deviations might be overestimated). A 
