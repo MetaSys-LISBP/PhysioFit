@@ -49,7 +49,7 @@ class IoHandler:
         self.simulated_data_sds = None
         self.simulated_data = None
         self.experimental_data = None
-        self.home_path = None
+        self.wkdir = None
         self.data_path = None
         self.res_path = None
         self.has_config_been_read = False
