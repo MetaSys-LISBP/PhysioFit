@@ -94,7 +94,7 @@ class App:
             except Exception:
                 st.error("An error has occurred when reading the yaml configuration file.")
                 raise
-        elif file_extension  in ["tsv", "txt"]:
+        elif file_extension in ["tsv", "txt"]:
             try:
                 self.io.data = self.io.read_data(self.data_file)
                 # Initialize default SDs
@@ -510,7 +510,7 @@ class App:
             self.io.wkdir = copy(
                 st.session_state.wkdir)
 
-        elif hasattr(st.session_state, "home_path"):
+        elif hasattr(st.session_state, "wkdir"):
 
             self.io.wkdir = Path(st.text_input(
                 "Selected output data directory:",
