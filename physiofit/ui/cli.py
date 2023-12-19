@@ -14,7 +14,6 @@ import argparse
 import logging
 from pathlib import Path
 import sys
-# import shutil
 
 import pandas as pd
 
@@ -93,8 +92,11 @@ def run(data, args, logger, experiments):
         io = IoHandler()
         exp_data = data.loc[exp, :].sort_values("time").copy()
         logger.info(f"Input Data: \n{exp_data}")
-        io.home_path = Path(args.data).parent
-        logger.info(f"Home path: {io.home_path}")
+        if hasattr(args, 'galaxy'):
+            io.wkdir = Path('.')
+        else:
+            io.wkdir = Path(args.data).parent
+        logger.info(f"Home path: {io.wkdir}")
         logger.info(f"Reading configuration file at {args.config}")
         io.configparser = io.read_yaml(args.config)
         logger.info(f"Config File:\n{io.configparser}")
@@ -128,9 +130,9 @@ def run(data, args, logger, experiments):
             io.multiple_experiments = []
         io.multiple_experiments.append(df)
         if exp is not None:
-            res_path = io.home_path / (io.home_path.name + "_res") / exp
+            res_path = io.wkdir / (io.wkdir.name + "_res") / exp
         else:
-            res_path = io.home_path / (io.home_path.name + "_res")
+            res_path = io.wkdir / (io.wkdir.name + "_res")
         logger.info(res_path)
         if not res_path.is_dir():
             res_path.mkdir(parents=True)

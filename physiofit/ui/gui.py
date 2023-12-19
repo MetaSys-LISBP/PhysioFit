@@ -94,7 +94,7 @@ class App:
             except Exception:
                 st.error("An error has occurred when reading the yaml configuration file.")
                 raise
-        elif file_extension  in ["tsv", "txt"]:
+        elif file_extension in ["tsv", "txt"]:
             try:
                 self.io.data = self.io.read_data(self.data_file)
                 # Initialize default SDs
@@ -141,10 +141,10 @@ class App:
             except Exception:
                 st.error("An error has occurred when initializing the model")
                 raise
-            if not self.io.home_path:
+            if not self.io.wkdir:
                 raise ValueError("No output directory selected")
             self.config_parser = ConfigParser(
-                path_to_data = self.io.home_path / self.data_file.name,
+                path_to_data =self.io.wkdir / self.data_file.name,
                 selected_model= self.model,
                 sds = self.sd,
                 mc = self.mc,
@@ -284,8 +284,8 @@ class App:
                     self._output_directory_selector()
 
                 else:
-                    self.io.home_path = Path(self.config_parser.path_to_data).resolve().parent
-                    self.io.res_path = self.io.home_path / (self.io.home_path.name + "_res")
+                    self.io.wkdir = Path(self.config_parser.path_to_data).resolve().parent
+                    self.io.res_path = self.io.wkdir / (self.io.wkdir.name + "_res")
 
             # Build the form for advanced parameters
             form = st.form("Parameter_form")
@@ -500,28 +500,28 @@ class App:
 
             # Initialize home path from directory selector and add
             # to session state
-            st.session_state.home_path = Path(st.text_input(
+            st.session_state.wkdir = Path(st.text_input(
                 "Selected output data directory:",
                 filedialog.askdirectory(master=root)
             ))
-            if st.session_state.home_path == Path(".") \
-                    or not st.session_state.home_path.exists():
+            if st.session_state.wkdir == Path(".") \
+                    or not st.session_state.wkdir.exists():
                 raise RuntimeError("Please provide a valid output directory")
-            self.io.home_path = copy(
-                st.session_state.home_path)
+            self.io.wkdir = copy(
+                st.session_state.wkdir)
 
-        elif hasattr(st.session_state, "home_path"):
+        elif hasattr(st.session_state, "wkdir"):
 
-            self.io.home_path = Path(st.text_input(
+            self.io.wkdir = Path(st.text_input(
                 "Selected output data directory:",
-                st.session_state.home_path
+                st.session_state.wkdir
             ))
-            if self.io.home_path == Path(".") \
-                    or not self.io.home_path.exists():
+            if self.io.wkdir == Path(".") \
+                    or not self.io.wkdir.exists():
                 raise RuntimeError("Please provide a valid output directory")
 
             # Initialize the result export directory
-            self.io.res_path = self.io.home_path / (self.io.home_path.name + "_res")
+            self.io.res_path = self.io.wkdir / (self.io.wkdir.name + "_res")
             if not clicked:
                 if not self.io.res_path.is_dir():
                     self.io.res_path.mkdir()

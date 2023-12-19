@@ -49,7 +49,7 @@ class IoHandler:
         self.simulated_data_sds = None
         self.simulated_data = None
         self.experimental_data = None
-        self.home_path = None
+        self.wkdir = None
         self.data_path = None
         self.res_path = None
         self.has_config_been_read = False
@@ -145,16 +145,16 @@ class IoHandler:
                 "DataFrame has not been generated"
             )
 
-        for x in ["time", "X"]:
+        for x in ["time", "X", "experiments"]:
             if x not in data.columns:
                 raise ValueError(f"Column {x} is missing from the dataset")
+        if data.columns[0] != "experiments":
+            raise ValueError("First column should be 'experiments'")
+        if data.columns[1] != "time":
+            raise ValueError("Second column should be 'time'")
 
-        if "experiment" in data.columns:
-            if len(data.columns) <= 3:
-                raise ValueError(f"Data does not contain any metabolite columns")
-        else:
-            if len(data.columns) <= 2:
-                raise ValueError(f"Data does not contain any metabolite columns")
+        if len(data.columns) <= 3:
+            raise ValueError(f"Data does not contain any metabolite columns")
 
         for x in data.columns:
             if x != "experiments" and data[x].dtypes != np.int64 and data[x].dtypes != np.float64:
@@ -219,7 +219,7 @@ class IoHandler:
     def read_yaml(yaml_file: str | bytes) -> ConfigParser:
 
         """
-        Import raml configuration file and parse keyword arguments
+        Import yaml configuration file and parse keyword arguments
 
         :param yaml_file: path to the yaml file or json file
         :return config_parser: Dictionary containing arguments parsed from yaml file

@@ -15,3 +15,4 @@ physiofit.egg-info/requires.txt
 physiofit.egg-info/SOURCES.txt
 physiofit.egg-info/top_level.txt
 /versions publi/
+/physiofit/data/

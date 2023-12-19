@@ -16,7 +16,7 @@ model:
     Glc_q: 1
     X_0: 1
     growth_rate: 1
-path_to_data: C:\Users\millard\Documents\GIT\PhysioFit\data_test\Steady-state_model\data.txt
+path_to_data: ".\\validation\\models\\Steady-state_model\\physiofit_results\\results\\config_file.yml"
 sds:
   Ace: 0.2
   Glc: 0.46
