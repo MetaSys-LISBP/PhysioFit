@@ -166,6 +166,9 @@ class IoHandler:
                 f"The column {x} contains only null or NA values"
             )
 
+        # To avoid errors when concatenating dataframes for the final summary
+        data["experiments"] = data["experiments"].str.replace(pat=" ", repl="_")
+
     @staticmethod
     def get_model_list():
         model_dir = Path(__file__).parent / "models"
