@@ -11,9 +11,6 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Switch matplotlib logger to higher level to not get debug logs in root logger
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
-
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame, read_csv, concat
 import yaml
@@ -22,8 +19,12 @@ from physiofit import __file__
 from physiofit.base.fitter import PhysioFitter
 from physiofit.models.base_model import StandardDevs, Bounds
 
+# Switch matplotlib logger to higher level to not get debug logs in root logger
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class IoHandler:
     """
@@ -68,7 +69,7 @@ class IoHandler:
         try:
             if isinstance(data, str):
                 data_path = Path(data).resolve()
-            # .dat file type for galaxy implementation
+                # .dat file type for galaxy implementation
                 if data_path.suffix in [".txt", ".tsv", ".dat"]:
                     data = read_csv(str(data_path), sep="\t")
                 elif data_path.suffix == ".csv":
@@ -129,7 +130,6 @@ class IoHandler:
 
         return model_class
 
-
     @staticmethod
     def _verify_data(data: DataFrame):
         """
@@ -163,8 +163,11 @@ class IoHandler:
                 )
             if all(data[x].isnull()) or all(data[x].isna()):
                 raise ValueError(
-                f"The column {x} contains only null or NA values"
-            )
+                    f"The column {x} contains only null or NA values"
+                )
+
+        # To avoid errors when concatenating dataframes for the final summary
+        data["experiments"] = data["experiments"].str.replace(pat=" ", repl="_")
 
     @staticmethod
     def get_model_list():
@@ -182,7 +185,7 @@ class IoHandler:
                 model = model_class(df)
                 print(model.model_name)
         return
-        
+
     def get_models(self, data=None):
         """
         Read modules containing the different models and add them to models attribute
@@ -237,7 +240,7 @@ class IoHandler:
             raise IOError(
                 f"Error while reading yaml configuration file {yaml_file}. "
                 f"\nTraceback:\n\n{e}"
-                )
+            )
         return config_parser
 
     def initialize_fitter(self, data: pd.DataFrame, **kwargs) -> PhysioFitter:
@@ -263,11 +266,11 @@ class IoHandler:
 
         if "sd" not in kwargs:
             fitter.sd.update(
-                {"X" : 0.2}
+                {"X": 0.2}
             )
             for col in self.data.columns[2:]:
                 fitter.sd.update(
-                    {col : 0.2}
+                    {col: 0.2}
                 )
 
         fitter.initialize_sd_matrix()
@@ -277,7 +280,6 @@ class IoHandler:
         )
 
         return fitter
-
 
     def output_pdf(self, fitter: PhysioFitter, export_path: str | Path = None):
         """
@@ -340,13 +342,13 @@ class IoHandler:
         else:
             final_df.to_csv(f"{str(Path(export_path))}/summary.csv")
 
-
-    def output_report(self, fitter, export_path: str |list = None):
+    def output_report(self, fitter, export_path: str | list = None):
         """
         Handle creation and export of the report containing stats from monte
         carlo analysis of optimization parameters
 
-        :param export_paths: list of paths to export the stats and fluxes. [0]
+        :param fitter: PhysioFitter object containing results from the optimization of parameters
+        :param export_path: list of paths to export the stats and fluxes. [0]
                              is for stats and [1] for fluxes.
         """
 
@@ -456,6 +458,7 @@ class IoHandler:
         """
         Plot the data
 
+        :param fitter: PhysioFitter object after optimization of parameters has been executed
         :param display: should plots be displayed
         """
 
@@ -533,7 +536,6 @@ class IoHandler:
 
 
 class ConfigParser:
-
     allowed_keys = ["model", "sds", "mc", "iterations"]
 
     def __init__(
@@ -561,7 +563,6 @@ class ConfigParser:
                 f"Number of iterations must be an integer: Detected input: {self.mc}, type: {type(self.iterations)}"
             )
 
-
     @classmethod
     def from_file(cls, yaml_file):
 
@@ -581,9 +582,9 @@ class ConfigParser:
             return ConfigParser(
                 path_to_data=data["path_to_data"],
                 selected_model=data["model"],
-                sds = data["sds"],
-                mc = data["mc"],
-                iterations = data["iterations"]
+                sds=data["sds"],
+                mc=data["mc"],
+                iterations=data["iterations"]
             )
         except KeyError:
             return ConfigParser(
@@ -598,13 +599,13 @@ class ConfigParser:
         pass
 
     def get_kwargs(self):
-        return  {
-            "path_to_data" : self.path_to_data,
-            "model" : self.model,
-            "mc" : self.mc,
-            "iterations" : self.iterations,
-            "sd" : self.sds
-            }
+        return {
+            "path_to_data": self.path_to_data,
+            "model": self.model,
+            "mc": self.mc,
+            "iterations": self.iterations,
+            "sd": self.sds
+        }
 
     def update_model(self, model):
 
@@ -618,15 +619,15 @@ class ConfigParser:
 
         with open(fr"{export_path}/config_file.yml", "w") as file:
             data = {
-                "model" : {
-                    "model_name" : self.model.model_name,
-                    "parameters_to_estimate" : self.model.parameters_to_estimate,
-                    "bounds" : {name : f"{bounds[0], bounds[1]}" for name, bounds in self.model.bounds.items()}
+                "model": {
+                    "model_name": self.model.model_name,
+                    "parameters_to_estimate": self.model.parameters_to_estimate,
+                    "bounds": {name: f"{bounds[0], bounds[1]}" for name, bounds in self.model.bounds.items()}
                 },
-                "sds" : dict(self.sds),
-                "mc" : self.mc,
-                "iterations" : self.iterations,
-                "path_to_data" : str(self.path_to_data)
+                "sds": dict(self.sds),
+                "mc": self.mc,
+                "iterations": self.iterations,
+                "path_to_data": str(self.path_to_data)
             }
             yaml.safe_dump(
                 data,
