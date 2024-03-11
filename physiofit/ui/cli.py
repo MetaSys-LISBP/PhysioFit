@@ -267,10 +267,6 @@ def process(args):
     # If configuration file is present we launch the optimization
     experiments = list(data["experiments"].unique())
     data = data.set_index("experiments")
-    for exp in experiments:
-        logger.info(f"Running optimization for {exp}")
-        run_data = data.loc[exp, :].sort_values("time").copy()
-        run(run_data, args, logger, exp)
     run(data, args, logger, experiments)
     logger.info("Done!")
     sys.exit()
