@@ -22,8 +22,7 @@ from physiofit.models.base_model import StandardDevs, Bounds
 # Switch matplotlib logger to higher level to not get debug logs in root logger
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(f"physiofit.{__name__}")
 
 
 class IoHandler:
