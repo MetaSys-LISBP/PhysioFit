@@ -11,8 +11,8 @@ from scipy.stats import chi2
 
 from physiofit.models.base_model import Model
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(f"physiofit.{__name__}")
+
 
 
 # TODO: add estimate deg function (eq 6) with plot of best fit and measured values
@@ -320,7 +320,6 @@ class PhysioFitter:
         """
 
         if method == "differential_evolution":
-            logger.debug(f"Optimization method = {method}")
             optimize_results = differential_evolution(
                 PhysioFitter._calculate_cost, bounds=bounds,
                 args=(
@@ -328,7 +327,6 @@ class PhysioFitter:
                 polish=True, x0=np.array(params)
             )
         elif method == "L-BFGS-B":
-            logger.debug(f"Optimization method = {method}")
             optimize_results = minimize(
                 PhysioFitter._calculate_cost, x0=np.array(params),
                 args=(
