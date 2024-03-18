@@ -19,6 +19,8 @@ import pandas as pd
 
 from physiofit.base.io import IoHandler, StandardDevs, ConfigParser
 
+logger = logging.getLogger(f"physiofit")
+
 def args_parse():
     """
     Parse arguments from user input.
@@ -59,18 +61,18 @@ def args_parse():
     )
 
     # Parse selective output path arguments (for galaxy implementation mostly)
-    parser.add_argument(
-        "-op", "--output_pdf", type=str,
-        help="Path to output the pdf file containing plots"
-    )
-    parser.add_argument(
-        "-of", "--output_fluxes", type=str,
-        help="Path to output the flux results"
-    )
-    parser.add_argument(
-        "-os", "--output_stats", type=str,
-        help="Path to output the khi² test"
-    )
+    # parser.add_argument(
+    #     "-op", "--output_pdf", type=str,
+    #     help="Path to output the pdf file containing plots"
+    # )
+    # parser.add_argument(
+    #     "-of", "--output_fluxes", type=str,
+    #     help="Path to output the flux results"
+    # )
+    # parser.add_argument(
+    #     "-os", "--output_stats", type=str,
+    #     help="Path to output the khi² test"
+    # )
     parser.add_argument(
         "-oc", "--output_config", type=str,
         help="Path to output the yaml config file"
@@ -88,11 +90,11 @@ def args_parse():
 
 def run(data, args, logger, experiments):
 
+    io = IoHandler()
     for exp in experiments:
-        io = IoHandler()
         exp_data = data.loc[exp, :].sort_values("time").copy()
         logger.info(f"Input Data: \n{exp_data}")
-        if hasattr(args, 'galaxy'):
+        if args.galaxy:
             io.wkdir = Path('.')
         else:
             io.wkdir = Path(args.data).parent
@@ -129,10 +131,7 @@ def run(data, args, logger, experiments):
         if not io.multiple_experiments:
             io.multiple_experiments = []
         io.multiple_experiments.append(df)
-        if exp is not None:
-            res_path = io.wkdir / (io.wkdir.name + "_res") / exp
-        else:
-            res_path = io.wkdir / (io.wkdir.name + "_res")
+        res_path = io.wkdir / (io.wkdir.name + "_res") / exp
         logger.info(res_path)
         if not res_path.is_dir():
             res_path.mkdir(parents=True)
@@ -149,13 +148,17 @@ def run(data, args, logger, experiments):
         # for line in dir.rglob("*"):
         #     print(line)
         generate_zips(str(dir), args.output_zip, logger)
+    logger.debug(f"Dataframes to concatenate:\n{io.multiple_experiments}")
 
     # shutil.make_archive(
     #     args.output_zip,
     #     format='zip',
     #     root_dir=str(io.home_path / (io.home_path.name + "_res"))
     #     )
-    io.output_recap(export_path=args.output_recap, galaxy=True)
+    if args.galaxy:
+        io.output_recap(export_path=args.output_recap, galaxy=args.galaxy)
+    else:
+        io.output_recap(export_path=str(res_path.parent), galaxy=False)
 
 def generate_zips(path_to_data_folder, output_path, logger):
     """Generate output zip file containing results
@@ -221,16 +224,15 @@ def generate_config(args, data, logger):
 
 def process(args):
 
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    out_stream = logging.StreamHandler()
-    formatter = logging.Formatter()
-    out_stream.setFormatter(formatter)
+    cli_handle = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    cli_handle.setFormatter(formatter)
     if args.debug_mode:
-        out_stream.setLevel(logging.DEBUG)
+        cli_handle.setLevel(logging.DEBUG)
     else:
-        out_stream.setLevel(logging.INFO)
-    logger.addHandler(out_stream)
+        cli_handle.setLevel(logging.INFO)
+    logger.addHandler(cli_handle)
+
 
     if args.list:
         IoHandler.get_model_list()
