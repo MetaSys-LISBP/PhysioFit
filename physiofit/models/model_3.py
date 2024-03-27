@@ -21,7 +21,7 @@ class ChildModel(Model):
     def get_params(self):
 
         self.parameters_to_estimate = {
-            "X_O" : self.vini,
+            "X_0" : self.vini,
             "growth_rate" : self.vini
         }
         self.fixed_parameters = {"Degradation": {
