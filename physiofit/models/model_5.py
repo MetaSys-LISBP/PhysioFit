@@ -95,8 +95,8 @@ class ChildModel(Model):
         def calculate_derivative(t, state, y_BM, y_P, km, qsmax):
             
             # get substrate and biomass concentrations
-            s_t = state[0]
-            x_t = state[1]
+            x_t = state[0]
+            s_t = state[1]
 
             # calculate fluxes
             qs_t = qsmax * (s_t / (km + s_t))
