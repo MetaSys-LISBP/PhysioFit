@@ -162,7 +162,7 @@ class App:
                         full_dataframe["experiments"] == experiment
                     ].drop("experiments", axis=1).copy()
 
-                    self.io.res_path = results_path / experiment
+                    self.io.res_path = results_path / str(experiment)
                     if not self.io.res_path.is_dir():
                         self.io.res_path.mkdir(parents=True)
                     # Initialize the fitter object
