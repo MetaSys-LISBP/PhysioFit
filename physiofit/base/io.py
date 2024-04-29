@@ -535,6 +535,12 @@ class IoHandler:
 
 
 class ConfigParser:
+    """
+    The ConfigParser class is used to parse configuration files for the PhysioFit package. It reads a YAML file and
+    extracts the necessary parameters for the model fitting process. It also includes methods to update the model
+    with the parsed parameters and export the run parameters back to a yaml config file.
+    """
+
     allowed_keys = ["model", "sds", "mc", "iterations"]
 
     def __init__(
