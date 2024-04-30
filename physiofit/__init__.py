@@ -4,3 +4,4 @@ import logging
 __version__ = importlib.metadata.version("physiofit")
 logger = logging.getLogger("physiofit")
 logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
