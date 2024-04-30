@@ -14,17 +14,18 @@ from physiofit.models.base_model import Model
 logger = logging.getLogger(f"physiofit.{__name__}")
 
 
-
-# TODO: add estimate deg function (eq 6) with plot of best fit and measured values
+# TODO: add estimate deg function (eq 6) with plot of best fit and measured
+#  values
 
 
 class PhysioFitter:
     """
-    This class is responsible for most of Physiofit's heavy lifting. Features included are:
+    This class is responsible for most of Physiofit's heavy lifting.
+    Features included are:
 
-        * loading of data from **csv** or **tsv** file
-        * **equation system initialization** using the following analytical functions (in absence of lag and
-          degradation:
+        * loading of data from **csv** or **tsv** file * **equation system
+        initialization** using the following analytical functions (in
+        absence of lag and degradation):
 
             X(t) = X0 * exp(mu * t)
             Mi(t) = qMi * (X0 / mu) * (exp(mu * t) - 1) + Mi0
@@ -34,23 +35,27 @@ class PhysioFitter:
 
             residuum = sum((sim - meas) / sd)²
 
-        * **optimization of the initial parameters** using `scipy.optimize.minimize ('Differential evolution', with polish with 'L-BFGS-B' method) <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb>`_
-        * **sensitivity analysis, khi2 tests and plotting**
+        * **optimization of the initial parameters** using
+        `scipy.optimize.minimize ('Differential evolution', with polish with
+        'L-BFGS-B' method) <https://docs.scipy.org/doc/scipy/reference
+        /optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb>`_ *
+        **sensitivity analysis, khi2 tests and plotting**
 
     :param data: DataFrame containing data and passed by IOstream object
-    :type data: class: pandas.DataFrame
-    :param model: Model to initialize parameters and optimize
-    :type model: physiofit.models.base_model.Model
-    :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
-    :type mc: Boolean
-    :param iterations: number of iterations for Monte-Carlo simulation (default=50)
-    :type iterations: int
-    :param sd: sd matrix used for residuum calculations. Can be:
+    :type data: class: pandas.DataFrame :param model: Model to initialize
+    parameters and optimize :type model: physiofit.models.base_model.Model
+    :param mc: Should Monte-Carlo sensitivity analysis be performed (
+    default=True) :type mc: Boolean :param iterations: number of iterations
+    for Monte-Carlo simulation (default=50) :type iterations: int :param sd:
+    sd matrix used for residuum calculations. Can be:
 
-                * a matrix with the same dimensions as the measurements matrix (but without the time column)
-                * a named vector containing sds for all the metabolites provided in the input file
-                * 0  in which case the matrix is automatically constructed from default values
-                * a dictionary with the data column headers as keys and the associated value as a scalar or list
+                * a matrix with the same dimensions as the measurements
+                matrix (but without the time column) * a named vector
+                containing sds for all the metabolites provided in the input
+                file * 0  in which case the matrix is automatically
+                constructed from default values * a dictionary with the data
+                column headers as keys and the associated value as a scalar
+                or list
 
     :type sd: int, float, list, dict or ndarray
     """
@@ -168,8 +173,8 @@ class PhysioFitter:
         if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd,
                                                                   list):
             raise TypeError(
-                f"Cannot coerce SD to array. Please check that a list or array "
-                f"is given as input.\nCurrent input: \n{self.sd}"
+                f"Cannot coerce SD to array. Please check that a list or array"
+                f" is given as input.\nCurrent input: \n{self.sd}"
             )
         else:
             self.sd = np.array(self.sd)
@@ -249,8 +254,9 @@ class PhysioFitter:
 
         logger.info("\nRunning optimization...\n")
         bounds = self.model.bounds()
-        parameters = [param for param in self.model.parameters_to_estimate.values()]
-        logger.debug(f"Simulate function = {self.model.simulate}")
+        parameters = [
+            param for param in self.model.parameters_to_estimate.values()
+        ]
         self.optimize_results = self._run_optimization(
             params=parameters,
             func=self.model.simulate,
@@ -298,7 +304,12 @@ class PhysioFitter:
 
         simulated_matrix = func(params, exp_data_matrix, time_vector,
                                 non_opt_params)
-        cost_val = np.square((simulated_matrix - exp_data_matrix) / sd_matrix)
+        cost_val = np.square(
+            np.divide(
+                np.subtract(simulated_matrix, exp_data_matrix),
+                sd_matrix
+            )
+        )
         residuum = np.nansum(cost_val)
         return residuum
 
@@ -323,14 +334,24 @@ class PhysioFitter:
             optimize_results = differential_evolution(
                 PhysioFitter._calculate_cost, bounds=bounds,
                 args=(
-                func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
+                    func,
+                    exp_data_matrix,
+                    time_vector,
+                    non_opt_params,
+                    sd_matrix
+                ),
                 polish=True, x0=np.array(params)
             )
         elif method == "L-BFGS-B":
             optimize_results = minimize(
                 PhysioFitter._calculate_cost, x0=np.array(params),
                 args=(
-                func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
+                    func,
+                    exp_data_matrix,
+                    time_vector,
+                    non_opt_params,
+                    sd_matrix
+                ),
                 method="L-BFGS-B", bounds=bounds, options={'maxcor': 30}
             )
         else:
@@ -362,13 +383,18 @@ class PhysioFitter:
         opt_params_list = []
         matrices = []
 
-        for _ in range(self.iterations):
+        for i in range(self.iterations):
             new_matrix = self._apply_noise()
-
+            logger.debug(f"Iteration {i + 1}:\n")
+            logger.debug(f"New matrix:\n{new_matrix}\n")
             # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(
-                opt_res.x, self.model.simulate, new_matrix, self.model.time_vector,
-                self.model.fixed_parameters, self.sd, self.model.bounds(),
+                opt_res.x,
+                self.model.simulate,
+                new_matrix,
+                self.model.time_vector,
+                self.model.fixed_parameters,
+                self.sd, self.model.bounds(),
                 "L-BFGS-B"
             )
 
@@ -449,8 +475,12 @@ class PhysioFitter:
         number_params = len(self.model.parameters_to_estimate)
         dof = number_measurements - number_params
         cost = self._calculate_cost(
-            self.optimize_results.x, self.model.simulate, self.experimental_matrix,
-            self.model.time_vector, self.model.fixed_parameters, self.sd
+            self.optimize_results.x,
+            self.model.simulate,
+            self.experimental_matrix,
+            self.model.time_vector,
+            self.model.fixed_parameters,
+            self.sd
         )
         p_val = chi2.cdf(cost, dof)
 
@@ -466,11 +496,11 @@ class PhysioFitter:
         )
 
         logger.info(f"khi2 test results:\n"
-                     f"khi2 value: {cost}\n"
-                     f"Number of measurements: {number_measurements}\n"
-                     f"Number of parameters to fit: {number_params}\n"
-                     f"Degrees of freedom: {dof}\n"
-                     f"p-value = {p_val}\n"
+                    f"khi2 value: {cost}\n"
+                    f"Number of measurements: {number_measurements}\n"
+                    f"Number of parameters to fit: {number_params}\n"
+                    f"Degrees of freedom: {dof}\n"
+                    f"p-value = {p_val}\n"
                     )
 
         if p_val < 0.95:
