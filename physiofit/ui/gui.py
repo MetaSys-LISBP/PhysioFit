@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from copy import copy
+import logging
 
 import pandas as pd
 import streamlit as st
@@ -11,6 +12,7 @@ import physiofit
 from physiofit.base.io import IoHandler, ConfigParser
 from physiofit.models.base_model import StandardDevs
 
+logger = logging.getLogger(f"physiofit.{__name__}")
 
 class App:
     """
