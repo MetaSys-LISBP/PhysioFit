@@ -104,9 +104,9 @@ class ChildModel(Model):
             qp_t = y_P * qs_t
 
             # calculate derivatives
-            dx = mu_t * x_t
-            ds = -qs_t * x_t
-            dp = qp_t * x_t
+            dx = np.multiply(mu_t, x_t)
+            ds = np.multiply(-qs_t, x_t)
+            dp = np.multiply(qp_t, x_t)
 
             return dx, ds, dp
 
