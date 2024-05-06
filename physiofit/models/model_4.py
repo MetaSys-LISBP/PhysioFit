@@ -53,15 +53,17 @@ class ChildModel(Model):
     ):
         # Get end shape
         simulated_matrix = np.empty_like(data_matrix)
-        x_0 = params_opti[0]
-        mu = params_opti[1]
+
+        # Get parameters
+        x_0, mu = params_opti[:2]
+
+        # Build matrix
         exp_mu_t = np.exp(mu * time_vector)
         simulated_matrix[:, 0] = x_0 * exp_mu_t
-        for i in range(1, int(len(params_opti) / 2)):
-            q = params_opti[i * 2]
-            m_0 = params_opti[i * 2 + 1]
+        for i in range(1, len(params_opti) // 2):
+            q, m_0 = params_opti[i*2:i*2+2]
             simulated_matrix[:, i] = q * (x_0 / mu) \
                                      * (exp_mu_t - 1) \
                                      + m_0
 
-        return simulated_matrix
+        return np.clip(simulated_matrix, a_min=0)
