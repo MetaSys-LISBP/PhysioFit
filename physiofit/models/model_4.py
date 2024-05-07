@@ -46,22 +46,22 @@ class ChildModel(Model):
 
     @staticmethod
     def simulate(
-            params_opti: list,
+            parameters: list,
             data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            params_non_opti: dict | list
+            args: dict | list
     ):
         # Get end shape
         simulated_matrix = np.empty_like(data_matrix)
 
         # Get parameters
-        x_0, mu = params_opti[:2]
+        x_0, mu = parameters[:2]
 
         # Build matrix
         exp_mu_t = np.exp(mu * time_vector)
         simulated_matrix[:, 0] = x_0 * exp_mu_t
-        for i in range(1, len(params_opti) // 2):
-            q, m_0 = params_opti[i * 2:i * 2 + 2]
+        for i in range(1, len(parameters) // 2):
+            q, m_0 = parameters[i * 2:i * 2 + 2]
             simulated_matrix[:, i] = q * (x_0 / mu) * (exp_mu_t - 1) + m_0
 
-        return np.clip(simulated_matrix, a_min=0)
+        return np.clip(simulated_matrix, a_min=0, a_max=None)

@@ -74,14 +74,14 @@ class ChildModel(Model):
 
     @staticmethod
     def simulate(
-            params_opti: list,
+            parameters: list,
             data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            params_non_opti: dict
+            args: dict
     ):
 
         # Get parameters
-        x_0, y_BM, km, qsmax, s_0, y_P, p_0 = params_opti
+        x_0, y_BM, km, qsmax, s_0, y_P, p_0 = parameters
 
         # initialize variables at t=0
         state = [x_0, s_0, p_0]

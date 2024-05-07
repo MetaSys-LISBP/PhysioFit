@@ -52,26 +52,26 @@ class ChildModel(Model):
 
     @staticmethod
     def simulate(
-            params_opti: list,
+            parameters: list,
             data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            params_non_opti: dict | list
+            args: dict | list
     ):
         # Get end shape
         simulated_matrix = np.empty_like(data_matrix)
 
         # Get initial params
-        x_0 = params_opti[0]
-        mu = params_opti[1]
+        x_0 = parameters[0]
+        mu = parameters[1]
 
         # Get X_0 values
         exp_mu_t = np.exp(mu * time_vector)
         simulated_matrix[:, 0] = x_0 * exp_mu_t
-        fixed_params = [value for value in params_non_opti["Degradation"].values()]
+        fixed_params = [value for value in args["Degradation"].values()]
 
-        for i in range(1, int(len(params_opti) / 2)):
-            q = params_opti[i * 2]
-            m_0 = params_opti[i * 2 + 1]
+        for i in range(1, int(len(parameters) / 2)):
+            q = parameters[i * 2]
+            m_0 = parameters[i * 2 + 1]
             k = fixed_params[i - 1]
             exp_k_t = np.exp(-k * time_vector)
             simulated_matrix[:, i] = q * (x_0 / (mu + k)) \

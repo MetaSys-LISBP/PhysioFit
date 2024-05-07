@@ -46,16 +46,16 @@ class ChildModel(Model):
 
     @staticmethod
     def simulate(
-            params_opti: list,
+            parameters: list,
             data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            params_non_opti: dict | list
+            args: dict | list
     ):
         # Get end shape
         simulated_matrix = np.empty_like(data_matrix)
-        x_0 = params_opti[0]
-        mu = params_opti[1]
-        t_lag = params_opti[2]
+        x_0 = parameters[0]
+        mu = parameters[1]
+        t_lag = parameters[2]
 
         # We get indices in time vector where time < t_lag
         idx = np.nonzero(time_vector < t_lag)
@@ -74,9 +74,9 @@ class ChildModel(Model):
         )
         exp_mu_t_lag = np.exp(mu * (time_vector - t_lag)) - 1
 
-        for i in range(1, int(len(params_opti) / 2)):
-            q = params_opti[i * 2 + 1]
-            m_0 = params_opti[i * 2 + 2]
+        for i in range(1, int(len(parameters) / 2)):
+            q = parameters[i * 2 + 1]
+            m_0 = parameters[i * 2 + 2]
             m_t_lag = np.full((len(idx) - 1,), m_0)
             mult_by_time = q * (x_0 / mu) * exp_mu_t_lag + m_0
             simulated_matrix[:, i] = np.concatenate(

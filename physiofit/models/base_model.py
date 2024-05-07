@@ -77,10 +77,10 @@ class Model(ABC):
     @staticmethod
     @abstractmethod
     def simulate(
-            params_opti: list,
+            parameters: list,
             data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            params_non_opti: dict | list
+            args: dict | list
     ):
         pass
 
