@@ -30,10 +30,10 @@ def test_simulation(data, sds):
     model = io.select_model("Steady-state batch model", data)
     model.get_params()
     sim_mat = model.simulate(
-        [param for param in model.parameters_to_estimate.values()],
+        [param for param in model.parameters.values()],
         model.experimental_matrix,
         model.time_vector,
-        model.fixed_parameters
+        model.args
     )
     assert isinstance(sim_mat, np.ndarray)
 

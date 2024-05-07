@@ -4,13 +4,18 @@ This module contains tests for the models module.
 import numpy as np
 from physiofit.base.io import IoHandler
 
+
 def test_monod_model(monod_model_sds, monod_model_data):
     """
-    Test that the Monod model using pyFOOMB simulated data & parameters given as input.
+    Test that the Monod model using pyFOOMB simulated data & parameters given
+    as input.
     """
 
     io = IoHandler()
-    model = io.select_model("Dynamic Monod model (1 substrate, 1 product)", monod_model_data)
+    model = io.select_model(
+        "Dynamic Monod model (1 substrate, 1 product)",
+        monod_model_data
+    )
     model.get_params()
     fitter = io.initialize_fitter(
         data=model.data,
@@ -21,7 +26,7 @@ def test_monod_model(monod_model_sds, monod_model_data):
     fitter.optimize()
     optimized_params = {
         name: param for name, param in zip(
-            list(fitter.model.parameters_to_estimate.keys()),
+            list(fitter.model.parameters.keys()),
             fitter.parameter_stats["optimal"]
         )
     }
@@ -59,6 +64,6 @@ def test_monod_model(monod_model_sds, monod_model_data):
     # P_product_y_P
     assert np.isclose(
         a=optimized_params["P_product_y_P"],
-        b=0.2,
+        b=0.1,
         atol=0.001
     )

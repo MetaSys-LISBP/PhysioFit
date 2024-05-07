@@ -126,7 +126,7 @@ def run(data, args, logger, experiments):
             orient="columns"
         )
         df.index = [
-            f"{exp} {param}" for param in fitter.model.parameters_to_estimate.keys()
+            f"{exp} {param}" for param in fitter.model.parameters.keys()
         ]
         if not io.multiple_experiments:
             io.multiple_experiments = []
@@ -154,7 +154,8 @@ def run(data, args, logger, experiments):
     #     args.output_zip,
     #     format='zip',
     #     root_dir=str(io.home_path / (io.home_path.name + "_res"))
-    #     )
+    #     )physiofit
+
     if args.galaxy:
         io.output_recap(export_path=args.output_recap, galaxy=args.galaxy)
     else:
