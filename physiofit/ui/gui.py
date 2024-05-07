@@ -188,7 +188,7 @@ class App:
                         orient="columns"
                     )
                     df.index = [
-                        f"{experiment} {param}" for param in fitter.model.parameters_to_estimate.keys()
+                        f"{experiment} {param}" for param in fitter.model.parameters.keys()
                     ]
                     st.write(df)
                     self.io.multiple_experiments.append(df)
@@ -211,10 +211,10 @@ class App:
     def silent_sim(self):
 
         self.model.simulate(
-            [param for param in self.model.parameters_to_estimate.values()],
+            [param for param in self.model.parameters.values()],
             self.model.experimental_matrix,
             self.model.time_vector,
-            self.model.fixed_parameters
+            self.model.args
         )
 
     def _initialize_opt_menu_widgets(self, file_extension):
@@ -298,7 +298,7 @@ class App:
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
                         st.write("Parameter Name")
-                        for key in self.model.parameters_to_estimate:
+                        for key in self.model.parameters:
                             st.text_input(
                                 label="label", # Unused
                                 label_visibility="collapsed",
@@ -308,7 +308,7 @@ class App:
                             )
                     with col2:
                         st.write("Parameter Value")
-                        for key, value in self.model.parameters_to_estimate.items():
+                        for key, value in self.model.parameters.items():
                             st.text_input(
                                 label="label", # Unused
                                 label_visibility = "collapsed",
@@ -337,13 +337,13 @@ class App:
                                 key=f"Parameter_upper_{key}"
                             )
 
-                    if self.model.fixed_parameters is not None:
-                        for param in self.model.fixed_parameters.keys():
+                    if self.model.args is not None:
+                        for param in self.model.args.keys():
                             st.subheader(f"Fixed parameters: {param}")
                             col1, col2 = st.columns(2)
                             with col1:
                                 st.write("Parameter Name")
-                                for key in self.model.fixed_parameters[param].keys():
+                                for key in self.model.args[param].keys():
                                     st.text_input(
                                         label="label", # Unused
                                         label_visibility="collapsed",
@@ -353,7 +353,7 @@ class App:
                                     )
                             with col2:
                                 st.write("Parameter Value")
-                                for key, value in self.model.fixed_parameters[param].items():
+                                for key, value in self.model.args[param].items():
                                     st.text_input(
                                         label="label", # Unused
                                         label_visibility="collapsed",
@@ -399,14 +399,14 @@ class App:
 
         # Start with estimable parameters
         # Get order of parameter names to build dict
-        estimable_parameter_name_order = [key for key in self.model.parameters_to_estimate.keys()]
+        estimable_parameter_name_order = [key for key in self.model.parameters.keys()]
         for name in estimable_parameter_name_order:
             try:
                 # Get values from widgets
                 if st.session_state[f"Parameter_value_{name}"] == "0":
-                    self.model.parameters_to_estimate[name] = 0
+                    self.model.parameters[name] = 0
                 else:
-                    self.model.parameters_to_estimate[name] = literal_eval(
+                    self.model.parameters[name] = literal_eval(
                         st.session_state[f"Parameter_value_{name}"].lstrip("0") # Strip leading zeroes to stop eval errors
                     )
                 # Get bounds
@@ -438,15 +438,15 @@ class App:
                 raise
 
         # Do the same for each fixed parameter class
-        if self.model.fixed_parameters is not None:
-            fixed_parameter_classes = [param for param in self.model.fixed_parameters]
+        if self.model.args is not None:
+            fixed_parameter_classes = [param for param in self.model.args]
             for param in fixed_parameter_classes:
-                for key in self.model.fixed_parameters[param].keys():
+                for key in self.model.args[param].keys():
                     try:
                         if st.session_state[f"Fixed_{param}_value_{key}"] == "0":
-                            self.model.fixed_parameters[param][key] = 0
+                            self.model.args[param][key] = 0
                         else:
-                            self.model.fixed_parameters[param][key] = literal_eval(
+                            self.model.args[param][key] = literal_eval(
                                 st.session_state[f"Fixed_{param}_value_{key}"].lstrip("0")
                             )
                     except ValueError:

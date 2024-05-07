@@ -15,16 +15,16 @@ class ChildModel(Model):
         super().__init__(data)
         self.model_name = "Steady-state batch model with degradation of metabolites"
         self.vini = 1
-        self.parameters_to_estimate = None
-        self.fixed_parameters = None
+        self.parameters = None
+        self.args = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = {
+        self.parameters = {
             "X_0" : self.vini,
             "growth_rate" : self.vini
         }
-        self.fixed_parameters = {"Degradation": {
+        self.args = {"Degradation": {
             met: 0 for met in self.metabolites
             }
         }
@@ -33,7 +33,7 @@ class ChildModel(Model):
             "growth_rate": (1e-3, 3),
         })
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.update(
+            self.parameters.update(
                 {
                     f"{metabolite}_q": self.vini,
                     f"{metabolite}_M0": self.vini
@@ -45,7 +45,7 @@ class ChildModel(Model):
                     f"{metabolite}_M0": (1e-6, 50)
                 }
             )
-            self.fixed_parameters = {"Degradation": {
+            self.args = {"Degradation": {
                 met: 0 for met in self.metabolites
                 }
             }

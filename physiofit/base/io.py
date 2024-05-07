@@ -372,7 +372,7 @@ class IoHandler:
                                        orient="columns")
 
         # Use IDs to clarify which parameter is described on each line
-        opt_data.index = [param for param in fitter.model.parameters_to_estimate.keys()]
+        opt_data.index = [param for param in fitter.model.parameters.keys()]
         opt_data.to_csv(flux_path, sep="\t")
 
         if isinstance(fitter.khi2_res, DataFrame):
@@ -615,7 +615,7 @@ class ConfigParser:
     def update_model(self, model):
 
         if self.model["parameters_to_estimate"] is not None:
-            model.parameters_to_estimate.update(self.model["parameters_to_estimate"])
+            model.parameters.update(self.model["parameters_to_estimate"])
         if self.model["bounds"] is not None:
             model.bounds.update(Bounds(self.model["bounds"]))
         return model
@@ -626,7 +626,7 @@ class ConfigParser:
             data = {
                 "model": {
                     "model_name": self.model.model_name,
-                    "parameters_to_estimate": self.model.parameters_to_estimate,
+                    "parameters_to_estimate": self.model.parameters,
                     "bounds": {name: f"{bounds[0], bounds[1]}" for name, bounds in self.model.bounds.items()}
                 },
                 "sds": dict(self.sds),

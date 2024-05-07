@@ -15,14 +15,14 @@ class ChildModel(Model):
         super().__init__(data)
         self.model_name = "Steady-state batch model"
         self.vini = 1
-        self.parameters_to_estimate = None
-        self.fixed_parameters = None
+        self.parameters = None
+        self.args = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = {
-            "X_0" : self.vini,
-            "growth_rate" : self.vini
+        self.parameters = {
+            "X_0": self.vini,
+            "growth_rate": self.vini
         }
         self.bounds = Bounds(
             {
@@ -31,10 +31,10 @@ class ChildModel(Model):
             }
         )
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.update(
+            self.parameters.update(
                 {
-                    f"{metabolite}_q" : self.vini,
-                    f"{metabolite}_M0" : self.vini
+                    f"{metabolite}_q": self.vini,
+                    f"{metabolite}_M0": self.vini
                 }
             )
             self.bounds.update(
@@ -61,9 +61,7 @@ class ChildModel(Model):
         exp_mu_t = np.exp(mu * time_vector)
         simulated_matrix[:, 0] = x_0 * exp_mu_t
         for i in range(1, len(params_opti) // 2):
-            q, m_0 = params_opti[i*2:i*2+2]
-            simulated_matrix[:, i] = q * (x_0 / mu) \
-                                     * (exp_mu_t - 1) \
-                                     + m_0
+            q, m_0 = params_opti[i * 2:i * 2 + 2]
+            simulated_matrix[:, i] = q * (x_0 / mu) * (exp_mu_t - 1) + m_0
 
         return np.clip(simulated_matrix, a_min=0)

@@ -8,6 +8,7 @@ import pandas as pd
 
 from physiofit.models.base_model import Model, Bounds
 
+
 class ChildModel(Model):
 
     def __init__(self, data):
@@ -16,26 +17,26 @@ class ChildModel(Model):
         self.model_name = "Steady-state batch model with lag phase and " \
                           "degradation of metabolites "
         self.vini = 1
-        self.parameters_to_estimate = None
-        self.fixed_parameters = None
+        self.parameters = None
+        self.args = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = {
-            "X_0" : self.vini,
-            "growth_rate" : self.vini,
-            "t_lag" : self.vini
+        self.parameters = {
+            "X_0": self.vini,
+            "growth_rate": self.vini,
+            "t_lag": self.vini
         }
         self.bounds = Bounds(
             X_0=(1e-3, 10),
             growth_rate=(1e-3, 3),
-            t_lag = (0, 0.5*self.time_vector.max())
+            t_lag=(0, 0.5 * self.time_vector.max())
         )
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.update(
+            self.parameters.update(
                 {
-                    f"{metabolite}_q" : self.vini,
-                    f"{metabolite}_M0" : self.vini
+                    f"{metabolite}_q": self.vini,
+                    f"{metabolite}_M0": self.vini
                 }
             )
             self.bounds.update(
@@ -45,9 +46,9 @@ class ChildModel(Model):
                 }
             )
 
-        self.fixed_parameters = {"Degradation": {
+        self.args = {"Degradation": {
             met: 0 for met in self.metabolites
-            }
+        }
         }
 
     @staticmethod
@@ -75,7 +76,8 @@ class ChildModel(Model):
         mult_by_time = x_0 * np.exp(mu * (time_vector[len(idx) - 1:] - t_lag))
         simulated_matrix[:, 0] = np.concatenate((x_t_lag, mult_by_time),
                                                 axis=None)
-        fixed_params = [value for value in params_non_opti["Degradation"].values()]
+        fixed_params = [value for value in
+                        params_non_opti["Degradation"].values()]
 
         for i in range(1, int(len(params_opti) / 2)):
             q = params_opti[i * 2 + 1]
@@ -93,14 +95,3 @@ class ChildModel(Model):
             )
 
         return simulated_matrix
-
-# TODO: Handle this
-
-if __name__ == "__main__":
-    model = ChildModel(
-        pd.read_csv(
-            r"C:\Users\legregam\Documents\Projets\PhysioFit\data"
-            r"\KEIO_test_data\KEIO_ROBOT6_1\KEIO_ROBOT6_1.tsv",
-            sep='\t')
-    )
-    print(type(model))

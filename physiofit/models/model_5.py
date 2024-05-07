@@ -16,11 +16,11 @@ class ChildModel(Model):
         super().__init__(data)
         self.model_name = "Dynamic Monod model (1 substrate, 1 product)"
         self.vini = 1
-        self.parameters_to_estimate = None
+        self.parameters = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = {
+        self.parameters = {
             "X_0": self.vini,
             "y_BM": self.vini
         }
@@ -32,7 +32,7 @@ class ChildModel(Model):
 
         for metabolite in self.metabolites:
             if metabolite.startswith("S_"):
-                self.parameters_to_estimate.update(
+                self.parameters.update(
                     {
                         f"{metabolite}_km": self.vini,
                         f"{metabolite}_qsmax": self.vini,
@@ -50,7 +50,7 @@ class ChildModel(Model):
 
         for metabolite in self.metabolites:
             if metabolite.startswith("P_"):
-                self.parameters_to_estimate.update(
+                self.parameters.update(
                     {
                         f"{metabolite}_y_P": self.vini,
                         f"{metabolite}_p_0": 100
@@ -65,7 +65,7 @@ class ChildModel(Model):
                 )
                 break
 
-        if len(self.parameters_to_estimate) != 7:
+        if len(self.parameters) != 7:
             raise ValueError(
                 "This model expects 2 metabolites in the data file (1 "
                 "substrate with name starting with 'S_' and 1 product with "
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     model = ChildModel(data)
     model.get_params()
-    params = [param for param in model.parameters_to_estimate.values()]
+    params = [param for param in model.parameters.values()]
     sol = ChildModel.simulate(
         params,
         model.data,

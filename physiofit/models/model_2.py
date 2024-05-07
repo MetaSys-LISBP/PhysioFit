@@ -15,12 +15,12 @@ class ChildModel(Model):
         super().__init__(data)
         self.model_name = "Steady-state batch model with lag phase"
         self.vini = 1
-        self.parameters_to_estimate = None
-        self.fixed_parameters = None
+        self.parameters = None
+        self.args = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = {
+        self.parameters = {
             "X_0" : self.vini,
             "growth_rate" : self.vini,
             "t_lag" : self.vini
@@ -31,7 +31,7 @@ class ChildModel(Model):
             "t_lag": (0, 0.5 * self.time_vector.max()),
         })
         for metabolite in self.metabolites:
-            self.parameters_to_estimate.update(
+            self.parameters.update(
                 {
                     f"{metabolite}_q" : 1,
                     f"{metabolite}_M0" : 1

@@ -255,14 +255,14 @@ class PhysioFitter:
         logger.info("\nRunning optimization...\n")
         bounds = self.model.bounds()
         parameters = [
-            param for param in self.model.parameters_to_estimate.values()
+            param for param in self.model.parameters.values()
         ]
         self.optimize_results = self._run_optimization(
             params=parameters,
             func=self.model.simulate,
             exp_data_matrix=self.experimental_matrix,
             time_vector=self.model.time_vector,
-            non_opt_params=self.model.fixed_parameters,
+            non_opt_params=self.model.args,
             sd_matrix=self.sd,
             bounds=bounds,
             method="differential_evolution"
@@ -272,14 +272,14 @@ class PhysioFitter:
         }
         logger.info(f"Optimization results: \n{self.optimize_results}\n")
         for i, param in zip(
-                self.model.parameters_to_estimate, self.optimize_results.x
+                self.model.parameters, self.optimize_results.x
         ):
             logger.info(f"\n{i} = {param}\n")
         self.simulated_matrix = self.model.simulate(
             self.optimize_results.x,
             self.experimental_matrix,
             self.model.time_vector,
-            self.model.fixed_parameters
+            self.model.args
         )
         logger.debug(f"simulated_matrix:\n{self.simulated_matrix}")
         nan_sim_mat = np.copy(self.simulated_matrix)
@@ -352,7 +352,7 @@ class PhysioFitter:
                     non_opt_params,
                     sd_matrix
                 ),
-                method="L-BFGS-B", bounds=bounds, options={'maxcor': 30}
+                method="L-BFGS-B", bounds=bounds
             )
         else:
             raise ValueError(f"{method} is not implemented")
@@ -387,13 +387,15 @@ class PhysioFitter:
             new_matrix = self._apply_noise()
             logger.debug(f"Iteration {i + 1}:\n")
             logger.debug(f"New matrix:\n{new_matrix}\n")
+            logger.debug(f"Sd matrix:\n{self.sd}\n")
+            logger.debug(f"time vector:\n{self.model.time_vector}\n")
             # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(
                 opt_res.x,
                 self.model.simulate,
                 new_matrix,
                 self.model.time_vector,
-                self.model.fixed_parameters,
+                self.model.args,
                 self.sd, self.model.bounds(),
                 "L-BFGS-B"
             )
@@ -402,7 +404,7 @@ class PhysioFitter:
             matrices.append(
                 self.model.simulate(
                     opt_res.x, new_matrix, self.model.time_vector,
-                    self.model.fixed_parameters
+                    self.model.args
                 )
             )
 
@@ -472,14 +474,14 @@ class PhysioFitter:
         number_measurements = np.count_nonzero(
             ~np.isnan(self.experimental_matrix)
         )
-        number_params = len(self.model.parameters_to_estimate)
+        number_params = len(self.model.parameters)
         dof = number_measurements - number_params
         cost = self._calculate_cost(
             self.optimize_results.x,
             self.model.simulate,
             self.experimental_matrix,
             self.model.time_vector,
-            self.model.fixed_parameters,
+            self.model.args,
             self.sd
         )
         p_val = chi2.cdf(cost, dof)
@@ -540,8 +542,9 @@ class PhysioFitter:
         parameters. SDs are obtained from the sd matrix
         """
 
-        new_matrix = np.array([
+        noisy_matrix = np.array([
             PhysioFitter._add_noise(self.simulated_matrix[idx, :], sd)
             for idx, sd in enumerate(self.sd)
         ])
-        return new_matrix
+        noisy_matrix[noisy_matrix < 0] = 0
+        return noisy_matrix
