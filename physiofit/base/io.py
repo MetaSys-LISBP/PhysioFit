@@ -94,14 +94,14 @@ class IoHandler:
         IoHandler._verify_data(data)
         return data
 
-    def select_model(self, model_name, data=None):
+    def select_model(self, name, data=None):
         """
         Select a model from the list of models in the model folder of the package src directory
         """
 
         self.get_models(data)
         for x in self.models:
-            if x.model_name == model_name:
+            if x.name == name:
                 model = x
         return model
 
@@ -182,7 +182,7 @@ class IoHandler:
                 )
                 model_class = getattr(module, "ChildModel")
                 model = model_class(df)
-                print(model.model_name)
+                print(model.name)
         return
 
     def get_models(self, data=None):
@@ -625,7 +625,7 @@ class ConfigParser:
         with open(fr"{export_path}/config_file.yml", "w") as file:
             data = {
                 "model": {
-                    "model_name": self.model.model_name,
+                    "model_name": self.model.name,
                     "parameters_to_estimate": self.model.parameters,
                     "bounds": {name: f"{bounds[0], bounds[1]}" for name, bounds in self.model.bounds.items()}
                 },
