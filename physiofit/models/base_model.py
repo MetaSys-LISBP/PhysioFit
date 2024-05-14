@@ -35,13 +35,13 @@ class Model(ABC):
             )
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
         self.metabolites = self.name_vector[1:]
-        self.model_name = None
+        self.name = None
         self.parameters = None
         self.args = None
         self.bounds = None
 
     def __repr__(self):
-        return f"Selected model: {self.model_name}\n" \
+        return f"Selected model: {self.name}\n" \
                f"Model data: \n{self.data}\n" \
                f"Experimental matrix: \n{self.experimental_matrix}\n" \
                f"Time vector: {self.time_vector}\n" \
