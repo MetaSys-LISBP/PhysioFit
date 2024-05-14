@@ -2,7 +2,243 @@
 This module contains tests for the models module.
 """
 import numpy as np
+import pandas as pd
+
 from physiofit.base.io import IoHandler
+import physiofit.models.base_model
+
+
+def test_steady_state_batch_model_with_lag_phase_and_degradation_of_metabolites(
+        model_1_data: pd.DataFrame,
+        sds: physiofit.models.base_model.StandardDevs
+):
+    io = IoHandler()
+    model = io.select_model(
+        name="Steady-state batch model with lag phase and "
+        "degradation of metabolites",
+        data=model_1_data
+    )
+    model.get_params()
+    fitter = io.initialize_fitter(
+        data=model.data,
+        model=model,
+        sd=sds,
+        debug_mode=True
+    )
+    fitter.optimize()
+    optimized_params = {
+        name: param for name, param in zip(
+            list(fitter.model.parameters.keys()),
+            fitter.parameter_stats["optimal"]
+        )
+    }
+
+    # t_lag
+    assert np.isclose(
+        a=optimized_params["t_lag"],
+        b=1.4,
+        rtol=0.2
+    )
+    # X_0
+    assert np.isclose(
+        a=optimized_params["X_0"],
+        b=0.02,
+        rtol=0.02
+    )
+    # growth_rate
+    assert np.isclose(
+        a=optimized_params["growth_rate"],
+        b=0.8,
+        rtol=0.02
+    )
+    # Glucose_q
+    assert np.isclose(
+        a=optimized_params["Glucose_q"],
+        b=-8,
+        rtol=0.02
+    )
+    # Glucose_M0
+    assert np.isclose(
+        a=optimized_params["Glucose_M0"],
+        b=20,
+        rtol=0.02
+    )
+    # Acetate_q
+    assert np.isclose(
+        a=optimized_params["Acetate_q"],
+        b=3,
+        rtol=0.02
+    )
+    # Acetate_M0
+    assert np.isclose(
+        a=optimized_params["Acetate_M0"],
+        b=0.01,
+        rtol=0.02
+    )
+    # Glutamate_q
+    assert np.isclose(
+        a=optimized_params["Glutamate_q"],
+        b=0.05,
+        rtol=0.02
+    )
+    # Glutamate_M0
+    assert np.isclose(
+        a=optimized_params["Glutamate_M0"],
+        b=0.01,
+        rtol=0.02
+    )
+
+
+def test_steady_state_batch_model_with_lag_phase(
+        model_2_data: pd.DataFrame,
+        sds: physiofit.models.base_model.StandardDevs
+):
+    io = IoHandler()
+    model = io.select_model(
+        name="Steady-state batch model with lag phase",
+        data=model_2_data
+    )
+    model.get_params()
+    fitter = io.initialize_fitter(
+        data=model.data,
+        model=model,
+        sd=sds,
+        debug_mode=True
+    )
+    fitter.optimize()
+    optimized_params = {
+        name: param for name, param in zip(
+            list(fitter.model.parameters.keys()),
+            fitter.parameter_stats["optimal"]
+        )
+    }
+
+    # t_lag
+    assert np.isclose(
+        a=optimized_params["t_lag"],
+        b=1.4,
+        rtol=0.01
+    )
+    # X_0
+    assert np.isclose(
+        a=optimized_params["X_0"],
+        b=0.02,
+        rtol=0.01
+    )
+    # growth_rate
+    assert np.isclose(
+        a=optimized_params["growth_rate"],
+        b=0.8,
+        rtol=0.01
+    )
+    # Glucose_q
+    assert np.isclose(
+        a=optimized_params["Glucose_q"],
+        b=-8,
+        rtol=0.01
+    )
+    # Glucose_M0
+    assert np.isclose(
+        a=optimized_params["Glucose_M0"],
+        b=20,
+        rtol=0.01
+    )
+    # Acetate_q
+    assert np.isclose(
+        a=optimized_params["Acetate_q"],
+        b=3,
+        rtol=0.01
+    )
+    # Acetate_M0
+    assert np.isclose(
+        a=optimized_params["Acetate_M0"],
+        b=0.01,
+        rtol=0.01
+    )
+    # Glutamate_q
+    assert np.isclose(
+        a=optimized_params["Glutamate_q"],
+        b=2,
+        rtol=0.01
+    )
+    # Glutamate_M0
+    assert np.isclose(
+        a=optimized_params["Glutamate_M0"],
+        b=0.01,
+        rtol=0.01
+    )
+
+def test_steady_state_batch_model(
+        model_4_data: pd.DataFrame,
+        sds: physiofit.models.base_model.StandardDevs
+):
+    io = IoHandler()
+    model = io.select_model(
+        "Steady-state batch model",
+        model_4_data
+    )
+    model.get_params()
+    fitter = io.initialize_fitter(
+        data=model.data,
+        model=model,
+        sd=sds,
+        debug_mode=True
+    )
+    fitter.optimize()
+    optimized_params = {
+        name: param for name, param in zip(
+            list(fitter.model.parameters.keys()),
+            fitter.parameter_stats["optimal"]
+        )
+    }
+    # X_0
+    assert np.isclose(
+        a=optimized_params["X_0"],
+        b=0.02,
+        rtol=0.01
+    )
+    # growth_rate
+    assert np.isclose(
+        a=optimized_params["growth_rate"],
+        b=0.8,
+        rtol=0.01
+    )
+    # Glucose_q
+    assert np.isclose(
+        a=optimized_params["Glucose_q"],
+        b=-8,
+        rtol=0.01
+    )
+    # Glucose_M0
+    assert np.isclose(
+        a=optimized_params["Glucose_M0"],
+        b=20,
+        rtol=0.01
+    )
+    # Acetate_q
+    assert np.isclose(
+        a=optimized_params["Acetate_q"],
+        b=3,
+        rtol=0.01
+    )
+    # Acetate_M0
+    assert np.isclose(
+        a=optimized_params["Acetate_M0"],
+        b=0.01,
+        rtol=0.01
+    )
+    # Glutamate_q
+    assert np.isclose(
+        a=optimized_params["Glutamate_q"],
+        b=2,
+        rtol=0.01
+    )
+    # Glutamate_M0
+    assert np.isclose(
+        a=optimized_params["Glutamate_M0"],
+        b=0.01,
+        rtol=0.01
+    )
 
 
 def test_monod_model(monod_model_sds, monod_model_data):
