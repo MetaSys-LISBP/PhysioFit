@@ -7,27 +7,27 @@ import pytest
 import physiofit
 
 
-def test_physiofitter(data, sds):
+def test_physiofitter(base_test_data):
     """
     Test that the model and PhysioFitter can be safely instanciated from IoHandler
     """
 
     io = physiofit.base.io.IoHandler()
-    model = io.select_model("Steady-state batch model", data)
+    model = io.select_model("Steady-state batch model", base_test_data)
     assert isinstance(model, physiofit.models.base_model.Model)
     model.get_params()
     fitter = io.initialize_fitter(
         model.data,
         model=model,
-        sd=sds,
+        sd=0.2,
         debug_mode=True
     )
     assert isinstance(fitter, physiofit.base.fitter.PhysioFitter)
 
-def test_simulation(data, sds):
+def test_simulation(base_test_data):
 
     io = physiofit.base.io.IoHandler()
-    model = io.select_model("Steady-state batch model", data)
+    model = io.select_model("Steady-state batch model", base_test_data)
     model.get_params()
     sim_mat = model.simulate(
         [param for param in model.parameters.values()],
@@ -37,7 +37,7 @@ def test_simulation(data, sds):
     )
     assert isinstance(sim_mat, np.ndarray)
 
-def test_wrong_entry_for_model_data(data, sds):
+def test_wrong_entry_for_model_data(base_test_data):
 
     with pytest.raises(AttributeError):
         io = physiofit.base.io.IoHandler()
@@ -55,15 +55,15 @@ def test_wrong_entry_for_model_data(data, sds):
             "Hello world this is an error"
         )
 
-def test_optimization_process(data, sds):
+def test_optimization_process(base_test_data):
 
     io = physiofit.base.io.IoHandler()
-    model = io.select_model("Steady-state batch model", data)
+    model = io.select_model("Steady-state batch model", base_test_data)
     model.get_params()
     fitter = io.initialize_fitter(
         model.data,
         model=model,
-        sd=sds,
+        sd=0.2,
         debug_mode=True
     )
     fitter.optimize()
@@ -71,14 +71,14 @@ def test_optimization_process(data, sds):
     for col in ["X", "Glucose", "Acetate"]:
         assert col in fitter.simulated_data.columns
 
-def test_monte_carlo(data, sds):
+def test_monte_carlo(base_test_data):
     io = physiofit.base.io.IoHandler()
-    model = io.select_model("Steady-state batch model", data)
+    model = io.select_model("Steady-state batch model", base_test_data)
     model.get_params()
     fitter = io.initialize_fitter(
         model.data,
         model=model,
-        sd=sds,
+        sd=0.2,
         debug_mode=True
     )
     fitter.optimize()
@@ -90,14 +90,14 @@ def test_monte_carlo(data, sds):
     assert hasattr(fitter, "parameter_stats")
     assert isinstance(fitter.parameter_stats, dict)
 
-def test_that_simulated_and_experimental_matrices_are_close(data, sds):
+def test_that_simulated_and_experimental_matrices_are_close(base_test_data):
     io = physiofit.base.io.IoHandler()
-    model = io.select_model("Steady-state batch model", data)
+    model = io.select_model("Steady-state batch model", base_test_data)
     model.get_params()
     fitter = io.initialize_fitter(
         model.data,
         model=model,
-        sd=sds,
+        sd=0.2,
         debug_mode=True
     )
     fitter.optimize()
