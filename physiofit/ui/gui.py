@@ -221,7 +221,7 @@ class App:
 
         # Get model names and give as options to user
         model_options = [
-            model.model_name for model in self.io.models
+            model.name for model in self.io.models
         ]
         if self.config_parser:
             if self.config_parser.model:
