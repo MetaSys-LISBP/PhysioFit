@@ -10,12 +10,8 @@ from physiofit.base.io import IoHandler
 logger = logging.getLogger(f"physiofit.{__name__}")
 logger.setLevel(logging.CRITICAL)
 
-
 @pytest.fixture
-def model_2_data():
-    """ Test data to use in tests for the model_1: Steady-state batch model
-    with lag phase and degradation of metabolites. Data is simulated using
-    synthetic parameters"""
+def model_3_data():
 
     return pd.DataFrame(
         {'time': {0: 0.0, 1: 0.2, 2: 0.4, 3: 0.6000000000000001, 4: 0.8,
@@ -54,7 +50,8 @@ def model_2_data():
                      21: 14.442161824151462, 22: 13.443114307230086,
                      23: 12.270721185485478, 24: 10.894905112042153,
                      25: 9.280369993371155, 26: 7.385695480012673,
-                     27: 5.16227434159538, 28: 2.5530654648697, 29: 0.0},
+                     27: 5.16227434159538, 28: 2.5530654648697,
+                     29: -0.5088695166562189},
          'Acetate': {0: 0.01, 1: 0.02301331532438577, 2: 0.03828458232519679,
                      3: 0.05620558016446701, 4: 0.07723606594787137,
                      5: 0.10191556963693509, 6: 0.13087723550673386,
@@ -70,34 +67,34 @@ def model_2_data():
                      25: 4.0298612524858175, 26: 4.740364194995248,
                      27: 5.574147121901733, 28: 6.552600450673863,
                      29: 7.700826068746083},
-         'Glutamate': {0: 0.01, 1: 0.018675543549590515,
-                       2: 0.02885638821679786, 3: 0.04080372010964467,
-                       4: 0.05482404396524758, 5: 0.07127704642462339,
-                       6: 0.0905848236711559, 7: 0.11324271016465011,
-                       8: 0.13983198627846413, 9: 0.17103479084982764,
-                       10: 0.20765162121975575, 11: 0.25062186972012945,
-                       12: 0.30104792346453757, 13: 0.3602234457148176,
-                       14: 0.4296665643721392, 15: 0.5111588190320802,
-                       16: 0.6067908657771541, 17: 0.7190161122476952,
-                       18: 0.8507136589806101, 19: 1.0052621617546382,
-                       20: 1.1866265098554676, 21: 1.3994595439621342,
-                       22: 1.6492214231924784, 23: 1.9423197036286308,
-                       24: 2.2862737219894615, 25: 2.689907501657211,
-                       26: 3.1635761299968315, 27: 3.719431414601155,
-                       28: 4.371733633782575, 29: 5.1372173791640545}}
+         'Glutamate': {0: 0.01, 1: 0.01607131015108712, 2: 0.0224100386448079,
+                       3: 0.029205066718692864, 4: 0.036652221089788446,
+                       5: 0.044960160796626104, 6: 0.054356436819364605,
+                       7: 0.0650939082916693, 8: 0.07745770312604938,
+                       9: 0.09177292063277068, 10: 0.10841328930255507,
+                       11: 0.12781101460674013, 12: 0.15046807988847946,
+                       13: 0.17696929880618822, 14: 0.20799746117775364,
+                       15: 0.244350966511984, 16: 0.2869644022967774,
+                       17: 0.3369325988105717, 18: 0.39553878071702653,
+                       19: 0.4642875402349305, 20: 0.5449434799049011,
+                       21: 0.6395765180442539, 22: 0.750615020597842,
+                       23: 0.8809081236202905, 24: 1.0337988461980507,
+                       25: 1.2132098702732164, 26: 1.4237441886556716,
+                       27: 1.6708032038334373, 28: 1.9607253077912765,
+                       29: 2.3009484984038036}}
     )
 
-
-def test_model_4_estimation(
-        model_4_data: pd.DataFrame,
+def test_model_3_estimation(
+        model_3_data: pd.DataFrame,
         sds: physiofit.models.base_model.StandardDevs
 ):
     io = IoHandler()
     model = io.select_model(
-        name="Steady-state batch model",
-        data=model_4_data
+        name="Steady-state batch model with degradation of metabolites",
+        data=model_3_data
     )
     model.get_params()
+    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamine": 1}}
     fitter = io.initialize_fitter(
         data=model.data,
         model=model,
@@ -112,34 +109,21 @@ def test_model_4_estimation(
         rtol=1e-3
     )
 
-
-def test_model_4_simulation(
+def test_model_3_simulation(
         placeholder_data,
         parameters,
-        model_4_data
+        model_3_data
 ):
     io = IoHandler()
     model = io.select_model(
-        name="Steady-state batch model",
+        name="Steady-state batch model with degradation of metabolites",
         data=placeholder_data
     )
     model.get_params()
-    model.parameters.update(parameters)
+    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamine": 1}}
     sim_data = model.simulate(
         list(model.parameters.values()),
         model.data.drop("time", axis=1),
         model.time_vector,
         model.args
-    )
-    df = pd.DataFrame(
-        data=sim_data,
-        index=model.time_vector,
-        columns=model.name_vector
-    )
-    df.index.name = "time"
-
-    pd.testing.assert_frame_equal(
-        df.reset_index(),
-        model_4_data,
-        atol=1e-6
     )

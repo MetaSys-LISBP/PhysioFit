@@ -9,7 +9,8 @@ import physiofit
 
 def test_physiofitter(base_test_data):
     """
-    Test that the model and PhysioFitter can be safely instanciated from IoHandler
+    Test that the model and PhysioFitter can be safely instantiated from
+    IoHandler
     """
 
     io = physiofit.base.io.IoHandler()

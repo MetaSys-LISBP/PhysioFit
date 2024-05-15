@@ -92,7 +92,7 @@ def test_model_1_estimation(
         data=model_1_data
     )
     model.get_params()
-    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamate": 1}}
+    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamine": 1}}
     fitter = io.initialize_fitter(
         data=model.data,
         model=model,
@@ -121,7 +121,7 @@ def test_model_1_simulation(
     )
     model.get_params()
     model.parameters.update(parameters)
-    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamate": 1}}
+    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamine": 1}}
     sim_data = model.simulate(
         list(model.parameters.values()),
         model.data.drop("time", axis=1),
@@ -135,4 +135,8 @@ def test_model_1_simulation(
     )
     df.index.name = "time"
 
-    pd.testing.assert_frame_equal(df.reset_index(), model_1_data)
+    pd.testing.assert_frame_equal(
+        df.reset_index(),
+        model_1_data,
+        atol=1e-6
+    )

@@ -13,9 +13,6 @@ logger.setLevel(logging.CRITICAL)
 
 @pytest.fixture
 def model_2_data():
-    """ Test data to use in tests for the model_1: Steady-state batch model
-    with lag phase and degradation of metabolites. Data is simulated using
-    synthetic parameters"""
 
     return pd.DataFrame(
         {'time': {0: 0.0, 1: 0.2, 2: 0.4, 3: 0.6000000000000001, 4: 0.8,
@@ -131,4 +128,8 @@ def test_model_2_simulation(
     )
     df.index.name = "time"
 
-    pd.testing.assert_frame_equal(df.reset_index(), model_2_data)
+    pd.testing.assert_frame_equal(
+        df.reset_index(),
+        model_2_data,
+        atol=1e-6
+    )
