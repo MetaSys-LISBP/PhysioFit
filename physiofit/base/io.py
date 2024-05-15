@@ -10,14 +10,14 @@ from io import BytesIO
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame, read_csv, concat
 import yaml
 
 from physiofit import __file__
 from physiofit.base.fitter import PhysioFitter
-from physiofit.models.base_model import StandardDevs, Bounds
+from physiofit.models.base_model import StandardDevs, Bounds, Model
 
 # Switch matplotlib logger to higher level to not get debug logs in root logger
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
@@ -84,44 +84,55 @@ class IoHandler:
             elif issubclass(type(data), BytesIO):
                 data = read_csv(data, sep="\t")
             else:
-                raise TypeError(f"Input data file is not of right type. Accepted types: file-like (bytes) or string")
+                raise TypeError(f"Input data file is not of right type. "
+                                f"Accepted types: file-like (bytes) or string")
         except Exception:
             logger.exception("There was an error while reading the data")
             raise IOError(
-                "Error while reading data. Please ensure you have the right file format (txt, tsv or bytes)"
+                "Error while reading data. Please ensure you have the right "
+                "file format (txt, tsv or bytes)"
             )
 
         IoHandler._verify_data(data)
         return data
 
-    def select_model(self, name, data=None):
+    def select_model(
+            self, name: str,
+            data: pd.DataFrame = None
+    ) -> Model:
         """
-        Select a model from the list of models in the model folder of the package src directory
+        Select a model from the list of models in the model folder of the
+        package src directory
         """
 
         self.get_models(data)
-        for x in self.models:
-            if x.name == name:
-                model = x
-        return model
+        for model in self.models:
+            if model.name == name:
+                return model
 
-    def read_model(self, model_file):
+    @staticmethod
+    def read_model(
+            model_file: str
+    ):
         """
         Import and return the model class from .py file containing the model.
 
-        .. warning: ONLY USE THIS FUNCTION ON TRUSTED PYTHON FILES. Reading code from untrusted sources can lead to
-                    propagation of viruses and compromised security.
+        .. warning: ONLY USE THIS FUNCTION ON TRUSTED PYTHON FILES. Reading
+        code from untrusted sources can lead to propagation of viruses and
+        compromised security.
 
         :param model_file: path to the model.py file to import
         """
 
         if not Path(model_file).is_file() or Path(model_file).suffix != ".py":
             raise ValueError(
-                "The given path is not valid. The path must point to a .py file containing the module "
-                "from which the model will be loaded."
+                "The given path is not valid. The path must point to a .py "
+                "file containing the module from which the model will be "
+                "loaded."
             )
 
-        spec = importlib.util.spec_from_file_location("module_to_import", fr"{model_file}")
+        spec = importlib.util.spec_from_file_location("module_to_import",
+                                                      fr"{model_file}")
         module = importlib.util.module_from_spec(spec)
         sys.modules["module_to_import"] = module
         spec.loader.exec_module(module)
@@ -130,7 +141,9 @@ class IoHandler:
         return model_class
 
     @staticmethod
-    def _verify_data(data: DataFrame):
+    def _verify_data(
+            data: DataFrame
+    ):
         """
         Perform checks on DataFrame returned by the _read_data function
 
@@ -156,7 +169,8 @@ class IoHandler:
             raise ValueError(f"Data does not contain any metabolite columns")
 
         for x in data.columns:
-            if x != "experiments" and data[x].dtypes != np.int64 and data[x].dtypes != np.float64:
+            if x != "experiments" and data[x].dtypes != np.int64 and data[
+                    x].dtypes != np.float64:
                 raise ValueError(
                     f"Column {x} has values that are not of numeric type"
                 )
@@ -166,7 +180,8 @@ class IoHandler:
                 )
 
         # To avoid errors when concatenating dataframes for the final summary
-        data["experiments"] = data["experiments"].str.replace(pat=" ", repl="_")
+        data["experiments"] = data["experiments"].str.replace(pat=" ",
+                                                              repl="_")
 
     @staticmethod
     def get_model_list():
@@ -185,9 +200,13 @@ class IoHandler:
                 print(model.name)
         return
 
-    def get_models(self, data=None):
+    def get_models(
+            self,
+            data: pd.DataFrame = None
+    ):
         """
-        Read modules containing the different models and add them to models attribute
+        Read modules containing the different models and add them to models
+        attribute
 
         :return: list containing the different model objects
         """
@@ -204,7 +223,8 @@ class IoHandler:
                 else:
                     self.models.append(model_class(self.data))
 
-    def get_local_model_folder(self) -> str:
+    @staticmethod
+    def get_local_model_folder() -> str:
         """
         Return the path towards the actual environment's used models folder
         """
@@ -212,7 +232,8 @@ class IoHandler:
         model_dir = Path(__file__).parent / "models"
         return str(model_dir)
 
-    # TODO: Implement this function to add model to model folder and add button to GUI
+    # TODO: Implement this function to add model to model folder and add
+    #  button to GUI
     @staticmethod
     def add_model(model_file):
         pass
@@ -223,17 +244,20 @@ class IoHandler:
         """
         Import yaml configuration file and parse keyword arguments
 
-        :param yaml_file: path to the yaml file or json file
-        :return config_parser: Dictionary containing arguments parsed from yaml file
+        :param yaml_file: path to the yaml file or json file :return
+        config_parser: Dictionary containing arguments parsed from yaml file
+
         """
 
         # Load config file
         try:
-            if isinstance(yaml_file, str) or issubclass(type(yaml_file), BytesIO):
+            if isinstance(yaml_file, str) or issubclass(type(yaml_file),
+                                                        BytesIO):
                 config_parser = ConfigParser.from_file(yaml_file)
             else:
                 raise TypeError(
-                    f"Trying to read object that is not a file or path to file: {yaml_file}"
+                    f"Trying to read object that is not a file or path to "
+                    f"file: {yaml_file}"
                 )
         except Exception as e:
             raise IOError(
@@ -260,7 +284,8 @@ class IoHandler:
             mc=kwargs["mc"] if "mc" in kwargs else True,
             iterations=kwargs["iterations"] if "iterations" in kwargs else 100,
             sd=kwargs["sd"] if "sd" in kwargs else StandardDevs(),
-            debug_mode=kwargs["debug_mode"] if "debug_mode" in kwargs else False
+            debug_mode=kwargs[
+                "debug_mode"] if "debug_mode" in kwargs else False
         )
 
         if "sd" not in kwargs:
@@ -323,17 +348,20 @@ class IoHandler:
             )
         if not self.multiple_experiments:
             raise ValueError(
-                f"It seems that the multiple experiments list is empty: {self.multiple_experiments}"
+                f"It seems that the multiple experiments list is empty: "
+                f"{self.multiple_experiments}"
             )
         for idx, element in enumerate(self.multiple_experiments):
             if not isinstance(element, DataFrame):
                 raise TypeError(
-                    f"All the elements of multiple_experiments must be DataFrames. Wrong element type"
+                    f"All the elements of multiple_experiments must be "
+                    f"DataFrames. Wrong element type"
                     f"detected at indice {idx}"
                 )
         final_df = concat(self.multiple_experiments)
         final_df = final_df.reset_index()
-        final_df[["experiments", "parameter name"]] = final_df["index"].str.split(" ", expand=True)
+        final_df[["experiments", "parameter name"]] = final_df[
+            "index"].str.split(" ", expand=True)
         final_df.set_index(["experiments", "parameter name"], inplace=True)
         final_df.drop("index", axis=1, inplace=True)
         if galaxy:
@@ -346,9 +374,9 @@ class IoHandler:
         Handle creation and export of the report containing stats from monte
         carlo analysis of optimization parameters
 
-        :param fitter: PhysioFitter object containing results from the optimization of parameters
-        :param export_path: list of paths to export the stats and fluxes. [0]
-                             is for stats and [1] for fluxes.
+        :param fitter: PhysioFitter object containing results from the
+        optimization of parameters :param export_path: list of paths to
+        export the stats and fluxes. [0] is for stats and [1] for fluxes.
         """
 
         if isinstance(export_path, list):
@@ -457,8 +485,8 @@ class IoHandler:
         """
         Plot the data
 
-        :param fitter: PhysioFitter object after optimization of parameters has been executed
-        :param display: should plots be displayed
+        :param fitter: PhysioFitter object after optimization of parameters
+        has been executed :param display: should plots be displayed
         """
 
         self._get_plot_data(fitter)
@@ -536,9 +564,11 @@ class IoHandler:
 
 class ConfigParser:
     """
-    The ConfigParser class is used to parse configuration files for the PhysioFit package. It reads a YAML file and
-    extracts the necessary parameters for the model fitting process. It also includes methods to update the model
-    with the parsed parameters and export the run parameters back to a yaml config file.
+    The ConfigParser class is used to parse configuration files for the
+    PhysioFit package. It reads a YAML file and extracts the necessary
+    parameters for the model fitting process. It also includes methods to
+    update the model with the parsed parameters and export the run
+    parameters back to a yaml config file.
     """
 
     allowed_keys = ["model", "sds", "mc", "iterations"]
@@ -560,12 +590,14 @@ class ConfigParser:
 
         if not isinstance(self.mc, bool):
             raise TypeError(
-                f"The MonteCarlo option must be given as a boolean (True or False). Detected input: {self.mc}, "
+                f"The MonteCarlo option must be given as a boolean (True or "
+                f"False). Detected input: {self.mc},"
                 f"type: {type(self.mc)}"
             )
         if not isinstance(self.iterations, int):
             raise TypeError(
-                f"Number of iterations must be an integer: Detected input: {self.mc}, type: {type(self.iterations)}"
+                f"Number of iterations must be an integer: Detected input: "
+                f"{self.mc}, type: {type(self.iterations)}"
             )
 
     @classmethod
@@ -627,7 +659,8 @@ class ConfigParser:
                 "model": {
                     "model_name": self.model.name,
                     "parameters_to_estimate": self.model.parameters,
-                    "bounds": {name: f"{bounds[0], bounds[1]}" for name, bounds in self.model.bounds.items()}
+                    "bounds": {name: f"{bounds[0], bounds[1]}" for name, bounds
+                               in self.model.bounds.items()}
                 },
                 "sds": dict(self.sds),
                 "mc": self.mc,
@@ -638,42 +671,3 @@ class ConfigParser:
                 data,
                 file
             )
-
-
-if __name__ == "__main__":
-    import pandas as pd
-
-    io_handler = IoHandler()
-    data_file = pd.read_csv(
-        r"C:\Users\legregam\Documents\Projets\PhysioFit\data\KEIO_test_data"
-        r"\KEIO_ROBOT6_1\KEIO_ROBOT6_1.tsv",
-        sep="\t"
-    )
-    io_handler.data = data_file
-    io_handler.data = io_handler.data.sort_values(
-        "time",
-        ignore_index=True
-    )
-    io_handler.get_models()
-    try:
-        sd = {"X": 0.}
-        for col in io_handler.data.columns[2:]:
-            sd.update({col: 0.5})
-    except Exception:
-        raise
-    io_handler.names = io_handler.data.columns[1:].to_list()
-    model = io_handler.models[-1]
-    model.get_params()
-    print(model)
-    keywargs = {
-        "sd": sd,
-        "model": model,
-        "mc": True,
-        "iterations": 100,
-        "debug_mode": True,
-    }
-    io_handler.res_path = Path(
-        r"C:\Users\legregam\Documents\Projets\PhysioFit\data\KEIO_test_data"
-        r"\KEIO_ROBOT6_1")
-    io_handler.initialize_fitter(kwargs=keywargs)
-    io_handler.fitter.optimize()
