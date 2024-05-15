@@ -24,8 +24,8 @@ def test_physiofitter(base_test_data):
     )
     assert isinstance(fitter, physiofit.base.fitter.PhysioFitter)
 
-def test_simulation(base_test_data):
 
+def test_simulation(base_test_data):
     io = physiofit.base.io.IoHandler()
     model = io.select_model("Steady-state batch model", base_test_data)
     model.get_params()
@@ -37,8 +37,8 @@ def test_simulation(base_test_data):
     )
     assert isinstance(sim_mat, np.ndarray)
 
-def test_wrong_entry_for_model_data(base_test_data):
 
+def test_wrong_entry_for_model_data(base_test_data):
     with pytest.raises(AttributeError):
         io = physiofit.base.io.IoHandler()
         model = io.select_model("Steady-state batch model", None)
@@ -46,7 +46,7 @@ def test_wrong_entry_for_model_data(base_test_data):
         model = io.select_model(
             "Steady-state batch model",
             np.array(
-                [[0, 1, 2],[0, 1, 2]]
+                [[0, 1, 2], [0, 1, 2]]
             )
         )
     with pytest.raises(AttributeError):
@@ -55,8 +55,8 @@ def test_wrong_entry_for_model_data(base_test_data):
             "Hello world this is an error"
         )
 
-def test_optimization_process(base_test_data):
 
+def test_optimization_process(base_test_data):
     io = physiofit.base.io.IoHandler()
     model = io.select_model("Steady-state batch model", base_test_data)
     model.get_params()
@@ -70,6 +70,7 @@ def test_optimization_process(base_test_data):
     assert isinstance(fitter.simulated_data, pd.DataFrame)
     for col in ["X", "Glucose", "Acetate"]:
         assert col in fitter.simulated_data.columns
+
 
 def test_monte_carlo(base_test_data):
     io = physiofit.base.io.IoHandler()
@@ -86,9 +87,11 @@ def test_monte_carlo(base_test_data):
     assert hasattr(fitter, "matrices_ci")
     assert isinstance(fitter.matrices_ci["lower_ci"], np.ndarray)
     assert isinstance(fitter.matrices_ci["higher_ci"], np.ndarray)
-    assert np.subtract(fitter.matrices_ci["higher_ci"], fitter.matrices_ci["lower_ci"]).all() > 0
+    assert np.subtract(fitter.matrices_ci["higher_ci"],
+                       fitter.matrices_ci["lower_ci"]).all() > 0
     assert hasattr(fitter, "parameter_stats")
     assert isinstance(fitter.parameter_stats, dict)
+
 
 def test_that_simulated_and_experimental_matrices_are_close(base_test_data):
     io = physiofit.base.io.IoHandler()
@@ -107,4 +110,3 @@ def test_that_simulated_and_experimental_matrices_are_close(base_test_data):
         rtol=1,
         equal_nan=True
     )
-
