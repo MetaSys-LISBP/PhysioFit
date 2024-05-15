@@ -380,7 +380,7 @@ class App:
                                         label_visibility="collapsed",
                                         value=value if self.config_parser is None
                                         else self.config_parser.model[
-                                            "fixed_parameters"][key],
+                                            "args"][key],
                                         key=f"Fixed_{param}_value_{key}"
                                     )
 
