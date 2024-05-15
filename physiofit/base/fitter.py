@@ -10,6 +10,7 @@ from scipy.optimize import minimize, differential_evolution
 from scipy.stats import chi2
 
 from physiofit.models.base_model import Model
+# import physiofit # To get debug logs from the module
 
 logger = logging.getLogger(f"physiofit.{__name__}")
 
@@ -138,6 +139,9 @@ class PhysioFitter:
             matrix = np.column_stack(columns)
             self.sd = matrix
 
+        logger.debug(f"SD object type: {type(self.sd)}")
+        logger.debug(f"Array built from dict:\n{self.sd}")
+
     def initialize_sd_matrix(self):
         """
         Initialize the sd matrix from different types of inputs: single value,
@@ -146,25 +150,63 @@ class PhysioFitter:
         :return: None
         """
 
+        # This function can be optimized, if the input is a matrix we should
+        # detect it directly
         logger.info("Initializing sd matrix...\n")
 
+        # If sd is None, we generate the default matrix
         if self.sd is None or self.sd == {}:
-            self.sd = {"X": 0.2}
-            self.sd.update({col: 0.5} for col in self.data.columns[2:])
+            try:
+                self.sd = {"X": 0.2}
+                for col in self.data.columns[2:]:
+                    self.sd.update({col: 0.5})
+            except Exception:
+                raise
 
         if isinstance(self.sd, dict):
             self._sd_dict_to_matrix()
-        elif isinstance(self.sd, (int, float)):
+        # When sd is a single value, we build a sd matrix containing the value
+        # in all positions
+        if isinstance(self.sd, int) or isinstance(self.sd, float):
             self._build_sd_matrix()
-        elif isinstance(self.sd, (np.ndarray, list)):
-            self.sd = np.array(self.sd).astype(float)
-            if self.sd.shape != self.experimental_matrix.shape:
-                self._build_sd_matrix()
-        else:
+            logger.debug(f"SD matrix: {self.sd}\n")
+            return
+        if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd,
+                                                                  list):
             raise TypeError(
-                "Cannot coerce SD to array. Please check that a list or array is given as input.")
+                f"Cannot coerce SD to array. Please check that a list or array "
+                f"is given as input.\nCurrent input: \n{self.sd}"
+            )
+        else:
+            self.sd = np.array(self.sd)
+        if not np.issubdtype(self.sd.dtype, np.number):
+            try:
+                self.sd = self.sd.astype(float)
+            except ValueError:
+                raise ValueError(
+                    f"The sd vector/matrix contains values that are not "
+                    f"numeric. \nCurrent sd vector/matrix: \n{self.sd}"
+                )
+            except Exception as e:
+                raise RuntimeError(f"Unknown error: {e}")
+        else:
+            # If the array is not the right shape, we assume it is a vector
+            # that needs to be tiled into a matrix
 
-        logger.info(f"SDs:\n{self.sd}\n")
+            logger.debug(f"SD matrix: {self.sd}\n")
+            logger.debug(f"Type of SD matrix: {type(self.sd)}")
+
+            if self.sd.shape != self.experimental_matrix.shape:
+                try:
+                    self._build_sd_matrix()
+                except ValueError:
+                    raise
+                except RuntimeError:
+                    raise
+            else:
+                logger.debug(f"sd matrix: {self.sd}\n")
+                return
+        logger.info(f"sd Matrix:\n{self.sd}\n")
 
     def _build_sd_matrix(self):
         """
@@ -173,14 +215,23 @@ class PhysioFitter:
         :return: None
         """
 
-        def _build_sd_matrix(self):
-            if isinstance(self.sd, np.ndarray) and self.sd.size == \
-                    self.experimental_matrix[0].size:
-                self.sd = np.tile(self.sd, (len(self.experimental_matrix), 1))
-            elif isinstance(self.sd, (int, float)):
-                self.sd = np.full(self.experimental_matrix.shape, self.sd)
+        # First condition: the sds are in a 1D array
+        if isinstance(self.sd, np.ndarray):
+            # We first check that the sd vector is as long as the
+            # experimental matrix on the row axis
+            if self.sd.size != self.experimental_matrix[0].size:
+                raise ValueError("sd vector not of right size")
             else:
-                raise RuntimeError("Unknown error")
+                # We duplicate the vector column-wise to build a matrix of
+                # duplicated sd vectors
+                self.sd = np.tile(self.sd, (len(self.experimental_matrix), 1))
+
+        # Second condition: the sd is a scalar and must be broadcast to a
+        # matrix with same shape as the data
+        elif isinstance(self.sd, int) or isinstance(self.sd, float):
+            self.sd = np.full(self.experimental_matrix.shape, self.sd)
+        else:
+            raise RuntimeError("Unknown error")
 
     def _get_default_sds(self):
         """
@@ -226,10 +277,20 @@ class PhysioFitter:
         ):
             logger.info(f"\n{i} = {param}\n")
         self.simulated_matrix = self.model.simulate(
-            self.optimize_results.x,
-            self.experimental_matrix,
-            self.model.time_vector,
-            self.model.args
+            parameters=self.optimize_results.x,
+            data_matrix=self.experimental_matrix,
+            time_vector=self.model.time_vector,
+            args=self.model.args
+        )
+        self.large_time_vector = np.arange(start=0, stop=max(
+            self.model.time_vector),
+                                  step=(max(self.model.time_vector) / 100)
+                                  )
+        self.large_matrix = self.model.simulate(
+            parameters=self.optimize_results.x,
+            data_matrix=np.ones(shape=(100, self.experimental_matrix.shape[1])),
+            time_vector=self.large_time_vector,
+            args=self.model.args
         )
         logger.debug(f"simulated_matrix:\n{self.simulated_matrix}")
         nan_sim_mat = np.copy(self.simulated_matrix)
@@ -237,6 +298,11 @@ class PhysioFitter:
         self.simulated_data = DataFrame(
             data=nan_sim_mat,
             index=self.model.time_vector,
+            columns=self.model.name_vector
+        )
+        self.large_simulated_data = DataFrame(
+            data=self.large_matrix,
+            index=self.large_time_vector,
             columns=self.model.name_vector
         )
         self.simulated_data.index.name = "Time"
@@ -353,7 +419,7 @@ class PhysioFitter:
             # Store the new simulated matrix in list for later use
             matrices.append(
                 self.model.simulate(
-                    opt_res.x, new_matrix, self.model.time_vector,
+                    opt_res.x, self.large_matrix, self.large_time_vector,
                     self.model.args
                 )
             )
@@ -379,13 +445,11 @@ class PhysioFitter:
         # Apply nan mask to be coherent with the experimental matrix
         nan_lower_ci = np.copy(self.matrices_ci['lower_ci'])
         nan_higher_ci = np.copy(self.matrices_ci['higher_ci'])
-        nan_lower_ci[np.isnan(self.experimental_matrix)] = np.nan
-        nan_higher_ci[np.isnan(self.experimental_matrix)] = np.nan
 
-        logger.info(
+        logger.debug(
             f"Simulated matrix lower confidence interval:\n{nan_lower_ci}\n"
         )
-        logger.info(
+        logger.debug(
             f"Simulated matrix higher confidence interval:\n{nan_higher_ci}\n"
         )
         return

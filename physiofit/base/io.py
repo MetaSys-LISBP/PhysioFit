@@ -310,6 +310,7 @@ class IoHandler:
         Handle the creation and output of a pdf file containing fit results as
         a plot
 
+        :param fitter:
         :param export_path: Path to exported pdf. In local mode, it is sent to
                             the _res directory
         :return: None
@@ -369,11 +370,13 @@ class IoHandler:
         else:
             final_df.to_csv(f"{str(Path(export_path))}/summary.csv")
 
-    def output_report(self, fitter, export_path: str | list = None):
+    @staticmethod
+    def output_report(fitter, export_path: str | list = None):
         """
         Handle creation and export of the report containing stats from monte
         carlo analysis of optimization parameters
 
+        :param export_path: Path to export the report
         :param fitter: PhysioFitter object containing results from the
         optimization of parameters :param export_path: list of paths to
         export the stats and fluxes. [0] is for stats and [1] for fluxes.
@@ -435,8 +438,8 @@ class IoHandler:
         """
 
         # Initialize vectors and data for plotting
-        if fitter.model.time_vector is not None:
-            x = fitter.model.time_vector
+        if fitter.large_time_vector is not None:
+            x = fitter.large_time_vector
         else:
             raise ValueError(
                 "PhysioFitter model time_vector has not been initialized. "
@@ -448,8 +451,8 @@ class IoHandler:
             raise ValueError(
                 "PhysioFitter object does not have experimental data loaded in"
             )
-        if fitter.simulated_matrix is not None:
-            sim_mat = fitter.simulated_matrix
+        if fitter.large_matrix is not None:
+            sim_mat = fitter.large_matrix
         else:
             raise ValueError("PhysioFitter simulated data does not exist yet")
         if fitter.matrices_ci is not None:
@@ -472,7 +475,7 @@ class IoHandler:
 
         self.experimental_data = DataFrame(
             columns=fitter.model.name_vector,
-            index=x,
+            index=fitter.model.time_vector,
             data=exp_mat
         ).sort_index(level=0)
         self.simulated_data = DataFrame(
@@ -485,8 +488,9 @@ class IoHandler:
         """
         Plot the data
 
+        :param display: Should plots be displayed or not on creation
         :param fitter: PhysioFitter object after optimization of parameters
-        has been executed :param display: should plots be displayed
+        has been executed
         """
 
         self._get_plot_data(fitter)
