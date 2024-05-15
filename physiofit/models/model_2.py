@@ -81,4 +81,4 @@ class ChildModel(Model):
             mult_by_time = q * (x_0 / mu) * exp_mu_t_lag + m_0
             simulated_matrix[:, i] = np.concatenate((m_t_lag, mult_by_time))
 
-        return np.clip(simulated_matrix, a_min=0, a_max=None)
+        return simulated_matrix

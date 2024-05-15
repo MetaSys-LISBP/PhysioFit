@@ -13,7 +13,8 @@ class ChildModel(Model):
     def __init__(self, data):
 
         super().__init__(data)
-        self.model_name = "Steady-state batch model with degradation of metabolites"
+        self.name = ("Steady-state batch model with degradation of "
+                           "metabolites")
         self.vini = 1
         self.parameters = None
         self.args = None
@@ -21,8 +22,8 @@ class ChildModel(Model):
     def get_params(self):
 
         self.parameters = {
-            "X_0" : self.vini,
-            "growth_rate" : self.vini
+            "X_0": self.vini,
+            "growth_rate": self.vini
         }
         self.args = {"Degradation": {
             met: 0 for met in self.metabolites
@@ -47,7 +48,7 @@ class ChildModel(Model):
             )
             self.args = {"Degradation": {
                 met: 0 for met in self.metabolites
-                }
+            }
             }
 
     @staticmethod

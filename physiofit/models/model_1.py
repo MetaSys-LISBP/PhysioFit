@@ -93,4 +93,4 @@ class ChildModel(Model):
                         -k * time_vector)) + m_0 * np.exp(-k * time_vector)
             simulated_matrix[:, i] = np.concatenate((m_t_lag, mult_by_time))
 
-        return np.clip(simulated_matrix, a_min=0, a_max=None)
+        return simulated_matrix

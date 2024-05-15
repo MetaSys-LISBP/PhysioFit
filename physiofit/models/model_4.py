@@ -64,4 +64,4 @@ class ChildModel(Model):
             q, m_0 = parameters[i * 2:i * 2 + 2]
             simulated_matrix[:, i] = q * (x_0 / mu) * (exp_mu_t - 1) + m_0
 
-        return np.clip(simulated_matrix, a_min=0, a_max=None)
+        return simulated_matrix
