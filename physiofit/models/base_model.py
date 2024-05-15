@@ -78,7 +78,7 @@ class Model(ABC):
     @abstractmethod
     def simulate(
             parameters: list,
-            data_matrix: np.ndarray,
+            data_matrix: np.ndarray | pd.DataFrame,
             time_vector: np.ndarray,
             args: dict | list
     ):
