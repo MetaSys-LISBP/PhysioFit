@@ -64,16 +64,21 @@ class ChildModel(Model):
         x_0, mu, t_lag = parameters[:3]
 
         # We get indices in time vector where time < t_lag
-        idx = np.nonzero(time_vector < t_lag)[0]
-
-        # Fill at those indices with x_0
-        x_t_lag = np.full(shape=(len(idx)), fill_value=x_0)
+        mask = (time_vector < t_lag)
 
         # Get time vector from length of t_lag to end
-        time_vector = time_vector[len(idx):]
+        time_vector_lag = time_vector[mask]
+        time_vector_growth = time_vector[np.logical_not(mask)]
+        time_vector_diff = time_vector_growth - t_lag
+
+        # optimize some calculations
+        exp_mu_t_lag = np.exp(mu * time_vector_diff)
+
+        # Fill at those indices with x_0
+        x_t_lag = np.repeat(x_0, len(time_vector_lag))
 
         # The rest of the biomass points are calculated as usual
-        mult_by_time = x_0 * np.exp(mu * (time_vector - t_lag))
+        mult_by_time = x_0 * exp_mu_t_lag
 
         # Concatenate both vectors and transfer to X_t column of the
         # simulated matrix
@@ -81,16 +86,13 @@ class ChildModel(Model):
 
         # Get extra arguments
         arg_values = [value for value in args["Degradation"].values()]
-
-        # optimize some calculations
-        exp_mu_t_lag = np.exp(mu * (time_vector - t_lag))
-
+        
         for i in range(1, len(parameters) // 2):
             q, m_0 = parameters[i * 2 + 1:i * 2 + 3]
             k = arg_values[i - 1]
-            m_t_lag = np.full(len(idx), fill_value=m_0)
+            m_t_lag = m_0 * np.exp(-k * time_vector_lag)
             mult_by_time = q * (x_0 / (mu + k)) * (exp_mu_t_lag - np.exp(
-                        -k * time_vector)) + m_0 * np.exp(-k * time_vector)
+                        -k * time_vector_diff)) + m_0 * np.exp(-k * time_vector_growth)
             simulated_matrix[:, i] = np.concatenate((m_t_lag, mult_by_time))
 
         return simulated_matrix
