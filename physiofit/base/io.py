@@ -664,7 +664,8 @@ class ConfigParser:
                     "model_name": self.model.name,
                     "parameters_to_estimate": self.model.parameters,
                     "bounds": {name: f"{bounds[0], bounds[1]}" for name, bounds
-                               in self.model.bounds.items()}
+                               in self.model.bounds.items()},
+                    "args": self.model.args,
                 },
                 "sds": dict(self.sds),
                 "mc": self.mc,
