@@ -14,6 +14,7 @@ from physiofit.models.base_model import StandardDevs
 
 logger = logging.getLogger(f"physiofit.{__name__}")
 
+
 class App:
     """
     Physiofit Graphical User Interface
@@ -22,9 +23,9 @@ class App:
     def __init__(self):
 
         self.defaults = {
-            "iterations" : 100,
-            "sd" : StandardDevs(),
-            "mc" : True
+            "iterations": 100,
+            "sd": StandardDevs(),
+            "mc": True
         }
         self.select_menu = None
         self.io = None
@@ -36,7 +37,8 @@ class App:
 
         st.set_page_config(page_title=f"PhysioFit (v{physiofit.__version__})")
         st.title(f"Welcome to PhysioFit (v{physiofit.__version__})")
-        st.write("Documentation available at [https://physiofit.readthedocs.io](https://physiofit.readthedocs.io).")
+        st.write(
+            "Documentation available at [https://physiofit.readthedocs.io](https://physiofit.readthedocs.io).")
         self.update_info = st.empty()
         self.check_uptodate()
         self.select_menu = st.selectbox(
@@ -92,9 +94,11 @@ class App:
                 # Get parameters from yaml file
                 self.config_parser = self.io.read_yaml(self.data_file)
                 # Load data into io_handler
-                self.io.data = self.io.read_data(self.config_parser.path_to_data)
+                self.io.data = self.io.read_data(
+                    self.config_parser.path_to_data)
             except Exception:
-                st.error("An error has occurred when reading the yaml configuration file.")
+                st.error(
+                    "An error has occurred when reading the yaml configuration file.")
                 raise
         elif file_extension in ["tsv", "txt"]:
             try:
@@ -127,9 +131,10 @@ class App:
             # Initialize the list of available models
             self.io.get_models()
         except Exception:
-            st.error(f"An error has occurred when listing models from the models folder: "
-                     f"\n{Path(__file__).parent / 'models'}. Please correct the model or submit an issue at "
-                     f"github.com/MetaSys-LISBP/PhysioFit/issues")
+            st.error(
+                f"An error has occurred when listing models from the models folder: "
+                f"\n{Path(__file__).parent / 'models'}. Please correct the model or submit an issue at "
+                f"github.com/MetaSys-LISBP/PhysioFit/issues")
             raise
 
         # Build menu
@@ -146,11 +151,11 @@ class App:
             if not self.io.wkdir:
                 raise ValueError("No output directory selected")
             self.config_parser = ConfigParser(
-                path_to_data =self.io.wkdir / self.data_file.name,
-                selected_model= self.model,
-                sds = self.sd,
-                mc = self.mc,
-                iterations = self.iterations
+                path_to_data=self.io.wkdir / self.data_file.name,
+                selected_model=self.model,
+                sds=self.sd,
+                mc=self.mc,
+                iterations=self.iterations
             )
 
             full_dataframe = self.io.data.copy()
@@ -162,7 +167,7 @@ class App:
                     # final_table_dict = {}
                     self.model.data = full_dataframe[
                         full_dataframe["experiments"] == experiment
-                    ].drop("experiments", axis=1).copy()
+                        ].drop("experiments", axis=1).copy()
 
                     self.io.res_path = results_path / str(experiment)
                     if not self.io.res_path.is_dir():
@@ -188,7 +193,8 @@ class App:
                         orient="columns"
                     )
                     df.index = [
-                        f"{experiment} {param}" for param in fitter.model.parameters.keys()
+                        f"{experiment} {param}" for param in
+                        fitter.model.parameters.keys()
                     ]
                     st.write(df)
                     self.io.multiple_experiments.append(df)
@@ -223,15 +229,19 @@ class App:
         model_options = [
             model.name for model in self.io.models
         ]
+        idx = None
         if self.config_parser:
             if self.config_parser.model:
                 try:
-                    idx = model_options.index(self.config_parser.model["model_name"])
+                    idx = model_options.index(
+                        self.config_parser.model["model_name"])
                 except Exception:
-                    st.error("Error while reading model name from configuration file")
+                    st.error(
+                        "Error while reading model name from configuration "
+                        "file"
+                    )
                     raise
-        else:
-            idx = None
+
         model_name = st.selectbox(
             label="Model",
             options=model_options,
@@ -249,7 +259,8 @@ class App:
                 self.model.get_params()
                 self.silent_sim()
             except Exception as e:
-                st.error(f"The following error occurred with the selected model: {e}")
+                st.error(
+                    f"The following error occurred with the selected model: {e}")
                 raise
             else:
                 st.success("Model successfully initialized")
@@ -268,13 +279,15 @@ class App:
                 enable_mc = False if self.mc else True
                 self.iterations = st.number_input(
                     "Number of iterations",
-                    value=self.defaults["iterations"] if self.config_parser is None
-                    else self.config_parser.iterations ,
+                    value=self.defaults[
+                        "iterations"] if self.config_parser is None
+                    else self.config_parser.iterations,
                     help="Number of iterations for Monte Carlo analysis.",
                     disabled=enable_mc
                 )
                 if self.iterations < 0:
-                    st.error("ERROR: Number of Monte-Carlo iterations must be a positive integer")
+                    st.error(
+                        "ERROR: Number of Monte-Carlo iterations must be a positive integer")
                 self.debug_mode = st.checkbox(
                     "Verbose logs",
                     help="Useful in case of trouble. Join it to the "
@@ -286,8 +299,10 @@ class App:
                     self._output_directory_selector()
 
                 else:
-                    self.io.wkdir = Path(self.config_parser.path_to_data).resolve().parent
-                    self.io.res_path = self.io.wkdir / (self.io.wkdir.name + "_res")
+                    self.io.wkdir = Path(
+                        self.config_parser.path_to_data).resolve().parent
+                    self.io.res_path = self.io.wkdir / (
+                                self.io.wkdir.name + "_res")
 
             # Build the form for advanced parameters
             form = st.form("Parameter_form")
@@ -300,7 +315,7 @@ class App:
                         st.write("Parameter Name")
                         for key in self.model.parameters:
                             st.text_input(
-                                label="label", # Unused
+                                label="label",  # Unused
                                 label_visibility="collapsed",
                                 value=key,
                                 key=f"Parameter_name_{key}",
@@ -310,10 +325,11 @@ class App:
                         st.write("Parameter Value")
                         for key, value in self.model.parameters.items():
                             st.text_input(
-                                label="label", # Unused
-                                label_visibility = "collapsed",
+                                label="label",  # Unused
+                                label_visibility="collapsed",
                                 value=value if self.config_parser is None
-                                else self.config_parser.model["parameters_to_estimate"][key],
+                                else self.config_parser.model[
+                                    "parameters_to_estimate"][key],
                                 key=f"Parameter_value_{key}"
                             )
                     with col3:
@@ -323,7 +339,9 @@ class App:
                                 label="label",  # Unused
                                 label_visibility="collapsed",
                                 value=bound[0] if self.config_parser is None
-                                else literal_eval(self.config_parser.model["bounds"][key])[0],
+                                else literal_eval(
+                                    self.config_parser.model["bounds"][key])[
+                                    0],
                                 key=f"Parameter_lower_{key}"
                             )
                     with col4:
@@ -333,7 +351,9 @@ class App:
                                 label="label",  # Unused
                                 label_visibility="collapsed",
                                 value=bound[1] if self.config_parser is None
-                                else literal_eval(self.config_parser.model["bounds"][key])[1],
+                                else literal_eval(
+                                    self.config_parser.model["bounds"][key])[
+                                    1],
                                 key=f"Parameter_upper_{key}"
                             )
 
@@ -345,7 +365,7 @@ class App:
                                 st.write("Parameter Name")
                                 for key in self.model.args[param].keys():
                                     st.text_input(
-                                        label="label", # Unused
+                                        label="label",  # Unused
                                         label_visibility="collapsed",
                                         value=key,
                                         key=f"Fixed_{param}_{key}",
@@ -353,12 +373,14 @@ class App:
                                     )
                             with col2:
                                 st.write("Parameter Value")
-                                for key, value in self.model.args[param].items():
+                                for key, value in self.model.args[
+                                    param].items():
                                     st.text_input(
-                                        label="label", # Unused
+                                        label="label",  # Unused
                                         label_visibility="collapsed",
                                         value=value if self.config_parser is None
-                                        else self.config_parser.model["fixed_parameters"][key],
+                                        else self.config_parser.model[
+                                            "fixed_parameters"][key],
                                         key=f"Fixed_{param}_value_{key}"
                                     )
 
@@ -399,7 +421,8 @@ class App:
 
         # Start with estimable parameters
         # Get order of parameter names to build dict
-        estimable_parameter_name_order = [key for key in self.model.parameters.keys()]
+        estimable_parameter_name_order = [key for key in
+                                          self.model.parameters.keys()]
         for name in estimable_parameter_name_order:
             try:
                 # Get values from widgets
@@ -407,7 +430,8 @@ class App:
                     self.model.parameters[name] = 0
                 else:
                     self.model.parameters[name] = literal_eval(
-                        st.session_state[f"Parameter_value_{name}"].lstrip("0") # Strip leading zeroes to stop eval errors
+                        st.session_state[f"Parameter_value_{name}"].lstrip("0")
+                        # Strip leading zeroes to stop eval errors
                     )
                 # Get bounds
                 if st.session_state[f"Parameter_lower_{name}"] == "0":
@@ -417,7 +441,9 @@ class App:
                     )
                     lower_bound = 0
                 else:
-                    lower_bound = literal_eval(st.session_state[f"Parameter_lower_{name}"].lstrip("0"))
+                    lower_bound = literal_eval(
+                        st.session_state[f"Parameter_lower_{name}"].lstrip(
+                            "0"))
                 if st.session_state[f"Parameter_upper_{name}"] == "0":
                     st.warning(
                         f"WARNING: {name} has an upper bound at 0. Sometimes this might confuse the optimizer. We "
@@ -425,7 +451,9 @@ class App:
                     )
                     upper_bound = 0
                 else:
-                    upper_bound = literal_eval(st.session_state[f"Parameter_upper_{name}"].lstrip("0"))
+                    upper_bound = literal_eval(
+                        st.session_state[f"Parameter_upper_{name}"].lstrip(
+                            "0"))
                 self.model.bounds[name] = (
                     lower_bound,
                     upper_bound
@@ -443,11 +471,13 @@ class App:
             for param in fixed_parameter_classes:
                 for key in self.model.args[param].keys():
                     try:
-                        if st.session_state[f"Fixed_{param}_value_{key}"] == "0":
+                        if st.session_state[
+                            f"Fixed_{param}_value_{key}"] == "0":
                             self.model.args[param][key] = 0
                         else:
                             self.model.args[param][key] = literal_eval(
-                                st.session_state[f"Fixed_{param}_value_{key}"].lstrip("0")
+                                st.session_state[
+                                    f"Fixed_{param}_value_{key}"].lstrip("0")
                             )
                     except ValueError:
                         st.error(
@@ -461,11 +491,12 @@ class App:
         for name in sd_name_order:
             try:
                 if st.session_state[f"Fixed_{name}_sd_value"] == "0":
-                    self.sd[name] = 0 # will raise Value Error as expected
+                    self.sd[name] = 0  # will raise Value Error as expected
                 else:
                     # Get values from widgets
                     self.sd[name] = literal_eval(
-                        st.session_state[f"Fixed_{name}_sd_value"].lstrip("0")  # Strip leading zeroes to stop eval errors
+                        st.session_state[f"Fixed_{name}_sd_value"].lstrip("0")
+                        # Strip leading zeroes to stop eval errors
                     )
             except ValueError:
                 st.error(
@@ -527,7 +558,6 @@ class App:
             if not clicked:
                 if not self.io.res_path.is_dir():
                     self.io.res_path.mkdir()
-
 
 
 if __name__ == "__main__":
