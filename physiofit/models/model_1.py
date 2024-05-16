@@ -14,7 +14,7 @@ class ChildModel(Model):
 
         super().__init__(data)
         self.name = "Steady-state batch model with lag phase and " \
-                          "degradation of metabolites"
+                    "degradation of metabolites"
         self.vini = 1
         self.parameters = None
         self.args = None
@@ -47,7 +47,7 @@ class ChildModel(Model):
 
         self.args = {"Degradation": {
             met: 0 for met in self.metabolites
-            }
+        }
         }
 
     @staticmethod
@@ -59,16 +59,23 @@ class ChildModel(Model):
     ):
         # Get end shape
         simulated_matrix = np.empty_like(data_matrix)
+        # print("simulated_matrix", simulated_matrix)
+        # print("simulated_matrix.shape", simulated_matrix.shape)
 
         # Get initial params
         x_0, mu, t_lag = parameters[:3]
 
         # We get indices in time vector where time < t_lag
         mask = (time_vector < t_lag)
+        # print("mask", mask)
 
         # Get time vector from length of t_lag to end
         time_vector_lag = time_vector[mask]
+        # print("len(time_vector_lag)", len(time_vector_lag))
+        # print("time_vector_lag", time_vector_lag)
         time_vector_growth = time_vector[np.logical_not(mask)]
+        # print("len(time_vector_growth)", len(time_vector_growth))
+        # print("time_vector_growth", time_vector_growth)
         time_vector_diff = time_vector_growth - t_lag
 
         # optimize some calculations
@@ -86,13 +93,14 @@ class ChildModel(Model):
 
         # Get extra arguments
         arg_values = [value for value in args["Degradation"].values()]
-        
+
         for i in range(1, len(parameters) // 2):
             q, m_0 = parameters[i * 2 + 1:i * 2 + 3]
             k = arg_values[i - 1]
             m_t_lag = m_0 * np.exp(-k * time_vector_lag)
             mult_by_time = q * (x_0 / (mu + k)) * (exp_mu_t_lag - np.exp(
-                        -k * time_vector_diff)) + m_0 * np.exp(-k * time_vector_growth)
+                -k * time_vector_diff)) + m_0 * np.exp(-k *
+                                                       time_vector_growth)
             simulated_matrix[:, i] = np.concatenate((m_t_lag, mult_by_time))
 
         return simulated_matrix
