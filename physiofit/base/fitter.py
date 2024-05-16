@@ -76,7 +76,7 @@ class PhysioFitter:
         self.mc = mc
         self.iterations = iterations
         self.sd = sd
-        self.debug_mode = debug_mode
+        self.debug_mode = logging.DEBUG if debug_mode else logging.INFO
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
 
         self.simulated_matrix = None
@@ -88,6 +88,8 @@ class PhysioFitter:
         self.matrices_ci = None
         self.opt_conf_ints = None
         self.khi2_res = None
+
+        logger.setLevel(self.debug_mode)
 
     def verify_attrs(self):
         """Check that attributes are valid"""
@@ -288,7 +290,9 @@ class PhysioFitter:
                                   )
         self.large_matrix = self.model.simulate(
             parameters=self.optimize_results.x,
-            data_matrix=np.ones(shape=(100, self.experimental_matrix.shape[1])),
+            data_matrix=np.ones(shape=(len(self.large_time_vector),
+                                       self.experimental_matrix.shape[
+                1])),
             time_vector=self.large_time_vector,
             args=self.model.args
         )
