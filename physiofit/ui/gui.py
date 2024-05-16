@@ -38,7 +38,8 @@ class App:
         st.set_page_config(page_title=f"PhysioFit (v{physiofit.__version__})")
         st.title(f"Welcome to PhysioFit (v{physiofit.__version__})")
         st.write(
-            "Documentation available at [https://physiofit.readthedocs.io](https://physiofit.readthedocs.io).")
+            "Documentation available at [https://physiofit.readthedocs.io]("
+            "https://physiofit.readthedocs.io).")
         self.update_info = st.empty()
         self.check_uptodate()
         self.select_menu = st.selectbox(
@@ -98,7 +99,8 @@ class App:
                     self.config_parser.path_to_data)
             except Exception:
                 st.error(
-                    "An error has occurred when reading the yaml configuration file.")
+                    "An error has occurred when reading the yaml "
+                    "configuration file.")
                 raise
         elif file_extension in ["tsv", "txt"]:
             try:
@@ -132,8 +134,9 @@ class App:
             self.io.get_models()
         except Exception:
             st.error(
-                f"An error has occurred when listing models from the models folder: "
-                f"\n{Path(__file__).parent / 'models'}. Please correct the model or submit an issue at "
+                f"An error has occurred when listing models from the models "
+                f"folder: \n{Path(__file__).parent / 'models'}. Please correct"
+                f" the model or submit an issue at "
                 f"github.com/MetaSys-LISBP/PhysioFit/issues")
             raise
 
@@ -143,6 +146,12 @@ class App:
         )
 
         if submitted:
+            handler = logging.FileHandler(self.io.res_path / "log.txt")
+            handler.setFormatter('%(asctime)s - %(levelname)s - %(message)s')
+            handler.setLevel(logging.INFO)
+            if self.debug_mode:
+                handler.setLevel(logging.DEBUG)
+            logger.addHandler(handler)
             try:
                 self._get_data_from_session_state()
             except Exception:
@@ -250,7 +259,7 @@ class App:
             index=idx
         )
 
-        #if model_name == "Dynamic system (only substrates)":
+        # if model_name == "Dynamic system (only substrates)":
         #    st.error("Not yet implemented...")
         if model_name:
             # Initialize selected model
@@ -260,7 +269,8 @@ class App:
                 self.silent_sim()
             except Exception as e:
                 st.error(
-                    f"The following error occurred with the selected model: {e}")
+                    f"The following error occurred with the selected model: "
+                    f"{e}")
                 raise
             else:
                 st.success("Model successfully initialized")
@@ -287,7 +297,9 @@ class App:
                 )
                 if self.iterations < 0:
                     st.error(
-                        "ERROR: Number of Monte-Carlo iterations must be a positive integer")
+                        "ERROR: Number of Monte-Carlo iterations must be a "
+                        "positive integer"
+                    )
                 self.debug_mode = st.checkbox(
                     "Verbose logs",
                     help="Useful in case of trouble. Join it to the "
@@ -302,7 +314,7 @@ class App:
                     self.io.wkdir = Path(
                         self.config_parser.path_to_data).resolve().parent
                     self.io.res_path = self.io.wkdir / (
-                                self.io.wkdir.name + "_res")
+                            self.io.wkdir.name + "_res")
 
             # Build the form for advanced parameters
             form = st.form("Parameter_form")
@@ -374,13 +386,13 @@ class App:
                             with col2:
                                 st.write("Parameter Value")
                                 for key, value in self.model.args[
-                                    param].items():
+                                        param].items():
                                     st.text_input(
                                         label="label",  # Unused
                                         label_visibility="collapsed",
-                                        value=value if self.config_parser is None
-                                        else self.config_parser.model[
-                                            "args"][key],
+                                        value=value if self.config_parser is
+                                                       None else
+                                        self.config_parser.model["args"][key],
                                         key=f"Fixed_{param}_value_{key}"
                                     )
 
@@ -436,8 +448,10 @@ class App:
                 # Get bounds
                 if st.session_state[f"Parameter_lower_{name}"] == "0":
                     st.warning(
-                        f"WARNING: {name} has a lower bound at 0. Sometimes this might confuse the optimizer. We "
-                        f"strongly recommend to set the lower bound at a non-zero value, 1e-6 for example."
+                        f"WARNING: {name} has a lower bound at 0. Sometimes "
+                        f"this might confuse the optimizer. We strongly "
+                        f"recommend to set the lower bound at a non-zero "
+                        f"value, 1e-6 for example."
                     )
                     lower_bound = 0
                 else:
@@ -446,8 +460,10 @@ class App:
                             "0"))
                 if st.session_state[f"Parameter_upper_{name}"] == "0":
                     st.warning(
-                        f"WARNING: {name} has an upper bound at 0. Sometimes this might confuse the optimizer. We "
-                        f"strongly recommend to set the lower bound at a non-zero value, 1e-6 for example."
+                        f"WARNING: {name} has an upper bound at 0. Sometimes "
+                        f"this might confuse the optimizer. We strongly "
+                        f"recommend to set the lower bound at a non-zero "
+                        f"value, 1e-6 for example."
                     )
                     upper_bound = 0
                 else:
@@ -460,8 +476,9 @@ class App:
                 )
             except ValueError:
                 st.error(
-                    f"ERROR: An error occurred while parsing the input for {name}. Please check that only numbers "
-                    f"have been entered."
+                    f"ERROR: An error occurred while parsing the input for"
+                    f" {name}. Please check that only numbers have been "
+                    f"entered."
                 )
                 raise
 
@@ -472,7 +489,7 @@ class App:
                 for key in self.model.args[param].keys():
                     try:
                         if st.session_state[
-                            f"Fixed_{param}_value_{key}"] == "0":
+                                f"Fixed_{param}_value_{key}"] == "0":
                             self.model.args[param][key] = 0
                         else:
                             self.model.args[param][key] = literal_eval(
@@ -481,8 +498,10 @@ class App:
                             )
                     except ValueError:
                         st.error(
-                            f"ERROR: An error occurred when parsing the input in the fixed parameter class {param} for "
-                            f"{key}. Please check that only numbers have been entered."
+                            f"ERROR: An error occurred when parsing the input "
+                            f"in the fixed parameter class {param} for {key}. "
+                            f"Please check that only numbers have been "
+                            f"entered."
                         )
                         raise
 
@@ -500,8 +519,9 @@ class App:
                     )
             except ValueError:
                 st.error(
-                    f"ERROR: An error occurred when parsing the input for {name} (SDs). Please check that only numbers "
-                    f"have been entered and that value is superior to 0."
+                    f"ERROR: An error occurred when parsing the input for "
+                    f"{name} (SDs). Please check that only numbers have been "
+                    f"entered and that value is superior to 0."
                 )
                 raise
 

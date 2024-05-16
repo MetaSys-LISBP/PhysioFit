@@ -299,9 +299,6 @@ class IoHandler:
 
         fitter.initialize_sd_matrix()
         fitter.verify_attrs()
-        logger.debug(
-            f"Fitter attribute dictionary:\n{fitter.__dict__}"
-        )
 
         return fitter
 
@@ -393,10 +390,6 @@ class IoHandler:
         else:
             flux_path = fr"{export_path}\flux_results.tsv"
             stat_path = fr"{export_path}\stat_results.tsv"
-
-        logger.debug(
-            f"Parameter Stats:\n{fitter.parameter_stats}"
-        )
 
         # Get optimization results as dataframe
         opt_data = DataFrame.from_dict(fitter.parameter_stats,

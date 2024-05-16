@@ -5,11 +5,13 @@ PhysioFit software main module
 import logging
 
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 from scipy.optimize import minimize, differential_evolution
 from scipy.stats import chi2
 
 from physiofit.models.base_model import Model
+
 # import physiofit # To get debug logs from the module
 
 logger = logging.getLogger(f"physiofit.{__name__}")
@@ -63,12 +65,12 @@ class PhysioFitter:
 
     def __init__(
             self,
-            data,
-            model,
-            mc=True,
-            iterations=100,
+            data: pd.DataFrame,
+            model: Model,
+            mc: bool = True,
+            iterations: int = 100,
             sd=None,
-            debug_mode=False
+            debug_mode: bool = False
     ):
 
         self.data = data
@@ -79,9 +81,12 @@ class PhysioFitter:
         self.debug_mode = logging.DEBUG if debug_mode else logging.INFO
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
 
-        self.simulated_matrix = None
-        self.simulated_data = None
-        self.optimize_results = None
+        self.simulated_matrix: np.ndarray | None = None
+        self.simulated_data: pd.DataFrame | None = None
+        self.large_matrix: np.ndarray | None = None
+        self.large_simulated_data: pd.DataFrame | None = None
+        self.large_time_vector: np.ndarray | None = None
+        self.optimize_results: np.ndarray | None = None
         self.simulate = None
         self.parameter_stats = None
         self.opt_params_sds = None
@@ -176,8 +181,8 @@ class PhysioFitter:
         if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd,
                                                                   list):
             raise TypeError(
-                f"Cannot coerce SD to array. Please check that a list or array "
-                f"is given as input.\nCurrent input: \n{self.sd}"
+                f"Cannot coerce SD to array. Please check that a list or array"
+                f" is given as input.\nCurrent input: \n{self.sd}"
             )
         else:
             self.sd = np.array(self.sd)
@@ -208,7 +213,6 @@ class PhysioFitter:
             else:
                 logger.debug(f"sd matrix: {self.sd}\n")
                 return
-        logger.info(f"sd Matrix:\n{self.sd}\n")
 
     def _build_sd_matrix(self):
         """
@@ -284,19 +288,19 @@ class PhysioFitter:
             time_vector=self.model.time_vector,
             args=self.model.args
         )
-        self.large_time_vector = np.arange(start=0, stop=max(
-            self.model.time_vector),
-                                  step=(max(self.model.time_vector) / 100)
-                                  )
+        self.large_time_vector = np.arange(
+            start=0,
+            stop=max(self.model.time_vector),
+            step=(max(self.model.time_vector) / 100)
+        )
         self.large_matrix = self.model.simulate(
             parameters=self.optimize_results.x,
-            data_matrix=np.ones(shape=(len(self.large_time_vector),
-                                       self.experimental_matrix.shape[
-                1])),
+            data_matrix=np.ones(
+                shape=(len(self.large_time_vector),
+                       self.experimental_matrix.shape[1])),
             time_vector=self.large_time_vector,
             args=self.model.args
         )
-        logger.debug(f"simulated_matrix:\n{self.simulated_matrix}")
         nan_sim_mat = np.copy(self.simulated_matrix)
         nan_sim_mat[np.isnan(self.experimental_matrix)] = np.nan
         self.simulated_data = DataFrame(
@@ -310,7 +314,8 @@ class PhysioFitter:
             columns=self.model.name_vector
         )
         self.simulated_data.index.name = "Time"
-        logger.info(f"Final Simulated Data: \n{self.simulated_data}\n")
+        logger.info(f"Simulated data: \n{self.simulated_data}\n")
+        logger.debug(f"Large simulated data: \n{self.large_simulated_data}\n")
 
     @staticmethod
     def _calculate_cost(
@@ -405,10 +410,10 @@ class PhysioFitter:
 
         for i in range(self.iterations):
             new_matrix = self._apply_noise()
-            logger.debug(f"Iteration {i + 1}:\n")
-            logger.debug(f"New matrix:\n{new_matrix}\n")
-            logger.debug(f"Sd matrix:\n{self.sd}\n")
-            logger.debug(f"time vector:\n{self.model.time_vector}\n")
+            # logger.debug(f"Iteration {i + 1}:\n")
+            # logger.debug(f"New matrix:\n{new_matrix}\n")
+            # logger.debug(f"Sd matrix:\n{self.sd}\n")
+            # logger.debug(f"time vector:\n{self.model.time_vector}\n")
             # We optimise the parameters using the noisy matrix as input
             opt_res = PhysioFitter._run_optimization(
                 opt_res.x,
@@ -446,16 +451,9 @@ class PhysioFitter:
         for key, value in self.parameter_stats.items():
             logger.info(f"{key}: {value}")
 
-        # Apply nan mask to be coherent with the experimental matrix
-        nan_lower_ci = np.copy(self.matrices_ci['lower_ci'])
-        nan_higher_ci = np.copy(self.matrices_ci['higher_ci'])
-
-        logger.debug(
-            f"Simulated matrix lower confidence interval:\n{nan_lower_ci}\n"
-        )
-        logger.debug(
-            f"Simulated matrix higher confidence interval:\n{nan_higher_ci}\n"
-        )
+        # # Apply nan mask to be coherent with the experimental matrix
+        # nan_lower_ci = np.copy(self.matrices_ci['lower_ci'])
+        # nan_higher_ci = np.copy(self.matrices_ci['higher_ci'])
         return
 
     def _compute_parameter_stats(self, opt_params_list):
@@ -488,7 +486,15 @@ class PhysioFitter:
         # self.parameter_stats_df = DataFrame()
 
     def khi2_test(self):
+        """
+        This method performs a chi-squared test to evaluate the goodness of
+        fit of the model. It calculates the chi-squared statistic and the
+        p-value and logs the results.
 
+        The chi-squared test is a statistical hypothesis test that is valid to
+        perform when the test statistic is chi-squared distributed under the
+        null hypothesis.
+        """
         number_measurements = np.count_nonzero(
             ~np.isnan(self.experimental_matrix)
         )
