@@ -29,7 +29,7 @@ class ChildModel(Model):
         self.bounds = Bounds(
             X_0=(1e-3, 10),
             growth_rate=(1e-3, 3),
-            t_lag=(0, 0.5 * self.time_vector.max())
+            t_lag=(1e-6, 0.5 * self.time_vector.max())
         )
         for metabolite in self.metabolites:
             self.parameters.update(
@@ -45,7 +45,7 @@ class ChildModel(Model):
                 }
             )
 
-        self.args = {"Degradation": {
+        self.args = {"Degradation constants": {
             met: 0 for met in self.metabolites
         }
         }
@@ -92,7 +92,8 @@ class ChildModel(Model):
         simulated_matrix[:, 0] = np.concatenate((x_t_lag, mult_by_time))
 
         # Get extra arguments
-        arg_values = [value for value in args["Degradation"].values()]
+        arg_values = [value for value in args[("Degradation "
+                                               "constants")].values()]
 
         for i in range(1, len(parameters) // 2):
             q, m_0 = parameters[i * 2 + 1:i * 2 + 3]

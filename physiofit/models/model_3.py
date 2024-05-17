@@ -25,7 +25,7 @@ class ChildModel(Model):
             "X_0": self.vini,
             "growth_rate": self.vini
         }
-        self.args = {"Degradation": {
+        self.args = {"Degradation constant": {
             met: 0 for met in self.metabolites
             }
         }
@@ -46,7 +46,7 @@ class ChildModel(Model):
                     f"{metabolite}_M0": (1e-6, 50)
                 }
             )
-            self.args = {"Degradation": {
+            self.args = {"Degradation constants": {
                 met: 0 for met in self.metabolites
             }
             }
@@ -68,7 +68,8 @@ class ChildModel(Model):
         # Get X_0 values
         exp_mu_t = np.exp(mu * time_vector)
         simulated_matrix[:, 0] = x_0 * exp_mu_t
-        fixed_params = [value for value in args["Degradation"].values()]
+        fixed_params = [value for value in args[("Degradation "
+                                                 "constants")].values()]
 
         for i in range(1, int(len(parameters) / 2)):
             q = parameters[i * 2]
