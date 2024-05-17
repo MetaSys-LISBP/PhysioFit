@@ -641,6 +641,15 @@ class ConfigParser:
             "sd": self.sds
         }
 
+    def check_data_path(self):
+        """
+        Check if the data path is valid
+        :return: True if the path is valid, False otherwise, None if no path
+        """
+        if self.path_to_data:
+            return Path(self.path_to_data).is_file()
+        return None
+
     def update_model(self, model):
 
         if self.model["parameters_to_estimate"] is not None:
