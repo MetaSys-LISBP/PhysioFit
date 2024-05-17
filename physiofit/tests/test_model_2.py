@@ -5,10 +5,8 @@ import pandas as pd
 import pytest
 
 import physiofit
-from physiofit.base.io import IoHandler
 
-logger = logging.getLogger(f"physiofit.{__name__}")
-logger.setLevel(logging.CRITICAL)
+logging.getLogger("physiofit").setLevel(logging.ERROR)
 
 
 @pytest.fixture
@@ -82,7 +80,7 @@ def test_model_2_estimation(
         model_2_data: pd.DataFrame,
         sds: physiofit.models.base_model.StandardDevs
 ):
-    io = IoHandler()
+    io = physiofit.base.io.IoHandler()
     model = io.select_model(
         name="Steady-state batch model with lag phase",
         data=model_2_data
@@ -108,7 +106,7 @@ def test_model_2_simulation(
         parameters,
         model_2_data
 ):
-    io = IoHandler()
+    io = physiofit.base.io.IoHandler()
     model = io.select_model(
         name="Steady-state batch model with lag phase",
         data=placeholder_data

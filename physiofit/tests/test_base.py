@@ -1,11 +1,14 @@
 """
 Test the creation and use of the PhysioFitter
 """
+import logging
+
 import numpy as np
 import pandas as pd
 import pytest
 import physiofit
 
+logging.getLogger("physiofit").setLevel(logging.ERROR)
 
 def test_physiofitter(base_test_data):
     """
@@ -21,7 +24,7 @@ def test_physiofitter(base_test_data):
         model.data,
         model=model,
         sd=0.2,
-        debug_mode=True
+        debug_mode=False
     )
     assert isinstance(fitter, physiofit.base.fitter.PhysioFitter)
 
@@ -65,7 +68,7 @@ def test_optimization_process(base_test_data):
         model.data,
         model=model,
         sd=0.2,
-        debug_mode=True
+        debug_mode=False
     )
     fitter.optimize()
     assert isinstance(fitter.simulated_data, pd.DataFrame)
@@ -81,7 +84,7 @@ def test_monte_carlo(base_test_data):
         model.data,
         model=model,
         sd=0.2,
-        debug_mode=True
+        debug_mode=False
     )
     fitter.optimize()
     fitter.monte_carlo_analysis()
@@ -102,12 +105,14 @@ def test_that_simulated_and_experimental_matrices_are_close(base_test_data):
         model.data,
         model=model,
         sd=0.2,
-        debug_mode=True
+        debug_mode=False
     )
     fitter.optimize()
+    print(base_test_data)
+    print(fitter.simulated_data)
     assert np.allclose(
         a=fitter.experimental_matrix,
-        b=fitter.simulated_data,
-        rtol=1,
+        b=fitter.simulated_matrix,
+        rtol=1e-3,
         equal_nan=True
     )

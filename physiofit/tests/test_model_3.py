@@ -5,10 +5,8 @@ import pandas as pd
 import pytest
 
 import physiofit
-from physiofit.base.io import IoHandler
 
-logger = logging.getLogger(f"physiofit.{__name__}")
-logger.setLevel(logging.CRITICAL)
+logging.getLogger("physiofit").setLevel(logging.ERROR)
 
 @pytest.fixture
 def model_3_data():
@@ -88,7 +86,7 @@ def test_model_3_estimation(
         model_3_data: pd.DataFrame,
         sds: physiofit.models.base_model.StandardDevs
 ):
-    io = IoHandler()
+    io = physiofit.base.io.IoHandler()
     model = io.select_model(
         name="Steady-state batch model with degradation of metabolites",
         data=model_3_data
@@ -114,7 +112,7 @@ def test_model_3_simulation(
         parameters,
         model_3_data
 ):
-    io = IoHandler()
+    io = physiofit.base.io.IoHandler()
     model = io.select_model(
         name="Steady-state batch model with degradation of metabolites",
         data=placeholder_data

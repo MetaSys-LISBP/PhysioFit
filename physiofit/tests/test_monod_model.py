@@ -1,13 +1,16 @@
 """
 This module contains tests for the models module.
 """
+import logging
+
 import numpy as np
 import pandas as pd
 import pytest
 from numpy import array
 
-from physiofit.base.io import IoHandler
+import physiofit
 
+logging.getLogger("physiofit").setLevel(logging.ERROR)
 
 @pytest.fixture
 def pyfoomb_simulated_data():
@@ -249,7 +252,7 @@ def test_monod_model(monod_model_sds, pyfoomb_simulated_data):
     as input.
     """
 
-    io = IoHandler()
+    io = physiofit.base.io.IoHandler()
     model = io.select_model(
         "Dynamic Monod model (1 substrate, 1 product)",
         pyfoomb_simulated_data
@@ -279,7 +282,7 @@ def test_monod_model(monod_model_sds, pyfoomb_simulated_data):
 
 def test_physiofit_simulations(parameters, placeholder_data,
                                pyfoomb_simulated_data):
-    io = IoHandler()
+    io = physiofit.base.io.IoHandler()
     model = io.select_model("Dynamic Monod model (1 substrate, 1 product)",
                             placeholder_data)
     model.get_params()

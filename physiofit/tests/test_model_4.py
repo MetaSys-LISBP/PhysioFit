@@ -5,17 +5,12 @@ import pandas as pd
 import pytest
 
 import physiofit
-from physiofit.base.io import IoHandler
 
-logger = logging.getLogger(f"physiofit.{__name__}")
-logger.setLevel(logging.CRITICAL)
+logging.getLogger("physiofit").setLevel(logging.ERROR)
 
 
 @pytest.fixture
-def model_2_data():
-    """ Test data to use in tests for the model_1: Steady-state batch model
-    with lag phase and degradation of metabolites. Data is simulated using
-    synthetic parameters"""
+def model_4_data():
 
     return pd.DataFrame(
         {'time': {0: 0.0, 1: 0.2, 2: 0.4, 3: 0.6000000000000001, 4: 0.8,
@@ -54,7 +49,8 @@ def model_2_data():
                      21: 14.442161824151462, 22: 13.443114307230086,
                      23: 12.270721185485478, 24: 10.894905112042153,
                      25: 9.280369993371155, 26: 7.385695480012673,
-                     27: 5.16227434159538, 28: 2.5530654648697, 29: 0.0},
+                     27: 5.16227434159538, 28: 2.5530654648697,
+                     29: -0.5088695166562189},
          'Acetate': {0: 0.01, 1: 0.02301331532438577, 2: 0.03828458232519679,
                      3: 0.05620558016446701, 4: 0.07723606594787137,
                      5: 0.10191556963693509, 6: 0.13087723550673386,
@@ -92,7 +88,7 @@ def test_model_4_estimation(
         model_4_data: pd.DataFrame,
         sds: physiofit.models.base_model.StandardDevs
 ):
-    io = IoHandler()
+    io = physiofit.base.io.IoHandler()
     model = io.select_model(
         name="Steady-state batch model",
         data=model_4_data
@@ -118,7 +114,7 @@ def test_model_4_simulation(
         parameters,
         model_4_data
 ):
-    io = IoHandler()
+    io = physiofit.base.io.IoHandler()
     model = io.select_model(
         name="Steady-state batch model",
         data=placeholder_data
