@@ -92,7 +92,9 @@ def test_model_3_estimation(
         data=model_3_data
     )
     model.get_params()
-    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamine": 1}}
+    model.args = {"Degradation constants":
+        {"Glucose": 0, "Acetate": 0, "Glutamine":1}
+                  }
     fitter = io.initialize_fitter(
         data=model.data,
         model=model,
@@ -118,10 +120,28 @@ def test_model_3_simulation(
         data=placeholder_data
     )
     model.get_params()
-    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamine": 1}}
+    model.parameters.update(parameters)
+    model.args = {"Degradation constants":
+                      {"Glucose": 0, "Acetate": 0, "Glutamine": 1}
+                  }
     sim_data = model.simulate(
         list(model.parameters.values()),
         model.data.drop("time", axis=1),
         model.time_vector,
         model.args
+    )
+    df = pd.DataFrame(
+        data=sim_data,
+        index=model.time_vector,
+        columns=model.name_vector
+    )
+    df.index.name = "time"
+
+    print(df.reset_index())
+    print(model_3_data)
+
+    pd.testing.assert_frame_equal(
+        df.reset_index(),
+        model_3_data,
+        atol=1e-6
     )

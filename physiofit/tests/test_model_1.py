@@ -92,7 +92,9 @@ def test_model_1_estimation(
         data=model_1_data
     )
     model.get_params()
-    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamate": 1}}
+    model.args = {"Degradation constants":
+                      {"Glucose": 0, "Acetate": 0, "Glutamine": 1}
+                  }
     fitter = io.initialize_fitter(
         data=model.data,
         model=model,
@@ -121,7 +123,9 @@ def test_model_1_simulation(
     )
     model.get_params()
     model.parameters.update(parameters)
-    model.args = {"Degradation": {"Glucose": 0, "Acetate": 0, "Glutamate": 1}}
+    model.args = {"Degradation constants":
+                      {"Glucose": 0, "Acetate": 0, "Glutamine": 1}
+                  }
     sim_data = model.simulate(
         list(model.parameters.values()),
         model.data.drop("time", axis=1),
