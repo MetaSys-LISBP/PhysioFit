@@ -8,12 +8,12 @@ import logging
 import pandas as pd
 import streamlit as st
 
+logger = logging.getLogger("physiofit")
+logger.setLevel(logging.DEBUG)
+
 import physiofit
 from physiofit.base.io import IoHandler, ConfigParser
 from physiofit.models.base_model import StandardDevs
-
-logger = logging.getLogger(f"physiofit.{__name__}")
-
 
 class App:
     """
@@ -146,12 +146,18 @@ class App:
         )
 
         if submitted:
-            handler = logging.FileHandler(self.io.res_path / "log.txt")
-            handler.setFormatter('%(asctime)s - %(levelname)s - %(message)s')
+            handler = logging.FileHandler(self.io.res_path / "log.txt", "w")
+            stream = logging.StreamHandler()
             handler.setLevel(logging.INFO)
+            stream.setLevel(logging.INFO)
             if self.debug_mode:
                 handler.setLevel(logging.DEBUG)
+                stream.setLevel(logging.DEBUG)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %('
+                                           'levelname)s - %(message)s')
+            handler.setFormatter(formatter)
             logger.addHandler(handler)
+            logger.addHandler(stream)
             try:
                 self._get_data_from_session_state()
             except Exception:
@@ -172,6 +178,7 @@ class App:
             experiments = list(self.io.data["experiments"].unique())
             self.io.multiple_experiments = []
             for experiment in experiments:
+                logger.info(f"Running optimization for {experiment}")
                 with st.spinner(f"Running optimization for {experiment}"):
                     # final_table_dict = {}
                     self.model.data = full_dataframe[
@@ -184,6 +191,9 @@ class App:
                     # Initialize the fitter object
                     self.io.names = self.io.data.columns[1:].to_list()
                     kwargs = self._build_fitter_kwargs()
+                    logger.info("Run options for the fitter:")
+                    for key, value in kwargs.items():
+                        logger.info(f"{key} : {value}")
                     fitter = self.io.initialize_fitter(
                         self.model.data,
                         model=kwargs["model"],
@@ -206,6 +216,7 @@ class App:
                         fitter.model.parameters.keys()
                     ]
                     st.write(df)
+                    logger.info(f"Results for {experiment}: \n{df}")
                     self.io.multiple_experiments.append(df)
 
                     # Export results
@@ -220,6 +231,7 @@ class App:
                     self.io.figures = []
                     self.config_parser.export_config(self.io.res_path)
             self.io.data = full_dataframe
+            logger.info(f"Resulting dataframe: \n{full_dataframe}")
             self.io.res_path = results_path
             self.io.output_recap(results_path)
 

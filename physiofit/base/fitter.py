@@ -159,7 +159,6 @@ class PhysioFitter:
 
         # This function can be optimized, if the input is a matrix we should
         # detect it directly
-        logger.info("Initializing sd matrix...\n")
 
         # If sd is None, we generate the default matrix
         if self.sd is None or self.sd == {}:
@@ -200,9 +199,6 @@ class PhysioFitter:
             # If the array is not the right shape, we assume it is a vector
             # that needs to be tiled into a matrix
 
-            logger.debug(f"SD matrix: {self.sd}\n")
-            logger.debug(f"Type of SD matrix: {type(self.sd)}")
-
             if self.sd.shape != self.experimental_matrix.shape:
                 try:
                     self._build_sd_matrix()
@@ -210,9 +206,7 @@ class PhysioFitter:
                     raise
                 except RuntimeError:
                     raise
-            else:
-                logger.debug(f"sd matrix: {self.sd}\n")
-                return
+
 
     def _build_sd_matrix(self):
         """
@@ -274,14 +268,15 @@ class PhysioFitter:
             bounds=bounds,
             method="differential_evolution"
         )
+        logger.info(f"SD matrix: {self.sd}")
         self.parameter_stats = {
             "optimal": self.optimize_results.x
         }
-        logger.info(f"Optimization results: \n{self.optimize_results}\n")
+        logger.info(f"Optimization results: {self.optimize_results}")
         for i, param in zip(
                 self.model.parameters, self.optimize_results.x
         ):
-            logger.info(f"\n{i} = {param}\n")
+            logger.info(f"{i} = {param}")
         self.simulated_matrix = self.model.simulate(
             parameters=self.optimize_results.x,
             data_matrix=self.experimental_matrix,
