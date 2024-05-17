@@ -8,12 +8,13 @@ import logging
 import pandas as pd
 import streamlit as st
 
-logger = logging.getLogger("physiofit")
-logger.setLevel(logging.DEBUG)
-
 import physiofit
 from physiofit.base.io import IoHandler, ConfigParser
 from physiofit.models.base_model import StandardDevs
+
+logger = logging.getLogger("physiofit")
+logger.setLevel(logging.DEBUG)
+
 
 class App:
     """
@@ -94,6 +95,11 @@ class App:
             try:
                 # Get parameters from yaml file
                 self.config_parser = self.io.read_yaml(self.data_file)
+                # Check if the data path exists, if not open up prompt to
+                # select file
+                # if not self.config_parser.check_data_path():
+                #     self._output_directory_selector()
+                # else:
                 # Load data into io_handler
                 self.io.data = self.io.read_data(
                     self.config_parser.path_to_data)
@@ -154,7 +160,7 @@ class App:
                 handler.setLevel(logging.DEBUG)
                 stream.setLevel(logging.DEBUG)
             formatter = logging.Formatter('%(asctime)s - %(name)s - %('
-                                           'levelname)s - %(message)s')
+                                          'levelname)s - %(message)s')
             handler.setFormatter(formatter)
             logger.addHandler(handler)
             logger.addHandler(stream)
@@ -398,7 +404,7 @@ class App:
                             with col2:
                                 st.write("Parameter Value")
                                 for key, value in self.model.args[
-                                        param].items():
+                                    param].items():
                                     st.text_input(
                                         label="label",  # Unused
                                         label_visibility="collapsed",
@@ -501,7 +507,7 @@ class App:
                 for key in self.model.args[param].keys():
                     try:
                         if st.session_state[
-                                f"Fixed_{param}_value_{key}"] == "0":
+                            f"Fixed_{param}_value_{key}"] == "0":
                             self.model.args[param][key] = 0
                         else:
                             self.model.args[param][key] = literal_eval(
@@ -550,18 +556,18 @@ class App:
 
     def _output_directory_selector(self):
 
-        # Set up tkinter for directory chooser
-        root = tk.Tk()
-        root.withdraw()
-
-        # Make folder picker dialog appear on top of other windows
-        root.wm_attributes('-topmost', 1)
-
         # Initialize folder picker button and add logic
         clicked = st.button(
             "Select output data directory", key="clicker"
         )
         if clicked:
+
+            # Set up tkinter for directory chooser
+            root = tk.Tk()
+            root.withdraw()
+
+            # Make folder picker dialog appear on top of other windows
+            root.wm_attributes('-topmost', 1)
 
             # Initialize home path from directory selector and add
             # to session state
