@@ -21,6 +21,7 @@ def get_last_version():
     except Exception:
         pass
 
+
 def main():
     """The main routine"""
 
@@ -32,6 +33,7 @@ def main():
         path_to_app = Path(physiofit.__file__).parent
         path_to_app = path_to_app / "ui/gui.py"
         run(["streamlit", "run", str(path_to_app)])
+
 
 if __name__ == "__main__":
     sys.exit(main())
