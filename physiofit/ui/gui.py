@@ -168,8 +168,8 @@ class App:
                 self.io.get_models()
             except Exception:
                 st.error(
-                    f"An error has occurred when listing models from the models "
-                    f"folder: \n{Path(__file__).parent / 'models'}. "
+                    f"An error has occurred when listing models from the "
+                    f"models folder: \n{Path(__file__).parent / 'models'}. "
                     f"Please correct the model or submit an issue at "
                     f"github.com/MetaSys-LISBP/PhysioFit/issues")
                 raise
@@ -448,12 +448,12 @@ class App:
                             with col2:
                                 st.write("Parameter Value")
                                 for key, value in self.model.args[
-                                    param].items():
+                                        param].items():
                                     st.text_input(
                                         label="label",  # Unused
                                         label_visibility="collapsed",
                                         value=value if self.config_parser is
-                                                       None else
+                                        None else
                                         self.config_parser.model["args"][key],
                                         key=f"Fixed_{param}_value_{key}"
                                     )
@@ -551,7 +551,7 @@ class App:
                 for key in self.model.args[param].keys():
                     try:
                         if st.session_state[
-                            f"Fixed_{param}_value_{key}"] == "0":
+                                f"Fixed_{param}_value_{key}"] == "0":
                             self.model.args[param][key] = 0
                         else:
                             self.model.args[param][key] = literal_eval(
