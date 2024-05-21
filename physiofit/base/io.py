@@ -648,7 +648,8 @@ class ConfigParser:
         """
         if self.path_to_data:
             return Path(self.path_to_data).is_file()
-        return None
+        else:
+            return False
 
     def update_model(self, model):
 
