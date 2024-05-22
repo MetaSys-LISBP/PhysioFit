@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "physiofit"
-version = "3.3.7"
+version = "3.4.0"
 description = "Calculate extracellular fluxes from metabolite concentrations and biomass data"
 authors = ["llegregam <legregam@insa-toulouse.fr>"]
 license = "GNU General Public License (GPL)"
