@@ -264,6 +264,7 @@ class App:
             logger.info(f"Resulting dataframe: \n{full_dataframe}")
             self.io.res_path = results_path
             self.io.output_recap(results_path)
+            logger.shutdown()
 
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
