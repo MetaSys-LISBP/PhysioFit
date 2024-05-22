@@ -89,7 +89,8 @@ class App:
             )
         ))
 
-    def clear_input_from_session_state(self):
+    @staticmethod
+    def clear_input_from_session_state():
 
         if hasattr(st.session_state, "config_parser_data_path"):
             del st.session_state["config_parser_data_path"]
@@ -103,14 +104,12 @@ class App:
         # Check file extension and initialize defaults
         file_extension = self.data_file.name.split(".")[1]
         if file_extension in ["yaml", "yml"]:
-            #. We store the path in session state to
+            # We store the path in session state to
             # avoid multiple prompts.
             try:
                 # For yaml files, we need to read the configuration file
                 # before loading the data.
                 self.config_parser = self.io.read_yaml(self.data_file)
-
-
                 # Check if the data path exists, if not open up prompt to
                 # select file
                 if not self.config_parser.check_data_path():
@@ -132,7 +131,6 @@ class App:
                 self.io.data = self.io.read_data(
                     str(self.config_parser.path_to_data)
                 )
-                # input_loaded = True
             except Exception:
                 st.error(
                     "An error has occurred when reading the yaml "
@@ -159,11 +157,8 @@ class App:
                 f"files or json for configuration files. Detected file: "
                 f"{self.data_file.name}")
 
-        # if input_loaded:
         # Reset config_parser path to data if it exists to handle new
         # data file paths
-        # if hasattr(st.session_state, "config_parser_data_path"):
-        #     del st.session_state["config_parser_data_path"]
         if "experiments" not in self.io.data.columns:
             raise ValueError(
                 "'experiments' column missing from dataset"
@@ -187,19 +182,7 @@ class App:
         submitted = self._initialize_opt_menu_widgets()
 
         if submitted:
-            handler = logging.FileHandler(self.io.res_path / "log.txt",
-                                          "w")
-            stream = logging.StreamHandler()
-            handler.setLevel(logging.INFO)
-            stream.setLevel(logging.INFO)
-            if self.debug_mode:
-                handler.setLevel(logging.DEBUG)
-                stream.setLevel(logging.DEBUG)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %('
-                                          'levelname)s - %(message)s')
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-            logger.addHandler(stream)
+            logger = self._build_logger(self.io.res_path)
             try:
                 self._get_data_from_session_state()
             except Exception:
@@ -254,11 +237,14 @@ class App:
                         fitter.parameter_stats,
                         orient="columns"
                     )
+                    printed_df = df.copy()
                     df.index = [
                         f"{experiment} {param}" for param in
                         fitter.model.parameters.keys()
                     ]
-                    st.write(df)
+                    printed_df.index = [
+                        f"{param}" for param in fitter.model.parameters.keys()
+                    ]
                     logger.info(f"Results for {experiment}: \n{df}")
                     self.io.multiple_experiments.append(df)
 
@@ -267,6 +253,7 @@ class App:
                     self.io.plot_data(fitter)
                     self.io.output_plots(fitter, self.io.res_path)
                     with st.expander(f"{experiment} plots"):
+                        st.write(printed_df)
                         for fig in self.io.figures:
                             st.pyplot(fig[1])
                     self.io.output_pdf(fitter, self.io.res_path)
@@ -299,6 +286,36 @@ class App:
             self.model.time_vector,
             self.model.args
         )
+
+    def _build_logger(self, output_path):
+        """
+        Sets up a logger for the application.
+
+        This method creates a logging handler that writes to a file and a
+        stream handler that writes to the console.
+        The log level is set to INFO by default, but can be set to DEBUG if
+        the debug_mode attribute is True.
+        A formatter is also set up to format the log messages.
+
+        :param output_path: The path where the log file will be written.
+        :type output_path: Path
+        :return: The configured logger.
+        :rtype: Logger
+        """
+        handler = logging.FileHandler(output_path / "log.txt",
+                                      "w")
+        stream = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        stream.setLevel(logging.INFO)
+        if self.debug_mode:
+            handler.setLevel(logging.DEBUG)
+            stream.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %('
+                                      'levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.addHandler(stream)
+        return logger
 
     def _initialize_opt_menu_widgets(self):
 
