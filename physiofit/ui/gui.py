@@ -253,7 +253,30 @@ class App:
                     self.io.plot_data(fitter)
                     self.io.output_plots(fitter, self.io.res_path)
                     with st.expander(f"{experiment} plots"):
-                        st.write(printed_df)
+                        data_col, stat_col =  st.columns(2)
+                        with data_col:
+                            st.write("Parameter statistics:")
+                            st.dataframe(printed_df)
+                        with stat_col:
+                            st.write("Khi² test results:")
+                            st.dataframe(fitter.khi2_res)
+                        if fitter.khi2_res.at["p_val", "Values"] < 0.95:
+                            st.write(
+                                f"\n\nAt level of 95% confidence, "
+                                f"the model fits the data good enough "
+                                f"with respect to the provided "
+                                f"measurement SD. Value: "
+                                f"{fitter.khi2_res.at['p_val', 'Values']}"
+                            )
+
+                        else:
+                            st.write(
+                                f"\n\nAt level of 95% confidence, "
+                                f"the model does not fit the data good "
+                                f"enough with respect to the provided "
+                                f"measurement SD. Value: "
+                                f"{fitter.khi2_res.at['p_val', 'Values']}"
+                            )
                         for fig in self.io.figures:
                             st.pyplot(fig[1])
                     self.io.output_pdf(fitter, self.io.res_path)
@@ -264,7 +287,7 @@ class App:
             logger.info(f"Resulting dataframe: \n{full_dataframe}")
             self.io.res_path = results_path
             self.io.output_recap(results_path)
-            logger.shutdown()
+            logging.shutdown()
 
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
@@ -314,8 +337,9 @@ class App:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %('
                                       'levelname)s - %(message)s')
         handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.addHandler(stream)
+        if not logger.hasHandlers():
+            logger.addHandler(handler)
+            logger.addHandler(stream)
         return logger
 
     def _initialize_opt_menu_widgets(self):
