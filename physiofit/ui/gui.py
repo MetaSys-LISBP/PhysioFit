@@ -89,7 +89,12 @@ class App:
             )
         ))
 
-    def _initialize_opt_menu(self):
+    def clear_input_from_session_state(self):
+
+        if hasattr(st.session_state, "config_parser_data_path"):
+            del st.session_state["config_parser_data_path"]
+
+    def _run(self):
         """
         Initialize all the options. If a yaml file is given as input, options
         are parsed from it. If the input is tsv, the defaults are used instead.
@@ -98,32 +103,36 @@ class App:
         # Check file extension and initialize defaults
         file_extension = self.data_file.name.split(".")[1]
         if file_extension in ["yaml", "yml"]:
+            #. We store the path in session state to
+            # avoid multiple prompts.
             try:
-                # Get parameters from yaml file
+                # For yaml files, we need to read the configuration file
+                # before loading the data.
                 self.config_parser = self.io.read_yaml(self.data_file)
+
+
                 # Check if the data path exists, if not open up prompt to
                 # select file
-                if hasattr(st.session_state, "config_parser_data_path"):
-                    # If the path is already in session state, use it
-                    self.config_parser.path_to_data = st.session_state[
-                        "config_parser_data_path"]
                 if not self.config_parser.check_data_path():
                     st.info(
                         "File path in configuration file is incorrect or "
                         "missing. Loading file from prompt."
                     )
-                    # Send path to session state to avoid multiple prompts
-                    st.session_state["config_parser_data_path"] = (
-                        self._get_data_path_config_context())
-                    self.config_parser.path_to_data = st.session_state[
-                        "config_parser_data_path"
-                    ]
+                    input_path = st.session_state.get(
+                        "config_parser_data_path",
+                        self._get_data_path_config_context()
+                    )
+                    self.config_parser.path_to_data = input_path
+                    st.session_state["config_parser_data_path"] = input_path
+
                 st.info(f"Input data: {self.config_parser.path_to_data}")
+                self.input_datafile_name = Path(
+                    self.config_parser.path_to_data).stem
                 # Load data into io_handler
                 self.io.data = self.io.read_data(
                     str(self.config_parser.path_to_data)
                 )
-                input_loaded = True
+                # input_loaded = True
             except Exception:
                 st.error(
                     "An error has occurred when reading the yaml "
@@ -132,8 +141,8 @@ class App:
                 raise
         elif file_extension in ["tsv", "txt"]:
             try:
+                self.input_datafile_name = self.data_file.name[:-4]
                 self.io.data = self.io.read_data(self.data_file)
-                input_loaded = True
                 # Initialize default SDs
                 self.defaults["sd"].update({
                     "X": 0.5
@@ -150,124 +159,124 @@ class App:
                 f"files or json for configuration files. Detected file: "
                 f"{self.data_file.name}")
 
-        if input_loaded:
-            # Reset config_parser path to data if it exists to handle new
-            # data file paths
-            if hasattr(st.session_state, "config_parser_data_path"):
-                del st.session_state["config_parser_data_path"]
-            if "experiments" not in self.io.data.columns:
-                raise ValueError(
-                    "'experiments' column missing from dataset"
-                )
-            self.io.data = self.io.data.sort_values(
-                ["experiments", "time"], ignore_index=True
+        # if input_loaded:
+        # Reset config_parser path to data if it exists to handle new
+        # data file paths
+        # if hasattr(st.session_state, "config_parser_data_path"):
+        #     del st.session_state["config_parser_data_path"]
+        if "experiments" not in self.io.data.columns:
+            raise ValueError(
+                "'experiments' column missing from dataset"
             )
+        self.io.data = self.io.data.sort_values(
+            ["experiments", "time"], ignore_index=True
+        )
 
+        try:
+            # Initialize the list of available models
+            self.io.get_models()
+        except Exception:
+            st.error(
+                f"An error has occurred when listing models from the "
+                f"models folder: \n{Path(__file__).parent / 'models'}. "
+                f"Please correct the model or submit an issue at "
+                f"github.com/MetaSys-LISBP/PhysioFit/issues")
+            raise
+
+        # Build menu
+        submitted = self._initialize_opt_menu_widgets()
+
+        if submitted:
+            handler = logging.FileHandler(self.io.res_path / "log.txt",
+                                          "w")
+            stream = logging.StreamHandler()
+            handler.setLevel(logging.INFO)
+            stream.setLevel(logging.INFO)
+            if self.debug_mode:
+                handler.setLevel(logging.DEBUG)
+                stream.setLevel(logging.DEBUG)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %('
+                                          'levelname)s - %(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+            logger.addHandler(stream)
             try:
-                # Initialize the list of available models
-                self.io.get_models()
+                self._get_data_from_session_state()
             except Exception:
                 st.error(
-                    f"An error has occurred when listing models from the "
-                    f"models folder: \n{Path(__file__).parent / 'models'}. "
-                    f"Please correct the model or submit an issue at "
-                    f"github.com/MetaSys-LISBP/PhysioFit/issues")
+                    "An error has occurred when initializing the model")
                 raise
+            if not self.io.wkdir:
+                raise ValueError("No output directory selected")
+            self.config_parser = ConfigParser(
+                path_to_data=self.io.wkdir / self.data_file.name,
+                selected_model=self.model,
+                sds=self.sd,
+                mc=self.mc,
+                iterations=self.iterations
+            )
 
-            # Build menu
-            submitted = self._initialize_opt_menu_widgets(file_extension)
+            full_dataframe = self.io.data.copy()
+            results_path = copy(self.io.res_path)
+            experiments = list(self.io.data["experiments"].unique())
+            self.io.multiple_experiments = []
+            for experiment in experiments:
+                logger.info(f"Running optimization for {experiment}")
+                with st.spinner(f"Running optimization for {experiment}"):
+                    # final_table_dict = {}
+                    self.model.data = full_dataframe[
+                        full_dataframe["experiments"] == experiment
+                        ].drop("experiments", axis=1).copy()
 
-            if submitted:
-                handler = logging.FileHandler(self.io.res_path / "log.txt",
-                                              "w")
-                stream = logging.StreamHandler()
-                handler.setLevel(logging.INFO)
-                stream.setLevel(logging.INFO)
-                if self.debug_mode:
-                    handler.setLevel(logging.DEBUG)
-                    stream.setLevel(logging.DEBUG)
-                formatter = logging.Formatter('%(asctime)s - %(name)s - %('
-                                              'levelname)s - %(message)s')
-                handler.setFormatter(formatter)
-                logger.addHandler(handler)
-                logger.addHandler(stream)
-                try:
-                    self._get_data_from_session_state()
-                except Exception:
-                    st.error(
-                        "An error has occurred when initializing the model")
-                    raise
-                if not self.io.wkdir:
-                    raise ValueError("No output directory selected")
-                self.config_parser = ConfigParser(
-                    path_to_data=self.io.wkdir / self.data_file.name,
-                    selected_model=self.model,
-                    sds=self.sd,
-                    mc=self.mc,
-                    iterations=self.iterations
-                )
+                    self.io.res_path = results_path / str(experiment)
+                    if not self.io.res_path.is_dir():
+                        self.io.res_path.mkdir(parents=True)
+                    # Initialize the fitter object
+                    self.io.names = self.io.data.columns[1:].to_list()
+                    kwargs = self._build_fitter_kwargs()
+                    logger.info("Run options for the fitter:")
+                    for key, value in kwargs.items():
+                        logger.info(f"{key} : {value}")
+                    fitter = self.io.initialize_fitter(
+                        self.model.data,
+                        model=kwargs["model"],
+                        mc=kwargs["mc"],
+                        iterations=kwargs["iterations"],
+                        sd=kwargs["sd"],
+                        debug_mode=kwargs["debug_mode"]
+                    )
+                    # Do the work
+                    fitter.optimize()
+                    if self.mc:
+                        fitter.monte_carlo_analysis()
+                    fitter.khi2_test()
+                    df = pd.DataFrame.from_dict(
+                        fitter.parameter_stats,
+                        orient="columns"
+                    )
+                    df.index = [
+                        f"{experiment} {param}" for param in
+                        fitter.model.parameters.keys()
+                    ]
+                    st.write(df)
+                    logger.info(f"Results for {experiment}: \n{df}")
+                    self.io.multiple_experiments.append(df)
 
-                full_dataframe = self.io.data.copy()
-                results_path = copy(self.io.res_path)
-                experiments = list(self.io.data["experiments"].unique())
-                self.io.multiple_experiments = []
-                for experiment in experiments:
-                    logger.info(f"Running optimization for {experiment}")
-                    with st.spinner(f"Running optimization for {experiment}"):
-                        # final_table_dict = {}
-                        self.model.data = full_dataframe[
-                            full_dataframe["experiments"] == experiment
-                            ].drop("experiments", axis=1).copy()
-
-                        self.io.res_path = results_path / str(experiment)
-                        if not self.io.res_path.is_dir():
-                            self.io.res_path.mkdir(parents=True)
-                        # Initialize the fitter object
-                        self.io.names = self.io.data.columns[1:].to_list()
-                        kwargs = self._build_fitter_kwargs()
-                        logger.info("Run options for the fitter:")
-                        for key, value in kwargs.items():
-                            logger.info(f"{key} : {value}")
-                        fitter = self.io.initialize_fitter(
-                            self.model.data,
-                            model=kwargs["model"],
-                            mc=kwargs["mc"],
-                            iterations=kwargs["iterations"],
-                            sd=kwargs["sd"],
-                            debug_mode=kwargs["debug_mode"]
-                        )
-                        # Do the work
-                        fitter.optimize()
-                        if self.mc:
-                            fitter.monte_carlo_analysis()
-                        fitter.khi2_test()
-                        df = pd.DataFrame.from_dict(
-                            fitter.parameter_stats,
-                            orient="columns"
-                        )
-                        df.index = [
-                            f"{experiment} {param}" for param in
-                            fitter.model.parameters.keys()
-                        ]
-                        st.write(df)
-                        logger.info(f"Results for {experiment}: \n{df}")
-                        self.io.multiple_experiments.append(df)
-
-                        # Export results
-                        self.io.output_report(fitter, self.io.res_path)
-                        self.io.plot_data(fitter)
-                        self.io.output_plots(fitter, self.io.res_path)
-                        with st.expander(f"{experiment} plots"):
-                            for fig in self.io.figures:
-                                st.pyplot(fig[1])
-                        self.io.output_pdf(fitter, self.io.res_path)
-                        # Reset figures to free memory
-                        self.io.figures = []
-                        self.config_parser.export_config(self.io.res_path)
-                self.io.data = full_dataframe
-                logger.info(f"Resulting dataframe: \n{full_dataframe}")
-                self.io.res_path = results_path
-                self.io.output_recap(results_path)
+                    # Export results
+                    self.io.output_report(fitter, self.io.res_path)
+                    self.io.plot_data(fitter)
+                    self.io.output_plots(fitter, self.io.res_path)
+                    with st.expander(f"{experiment} plots"):
+                        for fig in self.io.figures:
+                            st.pyplot(fig[1])
+                    self.io.output_pdf(fitter, self.io.res_path)
+                    # Reset figures to free memory
+                    self.io.figures = []
+                    self.config_parser.export_config(self.io.res_path)
+            self.io.data = full_dataframe
+            logger.info(f"Resulting dataframe: \n{full_dataframe}")
+            self.io.res_path = results_path
+            self.io.output_recap(results_path)
 
     def _build_flux_menu(self):
         """Build the starting menu with the data upload button"""
@@ -275,11 +284,12 @@ class App:
         self.data_file = st.file_uploader(
             "Load a data file or a json configuration file",
             key="data_uploader",
-            accept_multiple_files=False
+            accept_multiple_files=False,
+            on_change=self.clear_input_from_session_state
         )
 
         if self.data_file:
-            self._initialize_opt_menu()
+            self._run()
 
     def silent_sim(self):
 
@@ -290,7 +300,7 @@ class App:
             self.model.args
         )
 
-    def _initialize_opt_menu_widgets(self, file_extension):
+    def _initialize_opt_menu_widgets(self):
 
         # Get model names and give as options to user
         model_options = [
@@ -364,20 +374,15 @@ class App:
                          "issue on github."
                 )
 
-                if file_extension in ["tsv", "txt"]:
+                # if file_extension in ["tsv", "txt"]:
 
-                    self._output_directory_selector()
+                self._output_directory_selector()
 
-                else:
-                    self.io.wkdir = Path(
-                        self.config_parser.path_to_data).resolve().parent
-                    self.io.res_path = self.io.wkdir / (
-                            self.io.wkdir.name + "_res")
-                    st.info(f"Data loaded from path: "
-                            f"{self.config_parser.path_to_data}. ")
-                    st.info(f"Output directory set to the same directory as "
-                            f"the data file: {self.io.res_path}")
-
+                self.io.wkdir = Path(
+                    self.config_parser.path_to_data).resolve().parent
+                self.io.res_path = self.io.wkdir / (
+                        self.input_datafile_name + "_res")
+                self.io.res_path.mkdir(parents=True, exist_ok=True)
             # Build the form for advanced parameters
             form = st.form("Parameter_form")
             with form:

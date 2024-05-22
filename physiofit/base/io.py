@@ -15,6 +15,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame, read_csv, concat
 import yaml
 
+import physiofit.models.base_model
 from physiofit import __file__
 from physiofit.base.fitter import PhysioFitter
 from physiofit.models.base_model import StandardDevs, Bounds, Model
@@ -261,8 +262,8 @@ class IoHandler:
                 )
         except Exception as e:
             raise IOError(
-                f"Error while reading yaml configuration file {yaml_file}. "
-                f"\nTraceback:\n\n{e}"
+                f"Error while reading yaml configuration file. "
+                f"Traceback:{e}"
             )
         return config_parser
 
@@ -568,7 +569,8 @@ class ConfigParser:
     parameters back to a yaml config file.
     """
 
-    allowed_keys = ["model", "sds", "mc", "iterations"]
+    AUTHORIZED_KEYS = ["path_to_data", "model", "sds", "mc",
+                       "iterations"]
 
     def __init__(
             self,
@@ -579,11 +581,11 @@ class ConfigParser:
             path_to_data=None
     ):
 
-        self.path_to_data = path_to_data
-        self.model = selected_model
-        self.sds = StandardDevs(sds)
-        self.mc = mc
-        self.iterations = iterations
+        self.path_to_data: str = path_to_data
+        self.model: physiofit.models.base_model.Model = selected_model
+        self.sds: physiofit.models.base_model.StandardDevs = StandardDevs(sds)
+        self.mc: bool = mc
+        self.iterations: int = iterations
 
         if not isinstance(self.mc, bool):
             raise TypeError(
@@ -599,34 +601,21 @@ class ConfigParser:
 
     @classmethod
     def from_file(cls, yaml_file):
-
-        if isinstance(yaml_file, str):
-            with open(yaml_file, 'r') as file:
-                data = yaml.safe_load(file)
-        else:
-            data = yaml.safe_load(yaml_file)
-        data_keys = [key for key in data.keys()]
-        for key in cls.allowed_keys:
-            if key not in data_keys:
-                raise ValueError(
-                    f"The key {key} is missing from the input config file"
-                )
-
-        try:
-            return ConfigParser(
-                path_to_data=data["path_to_data"],
-                selected_model=data["model"],
-                sds=data["sds"],
-                mc=data["mc"],
-                iterations=data["iterations"]
-            )
-        except KeyError:
-            return ConfigParser(
-                selected_model=data["model"],
-                sds=data["sds"],
-                mc=data["mc"],
-                iterations=data["iterations"]
-            )
+        data = yaml.safe_load(yaml_file) if not isinstance(yaml_file, str) \
+            else yaml.safe_load(open(yaml_file, 'r'))
+        missing_keys = [key for key in cls.AUTHORIZED_KEYS if
+                        key not in data.keys()]
+        if missing_keys:
+            raise ValueError(
+                f"The keys {missing_keys} are missing from the input config "
+                f"file")
+        return cls(
+            path_to_data=data["path_to_data"],
+            selected_model=data["model"],
+            sds=data["sds"],
+            mc=data["mc"],
+            iterations=data["iterations"]
+        )
 
     @classmethod
     def from_galaxy(cls, galaxy_yaml):
@@ -649,7 +638,7 @@ class ConfigParser:
         if self.path_to_data:
             return Path(self.path_to_data).is_file()
         else:
-            return False
+            raise ValueError("No data path has been provided")
 
     def update_model(self, model):
 
