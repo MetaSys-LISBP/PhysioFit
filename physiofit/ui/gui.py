@@ -182,7 +182,7 @@ class App:
         submitted = self._initialize_opt_menu_widgets()
 
         if submitted:
-            logger = self._build_logger(self.io.res_path)
+            _logger = self._build_logger(self.io.res_path)
             try:
                 self._get_data_from_session_state()
             except Exception:
@@ -191,6 +191,12 @@ class App:
                 raise
             if not self.io.wkdir:
                 raise ValueError("No output directory selected")
+
+            _logger.info("=============================================")
+            _logger.info(f"Physiofit version: {physiofit.__version__}")
+            _logger.info("Path to results: \n" + str(self.io.res_path))
+            _logger.info("=============================================")
+
             self.config_parser = ConfigParser(
                 path_to_data=self.io.wkdir / self.data_file.name,
                 selected_model=self.model,
@@ -204,7 +210,7 @@ class App:
             experiments = list(self.io.data["experiments"].unique())
             self.io.multiple_experiments = []
             for experiment in experiments:
-                logger.info(f"Running optimization for {experiment}")
+                _logger.info(f"Running optimization for {experiment}")
                 with st.spinner(f"Running optimization for {experiment}"):
                     # final_table_dict = {}
                     self.model.data = full_dataframe[
@@ -217,9 +223,9 @@ class App:
                     # Initialize the fitter object
                     self.io.names = self.io.data.columns[1:].to_list()
                     kwargs = self._build_fitter_kwargs()
-                    logger.info("Run options for the fitter:")
+                    _logger.info("Run options for the fitter:")
                     for key, value in kwargs.items():
-                        logger.info(f"{key} : {value}")
+                        _logger.info(f"{key} : {value}")
                     fitter = self.io.initialize_fitter(
                         self.model.data,
                         model=kwargs["model"],
@@ -245,7 +251,7 @@ class App:
                     printed_df.index = [
                         f"{param}" for param in fitter.model.parameters.keys()
                     ]
-                    logger.info(f"Results for {experiment}: \n{df}")
+                    _logger.info(f"Results for {experiment}: \n{df}")
                     self.io.multiple_experiments.append(df)
 
                     # Export results
@@ -253,7 +259,7 @@ class App:
                     self.io.plot_data(fitter)
                     self.io.output_plots(fitter, self.io.res_path)
                     with st.expander(f"{experiment} plots"):
-                        data_col, stat_col =  st.columns(2)
+                        data_col, stat_col = st.columns(2)
                         with data_col:
                             st.write("Parameter statistics:")
                             st.dataframe(printed_df)
@@ -284,7 +290,7 @@ class App:
                     self.io.figures = []
                     self.config_parser.export_config(self.io.res_path)
             self.io.data = full_dataframe
-            logger.info(f"Resulting dataframe: \n{full_dataframe}")
+            _logger.info(f"Resulting dataframe: \n{full_dataframe}")
             self.io.res_path = results_path
             self.io.output_recap(results_path)
             logging.shutdown()
@@ -419,9 +425,6 @@ class App:
                 # if file_extension in ["tsv", "txt"]:
 
                 self._output_directory_selector()
-
-                self.io.wkdir = Path(
-                    self.config_parser.path_to_data).resolve().parent
                 self.io.res_path = self.io.wkdir / (
                         self.input_datafile_name + "_res")
                 self.io.res_path.mkdir(parents=True, exist_ok=True)
@@ -495,7 +498,7 @@ class App:
                             with col2:
                                 st.write("Parameter Value")
                                 for key, value in self.model.args[
-                                        param].items():
+                                     param].items():
                                     st.text_input(
                                         label="label",  # Unused
                                         label_visibility="collapsed",
