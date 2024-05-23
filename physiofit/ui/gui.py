@@ -239,6 +239,14 @@ class App:
                     if self.mc:
                         fitter.monte_carlo_analysis()
                     fitter.khi2_test()
+                    try:
+                        aic = fitter.aic()
+                    except ValueError:
+                        st.warning("Not enough measurements to calculate AIC")
+                        logger.warning(
+                            "Not enough measurements to calculate AIC"
+                        )
+                        aic = "NA"
                     df = pd.DataFrame.from_dict(
                         fitter.parameter_stats,
                         orient="columns"
@@ -283,6 +291,8 @@ class App:
                                 f"measurement SD. Value: "
                                 f"{fitter.khi2_res.at['p_val', 'Values']}"
                             )
+                        st.write(f"Akaike information criterion value:"
+                                 f" {aic}")
                         for fig in self.io.figures:
                             st.pyplot(fig[1])
                     self.io.output_pdf(fitter, self.io.res_path)
@@ -332,8 +342,11 @@ class App:
         :return: The configured logger.
         :rtype: Logger
         """
-        handler = logging.FileHandler(output_path / "log.txt",
-                                      "w")
+        try:
+            handler = logging.FileHandler(output_path / "log.txt",
+                                          "w")
+        except TypeError:
+            raise TypeError("Please provide a valid output directory")
         stream = logging.StreamHandler()
         handler.setLevel(logging.INFO)
         stream.setLevel(logging.INFO)
@@ -425,9 +438,10 @@ class App:
                 # if file_extension in ["tsv", "txt"]:
 
                 self._output_directory_selector()
-                self.io.res_path = self.io.wkdir / (
-                        self.input_datafile_name + "_res")
-                self.io.res_path.mkdir(parents=True, exist_ok=True)
+                if self.io.wkdir:
+                    self.io.res_path = self.io.wkdir / (
+                            self.input_datafile_name + "_res")
+                    self.io.res_path.mkdir(parents=True, exist_ok=True)
             # Build the form for advanced parameters
             form = st.form("Parameter_form")
             with form:

@@ -480,6 +480,30 @@ class PhysioFitter:
 
         # self.parameter_stats_df = DataFrame()
 
+    def aic(self):
+        """
+        Calculate the Akaike Information Criterion (AIC) for the model
+        """
+
+        n = np.count_nonzero(~np.isnan(self.experimental_matrix))
+        k = len(self.model.parameters) + 1 # +1 for the cost parameter
+        cost = self._calculate_cost(
+            self.optimize_results.x,
+            self.model.simulate,
+            self.experimental_matrix,
+            self.model.time_vector,
+            self.model.args,
+            self.sd
+        )
+        # Calculate AIC
+        aic = 2 * k + n * np.log(cost)
+        # Correct AIC for small sample sizes
+        if n / k < 40:
+            if n - k - 1 <= 0:
+                raise ValueError("Not enough measurements to calculate AIC")
+            aic += (2 * k * (k + 1)) / (n - k - 1)
+        return aic
+
     def khi2_test(self):
         """
         This method performs a chi-squared test to evaluate the goodness of
