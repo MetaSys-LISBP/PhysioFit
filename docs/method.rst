@@ -49,6 +49,14 @@ Goodness-of-fit evaluation
 PhysioFit performs a χ² test to assess the goodness of fit. Have a look at the :doc:`faq` section for 
 more details on the interpretation of the khi2 test results.
 
+Aikake Information Criterion (AIC)
+***********************************
+
+PhysioFit performs an AIC test to compare the different models between them and
+to select the best model. Have a look at the :doc:`faq` section for more
+details on the interpretation of the AIC test results.
+
+
 Sensitivity analysis
 *********************
 

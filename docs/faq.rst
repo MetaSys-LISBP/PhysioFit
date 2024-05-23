@@ -61,6 +61,48 @@ What parameters values should I use?
 
 Details on PhysioFit parameters can be found in the :doc:`usage` section.
 
+Which model should I use?
+------------------------------------------------------------------
+
+The choice of the model depends on the biological question you are addressing,
+the data you have, and the assumptions you are willing to make. We provide a
+set of models in PhysioFit, each with its own assumptions and requirements.
+We recommend to start with the simplest model that fits your data, and to
+evaluate the quality of the fit based on the χ² test results and the plots
+of experimental vs simulated data. If the fit is not satisfactory, you may
+want to try more complex models, but keep in mind that more complex models
+require more data and more assumptions, and may lead to overfitting.
+
+Another way to evaluate different models' capacities on modeling your data
+is to use the AIC (Akaike Information Criterion). The AIC is a measure of
+the relative quality of a statistical model for a given set of data. It
+estimates the quality of each model relative to each of the other models.
+The model with the lowest AIC value is considered the best model. The AIC
+value is given in the log file after the fitting process or directly in the
+graphical user interface. The AIC is calculated as follows:
+
+.. math::
+
+    AIC = 2k + n \ln(\frac{RSS}{n})
+
+where :math:`k` is the number of parameters in the model, :math:`n` is the
+number of data points, and :math:`RSS` is the residual sum of squares. For
+small sample sizes, the AICc (corrected AIC) is recommended. The AICc is
+calculated as follows:
+
+.. math::
+
+    AICc = AIC + \frac{2k(k+1)}{n-k-1}
+
+In practice, because the AICc approximates the AIC for large sample sizes,
+it's often advised that AICc be used as default.
+
+More information on the AIC can be found in the `original paper by Akaike
+(1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_ or `in
+this great guide by Symonds and Moussalli (2011) <https://doi.org/10
+.1007/s00265-010-1037-6>`_.
+
+
 How can I check if my data have been fitted correctly?
 ------------------------------------------------------------------
 
