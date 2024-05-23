@@ -240,13 +240,13 @@ class App:
                         fitter.monte_carlo_analysis()
                     fitter.khi2_test()
                     try:
-                        aic = fitter.aic()
+                        aic, aic_c = fitter.aic()
                     except ValueError:
                         st.warning("Not enough measurements to calculate AIC")
                         logger.warning(
                             "Not enough measurements to calculate AIC"
                         )
-                        aic = "NA"
+                        aic, aic_c = "NA"
                     df = pd.DataFrame.from_dict(
                         fitter.parameter_stats,
                         orient="columns"
@@ -266,14 +266,22 @@ class App:
                     self.io.output_report(fitter, self.io.res_path)
                     self.io.plot_data(fitter)
                     self.io.output_plots(fitter, self.io.res_path)
-                    with st.expander(f"{experiment} plots"):
-                        data_col, stat_col = st.columns(2)
+                    with st.expander(f"Experiment {experiment}"):
+                        data_col, stat_col, aic_col = st.columns(3)
                         with data_col:
                             st.write("Parameter statistics:")
                             st.dataframe(printed_df)
                         with stat_col:
                             st.write("Khi² test results:")
                             st.dataframe(fitter.khi2_res)
+                        with aic_col:
+                            st.dataframe(
+                                pd.DataFrame(
+                                    {
+                                        "ACC":
+                                    }
+                                )
+                            )
                         if fitter.khi2_res.at["p_val", "Values"] < 0.95:
                             st.write(
                                 f"\n\nAt level of 95% confidence, "
@@ -356,9 +364,10 @@ class App:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %('
                                       'levelname)s - %(message)s')
         handler.setFormatter(formatter)
-        if not logger.hasHandlers():
-            logger.addHandler(handler)
-            logger.addHandler(stream)
+        if logger.hasHandlers():
+            logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.addHandler(stream)
         return logger
 
     def _initialize_opt_menu_widgets(self):
