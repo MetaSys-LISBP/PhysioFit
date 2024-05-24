@@ -376,8 +376,9 @@ class IoHandler:
 
         :param export_path: Path to export the report
         :param fitter: PhysioFitter object containing results from the
-        optimization of parameters :param export_path: list of paths to
-        export the stats and fluxes. [0] is for stats and [1] for fluxes.
+                        optimization of parameters
+        :param export_path: list of paths to export the stats and fluxes. [
+                            0] is for stats and [1] for fluxes.
         """
 
         if isinstance(export_path, list):
@@ -400,8 +401,9 @@ class IoHandler:
         opt_data.index = [param for param in fitter.model.parameters.keys()]
         opt_data.to_csv(flux_path, sep="\t")
 
-        if isinstance(fitter.khi2_res, DataFrame):
-            with open(stat_path, "w+") as stat_out:
+        # Get khi² test results as dataframe and write to file
+        with open(stat_path, "w+") as stat_out:
+            if isinstance(fitter.khi2_res, DataFrame):
                 stat_out.write("==================\n"
                                "Khi² test results\n"
                                "==================\n\n")
@@ -425,6 +427,28 @@ class IoHandler:
                         f"provided measurement SD. Value: "
                         f"{fitter.khi2_res.at['p_val', 'Values']}\n"
                     )
+            else:
+                stat_out.write(
+                    "No khi² test results available. The model has not been "
+                    "tested against the data"
+                )
+
+            # Get AIC results as dataframe and write to file
+            if isinstance(fitter.aic_res, DataFrame):
+                stat_out.write(
+                    "\n\n==================\n"
+                    "AIC test results\n"
+                    "==================\n\n"
+                )
+                stat_out.write(
+                    fitter.aic_res.to_string(
+                        header=False, justify="center"
+                    )
+                )
+            else:
+                stat_out.write(
+                    "No AIC test results available."
+                )
 
     def _get_plot_data(self, fitter):
         """
