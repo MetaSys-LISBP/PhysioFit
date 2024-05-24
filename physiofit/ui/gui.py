@@ -36,7 +36,9 @@ class App:
     def start_app(self):
         """Launch the application"""
 
-        st.set_page_config(page_title=f"PhysioFit (v{physiofit.__version__})")
+        st.set_page_config(page_title=f"PhysioFit (v{physiofit.__version__})",
+                           layout="wide"
+                           )
         st.title(f"Welcome to PhysioFit (v{physiofit.__version__})")
         st.write(
             "Documentation available at [https://physiofit.readthedocs.io]("
@@ -240,13 +242,13 @@ class App:
                         fitter.monte_carlo_analysis()
                     fitter.khi2_test()
                     try:
-                        aic, aic_c = fitter.aic()
+                        fitter.aic_test()
                     except ValueError:
                         st.warning("Not enough measurements to calculate AIC")
                         logger.warning(
                             "Not enough measurements to calculate AIC"
                         )
-                        aic, aic_c = "NA"
+                        fitter.aic, fitter.aic_c = "NA"
                     df = pd.DataFrame.from_dict(
                         fitter.parameter_stats,
                         orient="columns"
@@ -275,12 +277,9 @@ class App:
                             st.write("Khi² test results:")
                             st.dataframe(fitter.khi2_res)
                         with aic_col:
+                            st.write("AIC test results:")
                             st.dataframe(
-                                pd.DataFrame(
-                                    {
-                                        "ACC":
-                                    }
-                                )
+                                fitter.aic_res
                             )
                         if fitter.khi2_res.at["p_val", "Values"] < 0.95:
                             st.write(
@@ -299,8 +298,6 @@ class App:
                                 f"measurement SD. Value: "
                                 f"{fitter.khi2_res.at['p_val', 'Values']}"
                             )
-                        st.write(f"Akaike information criterion value:"
-                                 f" {aic}")
                         for fig in self.io.figures:
                             st.pyplot(fig[1])
                     self.io.output_pdf(fitter, self.io.res_path)
@@ -443,8 +440,6 @@ class App:
                     help="Useful in case of trouble. Join it to the "
                          "issue on github."
                 )
-
-                # if file_extension in ["tsv", "txt"]:
 
                 self._output_directory_selector()
                 if self.io.wkdir:
