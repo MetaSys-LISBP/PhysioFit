@@ -121,11 +121,17 @@ class App:
                     )
                     input_path = st.session_state.get(
                         "config_parser_data_path",
-                        self._get_data_path_config_context()
+                        None
                     )
+                    if not input_path:
+                        input_path = self._get_data_path_config_context()
                     self.config_parser.path_to_data = input_path
                     st.session_state["config_parser_data_path"] = input_path
-
+                #st.write(
+                #    f"File path in config parser: {self.config_parser.path_to_data}")
+                #st.write(
+                #    f"file path in session state: {st.session_state.get('config_parser_data_path')}")
+                #st.write(self.config_parser)
                 st.info(f"Input data: {self.config_parser.path_to_data}")
                 self.input_datafile_name = Path(
                     self.config_parser.path_to_data).stem
@@ -374,17 +380,19 @@ class App:
             model.name for model in self.io.models
         ]
         idx = None
-        if self.config_parser:
-            if self.config_parser.model:
-                try:
-                    idx = model_options.index(
-                        self.config_parser.model["model_name"])
-                except Exception:
-                    st.error(
-                        "Error while reading model name from configuration "
-                        "file"
-                    )
-                    raise
+        if self.config_parser and self.config_parser.model:
+            #st.write(f"idx: {idx}")
+            try:
+                #st.write(f"model_options: {model_options}")
+                idx = model_options.index(
+                    self.config_parser.model["model_name"])
+            except Exception:
+                st.error(
+                    "Error while reading model name from configuration "
+                    "file"
+                )
+                raise
+        #st.write(f"idx: {idx}")
 
         model_name = st.selectbox(
             label="Model",
@@ -396,6 +404,7 @@ class App:
 
         # if model_name == "Dynamic system (only substrates)":
         #    st.error("Not yet implemented...")
+        #st.write(f"Selected model: {model_name}")
         if model_name:
             # Initialize selected model
             self.model = self.io.select_model(model_name)
