@@ -623,6 +623,11 @@ class ConfigParser:
                 f"{self.mc}, type: {type(self.iterations)}"
             )
 
+    def __repr__(self):
+        return f"ConfigParser(path_to_data={self.path_to_data}, " \
+               f"model={self.model}, sds={self.sds}, mc={self.mc}, " \
+               f"iterations={self.iterations})"
+
     @classmethod
     def from_file(cls, yaml_file):
         data = yaml.safe_load(yaml_file) if not isinstance(yaml_file, str) \
