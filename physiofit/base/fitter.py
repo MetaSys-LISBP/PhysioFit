@@ -12,8 +12,6 @@ from scipy.stats import chi2
 
 from physiofit.models.base_model import Model
 
-# import physiofit # To get debug logs from the module
-
 logger = logging.getLogger(f"physiofit.{__name__}")
 
 
@@ -93,6 +91,9 @@ class PhysioFitter:
         self.matrices_ci = None
         self.opt_conf_ints = None
         self.khi2_res = None
+        self.aic_res = None
+        self.aic = None
+        self.aic_c = None
 
         logger.setLevel(self.debug_mode)
 
@@ -206,7 +207,6 @@ class PhysioFitter:
                     raise
                 except RuntimeError:
                     raise
-
 
     def _build_sd_matrix(self):
         """
@@ -324,6 +324,10 @@ class PhysioFitter:
 
         simulated_matrix = func(params, exp_data_matrix, time_vector,
                                 non_opt_params)
+        # print("inside cost function")
+        # print(f"Params: {params}")
+        # print(f"Simulated matrix: {simulated_matrix}")
+        # print(f"Experimental matrix: {exp_data_matrix}")
         cost_val = np.square(
             np.divide(
                 np.subtract(simulated_matrix, exp_data_matrix),
@@ -404,16 +408,21 @@ class PhysioFitter:
         matrices = []
 
         for i in range(self.iterations):
-            new_matrix = self._apply_noise()
-            # logger.debug(f"Iteration {i + 1}:\n")
-            # logger.debug(f"New matrix:\n{new_matrix}\n")
-            # logger.debug(f"Sd matrix:\n{self.sd}\n")
-            # logger.debug(f"time vector:\n{self.model.time_vector}\n")
+            noisy_matrix = self._apply_noise()
+            logger.debug(f"Iteration {i + 1}:\n")
+            logger.debug(f"New matrix:\n{noisy_matrix}\n")
+            logger.debug(f"Sd matrix:\n{self.sd}\n")
+            logger.debug(f"time vector:\n{self.model.time_vector}\n")
+            logger.debug(
+                "simulated matrix:"
+                f": {self.model.simulate(opt_res.x, noisy_matrix, self.model.time_vector, self.model.args)}\n"
+            )
             # We optimise the parameters using the noisy matrix as input
-            opt_res = PhysioFitter._run_optimization(
+
+            mc_opt_res = PhysioFitter._run_optimization(
                 opt_res.x,
                 self.model.simulate,
-                new_matrix,
+                noisy_matrix,
                 self.model.time_vector,
                 self.model.args,
                 self.sd, self.model.bounds(),
@@ -423,13 +432,13 @@ class PhysioFitter:
             # Store the new simulated matrix in list for later use
             matrices.append(
                 self.model.simulate(
-                    opt_res.x, self.large_matrix, self.large_time_vector,
+                    mc_opt_res.x, self.large_matrix, self.large_time_vector,
                     self.model.args
                 )
             )
 
             # Store the new optimised parameters in list for later use
-            opt_params_list.append(opt_res.x)
+            opt_params_list.append(mc_opt_res.x)
 
         # Build a 3D array from all the simulated matrices to get standard
         # deviation on each data point
@@ -480,13 +489,13 @@ class PhysioFitter:
 
         # self.parameter_stats_df = DataFrame()
 
-    def aic(self):
+    def aic_test(self):
         """
         Calculate the Akaike Information Criterion (AIC) for the model
         """
 
         n = np.count_nonzero(~np.isnan(self.experimental_matrix))
-        k = len(self.model.parameters) + 1 # +1 for the cost parameter
+        k = len(self.model.parameters) + 1  # +1 for the cost parameter
         cost = self._calculate_cost(
             self.optimize_results.x,
             self.model.simulate,
@@ -496,13 +505,18 @@ class PhysioFitter:
             self.sd
         )
         # Calculate AIC
-        aic = 2 * k + n * np.log(cost)
+        self.aic = 2 * k + n * np.log(cost)
         # Correct AIC for small sample sizes
-        if n / k < 40:
-            if n - k - 1 <= 0:
-                raise ValueError("Not enough measurements to calculate AIC")
-            aic += (2 * k * (k + 1)) / (n - k - 1)
-        return aic
+        if n - k - 1 <= 0:
+            raise ValueError("Not enough measurements to calculate AIC")
+        self.aic_c = self.aic + ((2 * k * (k + 1)) / (n - k - 1))
+
+        self.aic_res = pd.DataFrame.from_dict(
+            {
+                "AIC": self.aic,
+                "AICc": self.aic_c
+            }, orient="index", columns=["Values"]
+        )
 
     def khi2_test(self):
         """
