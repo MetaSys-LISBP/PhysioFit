@@ -43,25 +43,79 @@ and the best solution is polished using the L-BFGS-B method (see
 `scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for more information on the optimization
 process).
 
+
+..  _`chi2 test`:
+
 Goodness-of-fit evaluation
 **************************
 
-PhysioFit performs a χ² test to assess the goodness of fit. Have a look at the :doc:`faq` section for 
-more details on the interpretation of the khi2 test results.
+PhysioFit performs a χ² test to assess the goodness of fit. A χ² test
+describes how well a model fits a set of observations. Measures of
+goodness of fit typically summarize the discrepancy between observed values
+and the values expected under the model used in PhysioFit (see
+:ref:`optimization_process`). It is calculated as the sum of differences
+between measured and simulated values, each squared and divided by the
+simulated value.
+A good fit corresponds to small differences between measured and simulated
+values, thereby the χ² value is low. In contrast, a bad fit corresponds to
+large differences between simulations and measurements, and the χ² value is
+high.
+
+The resulting χ² value can then be compared with a χ² distribution to
+determine the goodness of fit. The p-value of one-tail χ² test is calculated
+by PhysioFit from the best fit and is given in the log file (have a look to
+the :doc:`usage` section). A p-value close to 0 means poor fitting, and a
+p-value close to 1 means good fitting (keeping in mind that a p-value very
+close to 1 can be an evidence that standard deviations might be
+overestimated). A p-value between 0.95 and 1 means the model fits the data
+good enough with respect to the standard deviations provided (at a 95%
+confidence level). PhysioFit provides an explicit message stating whether
+the flux data are satisfactorily fitted or not (at a 95% confidence interval).
 
 Aikake Information Criterion (AIC)
 ***********************************
 
 PhysioFit performs an AIC test to compare the different models between them and
-to select the best model. Have a look at the :doc:`faq` section for more
-details on the interpretation of the AIC test results.
+to select the best model.
+The AIC is a measure of the relative quality of a statistical model for a
+given set of data. It estimates the quality of each model relative to each
+of the other models.
+The model with the lowest AIC value is considered the best model. The AIC
+value is given in the stat output file after the fitting process or directly in
+the graphical user interface. The AIC is calculated as follows:
+
+.. math::
+
+    AIC = 2k + n \ln(\frac{RSS}{n})
+
+where :math:`k` is the number of parameters in the model, :math:`n` is the
+number of data points, and :math:`RSS` is the residual sum of squares. For
+small sample sizes, the AICc (corrected AIC) is recommended. The AICc is
+calculated as follows:
+
+.. math::
+
+    AICc = AIC + \frac{2k(k+1)}{n-k-1}
+
+In practice, because the AICc approximates the AIC for large sample sizes,
+it's often advised that AICc be used as default.
+
+More information on the AIC can be found in the `original paper by Akaike
+(1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_ or `in
+this great guide by Symonds and Moussalli (2011) <https://doi.org/10
+.1007/s00265-010-1037-6>`_.
 
 
 Sensitivity analysis
 *********************
 
-To determine the precision on the fit and on the estimated parameters (including fluxes), PhysioFit performs a Monte Carlo analysis. Briefly, PhysioFit generates several 
-datasets by adding noise to the dynamics simulated from the best fit, and calculated fluxes and other growth 
-parameters for each of these synthetic datasets. This enables PhysioFit to compute statistics (mean, median, standard deviation and 95% confidence interval) for 
-each parameter (including fluxes). We recommend always running a sensitivity analysis when using PhysioFit.
+To determine the precision on the fit and on the estimated parameters
+(including fluxes), PhysioFit performs a Monte Carlo analysis. Briefly,
+PhysioFit generates several
+datasets by adding noise to the dynamics simulated from the best fit, and
+calculated fluxes and other growth
+parameters for each of these synthetic datasets. This enables PhysioFit to
+compute statistics (mean, median, standard deviation and 95% confidence
+interval) for each parameter (including fluxes). We recommend always running
+a sensitivity analysis when using PhysioFit.
 

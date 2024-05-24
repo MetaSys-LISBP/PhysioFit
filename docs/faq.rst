@@ -4,7 +4,8 @@ Frequently asked questions (FAQ)
 How are fluxes calculated?
 ------------------------------------------------------------------
 
-We provide details on the flux calculation approach implemented in PhysioFit in the :doc:`method` section.
+We provide details on the flux calculation approach implemented in PhysioFit
+in the :doc:`method` section.
 
 How many measurements should I use to calculate fluxes?
 ------------------------------------------------------------------
@@ -74,33 +75,8 @@ want to try more complex models, but keep in mind that more complex models
 require more data and more assumptions, and may lead to overfitting.
 
 Another way to evaluate different models' capacities on modeling your data
-is to use the AIC (Akaike Information Criterion). The AIC is a measure of
-the relative quality of a statistical model for a given set of data. It
-estimates the quality of each model relative to each of the other models.
-The model with the lowest AIC value is considered the best model. The AIC
-value is given in the log file after the fitting process or directly in the
-graphical user interface. The AIC is calculated as follows:
-
-.. math::
-
-    AIC = 2k + n \ln(\frac{RSS}{n})
-
-where :math:`k` is the number of parameters in the model, :math:`n` is the
-number of data points, and :math:`RSS` is the residual sum of squares. For
-small sample sizes, the AICc (corrected AIC) is recommended. The AICc is
-calculated as follows:
-
-.. math::
-
-    AICc = AIC + \frac{2k(k+1)}{n-k-1}
-
-In practice, because the AICc approximates the AIC for large sample sizes,
-it's often advised that AICc be used as default.
-
-More information on the AIC can be found in the `original paper by Akaike
-(1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_ or `in
-this great guide by Symonds and Moussalli (2011) <https://doi.org/10
-.1007/s00265-010-1037-6>`_.
+is to use the AIC (Akaike Information Criterion). For more information, please
+refer to the :doc:`method` section.
 
 
 How can I check if my data have been fitted correctly?
@@ -109,43 +85,49 @@ How can I check if my data have been fitted correctly?
 The quality of the fit can be evaluated based on:
 
     * the plots of experimental vs simulated data for the best fit, which should be as close as possible,
-    * the χ² statistical test results given in the log file (see below for help on interpreting the results).
+    * the χ² statistical test results given in the stat ouput file (see below
+      for help on interpreting the results).
 
-.. seealso:: :ref:`chi2 test` and :ref:`bad fit` 
+.. seealso:: :ref:`chi2 test` and :ref:`bad fit`
 
-..  _`chi2 test`:
-
-What is a χ² test?
-------------------------------------------------------------------
-
-A χ² test describes how well a model fits a set of observations. Measures of goodness of fit typically summarize the discrepancy between observed values and the values expected under the model used in PhysioFit (see the :doc:`method` section). It is calculated as the sum of differences between measured and simulated values, each squared and divided by the simulated value.
-A good fit corresponds to small differences between measured and simulated values, thereby the χ² value is low. In contrast, a bad fit corresponds to large differences between simulations and measurements, and the χ² value is high. 
-
-The resulting χ² value can then be compared with a χ² distribution to determine the goodness of fit. The p-value of one-tail χ² test is calculated by PhysioFit from the best fit and is given in the log file (have a look to the :doc:`usage` section). A p-value close to 0 means poor fitting, and a p-value close to 1 means good fitting (keeping in mind that a p-value very close to 1 can be an evidence that standard deviations might be overestimated). A 
-p-value between 0.95 and 1 means the model fits the data good enough with respect to the standard deviations provided (at a 95% confidence level). PhysioFit provides an explicit meassage stating wether the flux data are satisfactorily fitted or not (at a 95% confidence interval).
 
 ..  _`bad fit`:
 
 My data hasn't been correctly fitted. Why?
 ------------------------------------------------------------------
 
-A possible reason to explain a bad fit is that standard deviations on measurements (concentration biomass and metabolites) is under-estimated, thereby making the χ² test too stringent. In this case, plots of measured and fitted data should be in agreement. Reliable estimated of standard deviation on measurements must be provided to PhysioFit (have a look to the :doc:`usage` section to see how to check and adjust this parameter).
+A possible reason to explain a bad fit is that standard deviations on
+measurements (concentration biomass and metabolites) is under-estimated,
+thereby making the χ² test too stringent. In this case, plots of measured and
+fitted data should be in agreement. Reliable estimated of standard deviation
+on measurements must be provided to PhysioFit (have a look to the :doc:`usage`
+section to see how to check and adjust this parameter).
 
-Another possible reason to explain a bad fit is that a key asumption of the flux calculation method is not respected. For instance, 
-if you use a steady-state model shipped with PhysioFit, cells might not be strictly in metabolic steady-state, i.e. with 
-constant fluxes during the whole experiment. If this key asumption does not occur (e.g. cells are continuously adapting 
-to their environment and fluxes change over time), PhysioFit will not be able to fit the data satisfactorily. In this case, 
-evaluate wether the deviation is significant or not (e.g. based on the detailed χ² statistics or on the plot of fitted vs 
-measured data), and evaluate the potential biases that would be introduced by interpreting (or not) these flux values.
+Another possible reason to explain a bad fit is that a key asumption of the
+flux calculation method is not respected. For instance, if you use a
+steady-state model shipped with PhysioFit, cells might not be strictly in
+metabolic steady-state, i.e. with constant fluxes during the whole
+experiment. If this key asumption does not occur (e.g. cells are continuously
+adapting to their environment and fluxes change over time), PhysioFit will
+not be able to fit the data satisfactorily. In this case, evaluate wether
+the deviation is significant or not (e.g. based on the detailed χ²
+statistics or on the plot of fitted vs measured data), and evaluate the
+potential biases that would be introduced by interpreting (or not) these
+flux values.
 
-In rare situations, it may also be because some parameters have to be tweaked to
-help PhysioFit fitting the measurements, which results in obviously aberrant fits (e.g. with flat 
-time-course profiles for all metabolites). This might happen for instance if some measurements are 
-provided in units far from unity (e.g. 1.10\ :sup:`-5` M instead of 10 µM). If this situation happens, we suggest modifying the initial values of fluxes, or changing the units of input data, and re-run the flux calculation. For more info on the run parameters and how they may affect the fitting process,
+In rare situations, it may also be because some parameters have to be
+tweaked to help PhysioFit fitting the measurements, which results in
+obviously aberrant fits (e.g. with flat time-course profiles for all
+metabolites). This might happen for instance if some measurements are
+provided in units far from unity (e.g. 1.10\ :sup:`-5` M instead of 10 µM). If
+this situation happens, we suggest modifying the initial values of fluxes,
+or changing the units of input data, and re-run the flux calculation. For
+more info on the run parameters and how they may affect the fitting process,
 please refer to section :ref:`physiofit parameters`.
 
 If you believe the problem is in PhysioFit, we would greatly appreciate 
-if you could open a new issue on our `issue tracker  <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_.
+if you could open a new issue on our `issue tracker <https://github
+.com/MetaSys-LISBP/PhysioFit/issues>`_.
    
 I cannot start PhysioFit graphical user interface, can you help me?
 -------------------------------------------------------------------
