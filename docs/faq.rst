@@ -68,15 +68,18 @@ Which model should I use?
 The choice of the model depends on the biological question you are addressing,
 the data you have, and the assumptions you are willing to make. We provide a
 set of models in PhysioFit, each with its own assumptions and requirements.
-We recommend to start with the simplest model that fits your data, and to
+
+As a starting point, we recommend to start with the most appropriate model you have
+in mind based on the type of experiment you have conducted. Start with the
+simplest model that fits your data, and
 evaluate the quality of the fit based on the χ² test results and the plots
 of experimental vs simulated data. If the fit is not satisfactory, you may
-want to try more complex models, but keep in mind that more complex models
-require more data and more assumptions, and may lead to overfitting.
+want to try more complex models, but keep in mind that more complex models may
+require more data and often include more assumptions, and may lead to overfitting.
 
-Another way to evaluate different models' capacities on modeling your data
+If different models fit your data, a good practice to compare different models
 is to use the AIC (Akaike Information Criterion). For more information, please
-refer to the :doc:`method` section.
+refer to the section "Model comparison" from the :doc:`method` page.
 
 
 How can I check if my data have been fitted correctly?
@@ -125,7 +128,7 @@ or changing the units of input data, and re-run the flux calculation. For
 more info on the run parameters and how they may affect the fitting process,
 please refer to section :ref:`physiofit parameters`.
 
-If you believe the problem is in PhysioFit, we would greatly appreciate 
+If you think the problem is in PhysioFit, we would greatly appreciate 
 if you could open a new issue on our `issue tracker <https://github
 .com/MetaSys-LISBP/PhysioFit/issues>`_.
    

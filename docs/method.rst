@@ -44,6 +44,22 @@ and the best solution is polished using the L-BFGS-B method (see
 process).
 
 
+.. _sensitivity_analysis:
+
+Sensitivity analysis
+*********************
+
+To determine the precision on the fit and on the estimated parameters,
+PhysioFit performs a Monte Carlo analysis. Briefly,
+PhysioFit generates several
+datasets by adding noise to the dynamics simulated from the best fit, and
+calculates fluxes and other growth
+parameters for each of these synthetic datasets. This enables PhysioFit to
+compute statistics (mean, median, standard deviation and 95 % confidence
+interval) for each parameter. We recommend always running
+a sensitivity analysis when using PhysioFit.
+
+
 ..  _`chi2 test`:
 
 Goodness-of-fit evaluation
@@ -72,25 +88,24 @@ good enough with respect to the standard deviations provided (at a 95%
 confidence level). PhysioFit provides an explicit message stating whether
 the flux data are satisfactorily fitted or not (at a 95% confidence interval).
 
-Aikake Information Criterion (AIC)
+Model comparison
 ***********************************
 
-PhysioFit performs an AIC test to compare the different models between them and
-to select the best model.
-The AIC is a measure of the relative quality of a statistical model for a
-given set of data. It estimates the quality of each model relative to each
-of the other models.
-The model with the lowest AIC value is considered the best model. The AIC
-value is given in the stat output file after the fitting process or directly in
-the graphical user interface. The AIC is calculated as follows:
+PhysioFit calculates the Aikake Information Criterion (AIC)
+to help users select the most appropriate model for their data.
+The AIC is a measure of the explanatory power of a model to explain a
+given set of data. The model with the lowest AIC value is
+thus considered the best model.
+
+The AIC is calculated as follows:
 
 .. math::
 
     AIC = 2k + n \ln(\frac{RSS}{n})
 
-where :math:`k` is the number of parameters in the model, :math:`n` is the
+where :math:`k` is the number of parameters in the model (plus 1), :math:`n` is the
 number of data points, and :math:`RSS` is the residual sum of squares. For
-small sample sizes, the AICc (corrected AIC) is recommended. The AICc is
+small sample sizes, it is recommended to use the AICc (corrected AIC), which is
 calculated as follows:
 
 .. math::
@@ -100,22 +115,20 @@ calculated as follows:
 In practice, because the AICc approximates the AIC for large sample sizes,
 it's often advised that AICc be used as default.
 
+The AIC
+value can be found in the statistical output file or directly in
+the graphical user interface. 
+
+To identify the best model, different candidate models that differ in terms
+of structure or complexity can be used
+to fit the data and then compared based on their AIC. The model
+with the lowest AIC value is considered the best-fitting model among
+the candidates. However, it is crucial to consider the differences
+in AIC values between models, as models with low ΔAIC values (typically < 2)
+are considered to have similar support from the data. 
+
 More information on the AIC can be found in the `original paper by Akaike
 (1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_ or `in
-this great guide by Symonds and Moussalli (2011) <https://doi.org/10
+this practical guide <https://doi.org/10
 .1007/s00265-010-1037-6>`_.
-
-
-Sensitivity analysis
-*********************
-
-To determine the precision on the fit and on the estimated parameters
-(including fluxes), PhysioFit performs a Monte Carlo analysis. Briefly,
-PhysioFit generates several
-datasets by adding noise to the dynamics simulated from the best fit, and
-calculated fluxes and other growth
-parameters for each of these synthetic datasets. This enables PhysioFit to
-compute statistics (mean, median, standard deviation and 95% confidence
-interval) for each parameter (including fluxes). We recommend always running
-a sensitivity analysis when using PhysioFit.
 
