@@ -19,11 +19,11 @@ additional tailor-made models can be implemented by users.
 **PhysioFit includes the following features:**
 
    * **calculation of growth rate and extracellular (uptake and production) fluxes**,
-   * **a set of steady-state and dynamic models** are shipped with PhysioFit,
+   * a set of **steady-state and dynamic models**,
    * **tailor-made models** can be constructed by users,
    * Monte-Carlo sensitivity analysis to **estimate the precision of the calculated fluxes**,
    * **evaluation of the goodness of fit and visual inspection of the fitted curves**,
-   * Akaike information criterion to **guide users to identify the most appropriate model**,
+   * calculation of the Akaike information criterion to **guide users to identify the most appropriate model**,
    * shipped as a **library** with both a **graphical** and a **command line** interface,
    * **open-source, free and easy to install** everywhere where Python 3 and pip run,
    * **biologist-friendly**.
