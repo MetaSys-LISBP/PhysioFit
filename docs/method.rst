@@ -88,12 +88,14 @@ good enough with respect to the standard deviations provided (at a 95%
 confidence level). PhysioFit provides an explicit message stating whether
 the flux data are satisfactorily fitted or not (at a 95% confidence interval).
 
-Model comparison
+Model comparison and selection
 ***********************************
 
-PhysioFit calculates the Aikake Information Criterion (AIC)
-to help users select the most appropriate model for their data.
-The AIC is a measure of the explanatory power of a model with respect to a
+PhysioFit calculates the Aikake Information Criterion (both classical and corrected, AIC and AICc)
+to help users compare different models and select the most appropriate one for their data. The AIC and AICc values
+can be found in the statistical output file or directly in
+the graphical user interface. 
+The AIC is a statistical metrics that measures the explanatory power of a model with respect to a
 given set of data. The model with the lowest AIC value is
 thus considered the best model.
 
@@ -101,11 +103,12 @@ The AIC is calculated as follows:
 
 .. math::
 
-    AIC = 2k + n \ln(\frac{RSS}{n})
+    AIC = 2k + n \ln(\frac{residuum}{n})
 
 where :math:`k` is the number of parameters in the model (plus 1), :math:`n` is the
-number of data points, and :math:`RSS` is the residual sum of squares. For
-small sample sizes (typically < 40 data points>), it is recommended to use 
+number of data points, and :math:`residuum` is the residual sum of squares (see
+:ref:`optimization_process`). For
+datasets with a low number of measurements (typically less than 40 data points>), it is recommended to use 
 the AICc (corrected AIC), which is
 calculated as follows:
 
@@ -116,10 +119,6 @@ calculated as follows:
 In practice, because the AICc approximates the AIC for large sample sizes,
 it's often advised that AICc be used as default.
 
-The AIC
-value can be found in the statistical output file or directly in
-the graphical user interface. 
-
 To identify the best model, different candidate models that differ in terms
 of structure or complexity can be used
 to fit the data and then compared based on their AIC. The model
@@ -128,8 +127,8 @@ the candidates and should thus used to fit the dataset. However, it is crucial t
 in AIC values between models, as models with low ΔAIC values (typically < 2)
 are considered to have similar support from the data. 
 
-More information on the AIC can be found in the `original paper by Akaike
-(1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_ or `in
-this practical guide <https://doi.org/10
+More information on the AIC can be found in the original publication
+by `Akaike (1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_ or in
+this practical guide by `Symonds and Moussali (2010) <https://doi.org/10
 .1007/s00265-010-1037-6>`_.
 
