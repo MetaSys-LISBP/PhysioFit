@@ -108,7 +108,7 @@ The AIC is calculated as follows:
 where :math:`k` is the number of parameters in the model (plus 1), :math:`n` is the
 number of data points, and :math:`residuum` is the residual sum of squares (see
 :ref:`optimization_process`). For
-datasets with a low number of measurements (typically less than 40 data points>), it is recommended to use 
+datasets with a low number of measurements (typically less than 40 data points), it is recommended to use 
 the AICc (corrected AIC), which is
 calculated as follows:
 
