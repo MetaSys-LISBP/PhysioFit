@@ -93,7 +93,7 @@ Model comparison
 
 PhysioFit calculates the Aikake Information Criterion (AIC)
 to help users select the most appropriate model for their data.
-The AIC is a measure of the explanatory power of a model to explain a
+The AIC is a measure of the explanatory power of a model with respect to a
 given set of data. The model with the lowest AIC value is
 thus considered the best model.
 
@@ -105,7 +105,8 @@ The AIC is calculated as follows:
 
 where :math:`k` is the number of parameters in the model (plus 1), :math:`n` is the
 number of data points, and :math:`RSS` is the residual sum of squares. For
-small sample sizes, it is recommended to use the AICc (corrected AIC), which is
+small sample sizes (typically < 40 data points>), it is recommended to use 
+the AICc (corrected AIC), which is
 calculated as follows:
 
 .. math::
@@ -123,7 +124,7 @@ To identify the best model, different candidate models that differ in terms
 of structure or complexity can be used
 to fit the data and then compared based on their AIC. The model
 with the lowest AIC value is considered the best-fitting model among
-the candidates. However, it is crucial to consider the differences
+the candidates and should thus used to fit the dataset. However, it is crucial to consider the differences
 in AIC values between models, as models with low ΔAIC values (typically < 2)
 are considered to have similar support from the data. 
 
