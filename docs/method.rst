@@ -82,7 +82,7 @@ determine the goodness of fit. The p-value of one-tail χ² test is calculated
 by PhysioFit from the best fit and is given in the log file (have a look to
 the :doc:`usage` section). A p-value close to 0 means poor fitting, and a
 p-value close to 1 means good fitting (keeping in mind that a p-value very
-close to 1 can be an evidence that standard deviations might be
+close to 1 suggest that standard deviations might be
 overestimated). A p-value between 0.95 and 1 means the model fits the data
 good enough with respect to the standard deviations provided (at a 95%
 confidence level). PhysioFit provides an explicit message stating whether
@@ -95,7 +95,7 @@ PhysioFit calculates the Aikake Information Criterion (both classical and correc
 to help users compare different models and select the most appropriate one for their data. The AIC and AICc values
 can be found in the statistical output file or directly in
 the graphical user interface. 
-The AIC is a statistical metrics that measures the explanatory power of a model with respect to a
+Briefly, the AIC is a statistical metric that measures the explanatory power of a model with respect to a
 given set of data. The model with the lowest AIC value is
 thus considered the best model.
 
@@ -117,7 +117,7 @@ calculated as follows:
     AICc = AIC + \frac{2k(k+1)}{n-k-1}
 
 In practice, because the AICc approximates the AIC for large sample sizes,
-it's often advised that AICc be used as default.
+it's often advised to use AICc as the default.
 
 To identify the best model, different candidate models that differ in terms
 of structure or complexity can be used
@@ -127,8 +127,9 @@ the candidates and should thus used to fit the dataset. However, it is crucial t
 in AIC values between models, as models with low ΔAIC values (typically < 2)
 are considered to have similar support from the data. 
 
-More information on the AIC can be found in the original publication
-by `Akaike (1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_ or in
-this practical guide by `Symonds and Moussali (2010) <https://doi.org/10
+Detailed information on the AIC can be found in the original publication
+by `Akaike (1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_, and a practical
+guide ("what it is, how and when to apply it and what it achieves") has been published by
+`Symonds and Moussali (2010) <https://doi.org/10
 .1007/s00265-010-1037-6>`_.
 

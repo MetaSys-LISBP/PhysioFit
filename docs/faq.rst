@@ -69,15 +69,15 @@ The choice of the model depends on the biological question you are addressing,
 the data you have, and the assumptions you are willing to make. We provide a
 set of models in PhysioFit, each with its own assumptions and requirements.
 
-As a starting point, we recommend to start with the most appropriate model you have
-in mind based on the type of experiment you have conducted. Start with the
-simplest model that fits your data, and
-evaluate the quality of the fit based on the χ² test results and on the plots
-of experimental vs simulated data. If the fit is not satisfactory, you may
-want to try more complex models, but keep in mind that more complex models may
-require more data and often include more assumptions, and may lead to overfitting.
+As a starting point, we recommend using the most relevant model based on
+the type of experiment you have conducted. Begin with the simplest model that
+fits your data and evaluate the quality of the fit based on the χ² test
+results and the plots of experimental vs. simulated data. If the fit is
+not satisfactory, you may try more complex models. However, keep in mind
+that more complex models often require more data, include more assumptions,
+and may lead to overfitting.
 
-If different models fit your data, a good practice to compare different models
+If different models fit your data, a good practice for comparing them
 is to use the AIC (Akaike Information Criterion). For more information, please
 refer to the section "Model comparison" from the :doc:`method` page.
 
