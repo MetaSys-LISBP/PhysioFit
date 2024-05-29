@@ -517,12 +517,10 @@ Test the model
 
 **Simulate data from parameters**
 
-It is possible to simulate synthetic data using a set of predefined
-parameters to then use this data to test the model or write unit tests. This
-can be done by updating the parameters dictionary in the model with the
-desired parameters.
-The number of simulated data points is defined by the length of the input
-dataframe (for which the actual data points do not matter): ::
+It is possible to simulate synthetic data using the model's default
+parameters (or a set of predefined parameters) to asses the functionality of
+the model. The number of simulated data points is defined by the length of
+the input dataframe (for which the actual data points do not matter): ::
 
     import pandas as pd
     import numpy as np
@@ -545,22 +543,28 @@ dataframe (for which the actual data points do not matter): ::
         "Steady-state batch model",
         data
     )
-    model.get_params() # Get default parameters for the model
 
+    # Get default parameters for the model
+    model.get_params()
+
+    # Simulate data
     sim_data = model.simulate(
         list(model.parameters.values()),
         model.data.drop("time", axis=1),
         model.time_vector,
         model.args
     )
+    # Create a pretty visualisation of the data in a dataframe
     df = pd.DataFrame(
         data=sim_data,
         index=model.time_vector,
         columns=model.name_vector
     )
-    # give the index the name "time"
+    # Give the index the name "time" for clarity
     df.index.name = "time"
-    df.plot() # Visualize the simulated data
+
+    # Visualize the simulated data
+    df.plot()
 
 The dataframe can then be used as input data for the model, and the model
 can be tested as described above. If the parameters to use for the
@@ -589,7 +593,8 @@ synthetic data,you can now launch the estimation of parameters: ::
         from physiofit.base.io import IoHandler
         from physiofit.models.base_model import StandardDevs
 
-        test_data = df.reset_index() # Use the simulated data from above
+        # Use the simulated data from above
+        test_data = df.reset_index()
 
         io = IoHandler()
         model = ChildModel(data=test_data)
