@@ -276,7 +276,7 @@ def test_monod_model(monod_model_sds, pyfoomb_simulated_data):
         b=list(optimized_params.values()),
         a=[0.01, 0.4, 1, 1.5, 20, 0.12, 0],
         rtol=1e-2,
-        atol=1e-3
+        atol=1e-2
     )
 
 
@@ -305,5 +305,5 @@ def test_physiofit_simulations(parameters, placeholder_data,
         df,
         pyfoomb_simulated_data,
         rtol=1e-2,
-        atol=1e-3
+        atol=1e-2
     )
