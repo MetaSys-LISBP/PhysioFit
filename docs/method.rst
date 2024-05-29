@@ -81,10 +81,10 @@ high.
 The resulting χ² value can then be compared with a χ² distribution to
 determine the goodness of fit. The p-value of one-tail χ² test is calculated
 by PhysioFit from the best fit and is given in the log file (have a look to
-the :doc:`usage` section). A p-value close to 0 means poor fitting, and a
-p-value close to 1 means good fitting (keeping in mind that a p-value very
-close to 1 suggest that standard deviations might be
-overestimated). A p-value between 0.95 and 1 means the model fits the data
+the :doc:`usage` section). A p-value close to 1 means poor fitting, and a
+p-value close to 0 means good fitting (keeping in mind that a p-value very
+close to 0 suggest that standard deviations might be
+overestimated). A p-value between 0 and 0.05 means the model fits the data
 good enough with respect to the standard deviations provided (at a 95%
 confidence level). PhysioFit provides an explicit message stating whether
 the flux data are satisfactorily fitted or not (at a 95% confidence interval).
