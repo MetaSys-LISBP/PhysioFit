@@ -515,42 +515,6 @@ behind this implementation can be found :ref:`here <default_dynamic_models>`.
 Test the model
 --------------
 
-Once you have completely populated your model file, you can now launch a round of simulations and optimizations in a
-programmatic way: ::
-
-    if __name__ == "__main__":
-        from physiofit.base.io import IoHandler
-        from physiofit.models.base_model import StandardDevs
-
-        test_data = pd.DataFrame(
-            {
-                "time": [0, 1, 2, 3],
-                "experiments": ["A", "A", "A", "A"],
-                "X": [0.5, 0.8, 1.2, 1.8],
-                "Glucose": [12, 11.6, 11, 10.2]
-            }
-        )
-
-        io = IoHandler()
-        model = ChildModel(data=test_data)
-        model.get_params()
-        fitter = io.initialize_fitter(
-            model.data,
-            model=model,
-            mc=True,
-            iterations=100,
-            sd=StandardDevs({"X": 1, "Glucose": 1}),
-            debug_mode=True
-        )
-        fitter.optimize()
-        fitter.monte_carlo_analysis()
-        fitter.khi2_test()
-        print(fitter.parameter_stats)
-
-This will return the calculated flux values and associated statistics.
-
-.. note:: The test data and calculation parameters (e.g. standard deviations) defined in the test function must correspond to those expected for the new model.
-
 **Simulate data from parameters**
 
 It is possible to simulate synthetic data using a set of predefined
@@ -581,21 +545,7 @@ dataframe (for which the actual data points do not matter): ::
         "Steady-state batch model",
         data
     )
-    model.get_params()
-
-    # Update parameters
-    model.parameters.update(
-        {
-            "X_0": 0.02,
-            "growth_rate": 0.8,
-            "Glucose_q": -8,
-            "Glucose_M0": 20,
-            "Acetate_q": 3,
-            "Acetate_M0": 0.01,
-            "Glutamate_q": 2,
-            "Glutamate_M0": 0.01
-        }
-    )
+    model.get_params() # Get default parameters for the model
 
     sim_data = model.simulate(
         list(model.parameters.values()),
@@ -613,7 +563,56 @@ dataframe (for which the actual data points do not matter): ::
     df.plot() # Visualize the simulated data
 
 The dataframe can then be used as input data for the model, and the model
-can be tested as described above.
+can be tested as described above. If the parameters to use for the
+simulation are not the ones given by default, you can always update the
+associated model parameters using the built-in update method: ::
+
+    model.parameters.update(
+        {
+            "X_0": 0.02,
+            "growth_rate": 0.8,
+            "Glucose_q": -8,
+            "Glucose_M0": 20,
+            "Acetate_q": 3,
+            "Acetate_M0": 0.01,
+            "Glutamate_q": 2,
+            "Glutamate_M0": 0.01
+        }
+    )
+
+**Parameter estimation**
+
+Once you have completely populated your model file and generated the
+synthetic data,you can now launch the estimation of parameters: ::
+
+    if __name__ == "__main__":
+        from physiofit.base.io import IoHandler
+        from physiofit.models.base_model import StandardDevs
+
+        test_data = df.reset_index() # Use the simulated data from above
+
+        io = IoHandler()
+        model = ChildModel(data=test_data)
+        model.get_params()
+        fitter = io.initialize_fitter(
+            model.data,
+            model=model,
+            mc=True,
+            iterations=100,
+            sd=StandardDevs({"X": 0.2, "Glucose": 0.2, "Acetate": 0.2, "Glutamate": 0.2}),
+            debug_mode=True
+        )
+        fitter.optimize()
+        fitter.monte_carlo_analysis()
+        fitter.khi2_test()
+        print(fitter.parameter_stats)
+
+This will return the calculated flux values and associated statistics.
+comparing the estimated parameters with the initial parameters used to
+simulate the data will allow you to assess the quality of the model. This
+process can be repeated with different sets of parameters to ensure the
+robustness of the model. This code can then be used as unit tests for the
+created model.
 
 **GUI integration**
 
