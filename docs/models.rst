@@ -192,8 +192,8 @@ method to inherit the logic from the base class: ::
         def __init__(self, data):
             super().__init__(data)
             self.model_name = "Tutorial model"
-            self.parameters_to_estimate = None
-            self.fixed_parameters = None
+            self.parameters = None
+            self.args = None
 
         def get_params(self):
             pass
@@ -235,10 +235,10 @@ If you now run the file, you should have a standard output in your console that 
     2     2           A  1.2     11.0
     3     3           A  1.8     10.2
     Experimental matrix:
-    [['A' 0.5 12.0]
-     ['A' 0.8 11.6]
-     ['A' 1.2 11.0]
-     ['A' 1.8 10.2]]
+    [[0.5 12.0]
+     [0.8 11.6]
+     [1.2 11.0]
+     [1.8 10.2]]
     Time vector: [0 1 2 3]
     Name vector: ['X', 'Glucose']
     Biomass & Metabolites: ['Glucose']
@@ -246,15 +246,19 @@ If you now run the file, you should have a standard output in your console that 
     Fixed parameters: None
     Bounds: None
 
-The next step is to define the parameters (used for simulationsand optimization). PhysioFit supports two types of parameters (**parameters to estimate** and **fixed parameters**) which are detailed below.
+The next step is to define the parameters (used for simulations and
+optimization). PhysioFit supports two types of parameters (**parameters to
+estimate** and **fixed parameters**) which are detailed below.
 
 .. _parameters_to_estimate:
 
 Free parameters
 ^^^^^^^^^^^^^^^
 
-The free parameters are the parameters that will be estimated by PhysioFit, and thus that require defining bounds and initial values
-to be initialized. The list of parameters and their initial (default) values must be returned by the :samp:`get_params` method: ::
+The free parameters are the parameters that will be estimated by PhysioFit,
+and thus that require defining bounds and initial values to be initialized.
+The list of parameters and their initial (default) values must be returned
+by the :samp:`get_params` method: ::
 
     from physiofit.models.base_model import Model
 
@@ -263,8 +267,8 @@ to be initialized. The list of parameters and their initial (default) values mus
         def __init__(self, data):
             super().__init__(data)
             self.model_name = "Tutorial model"
-            self.parameters_to_estimate = None
-            self.fixed_parameters = None
+            self.parameters = None
+            self.args = None
 
         def get_params(self):
 
@@ -272,8 +276,8 @@ to be initialized. The list of parameters and their initial (default) values mus
             # the parameter name and the value is a number that will
             # be the initial value for the optimization process
 
-            self.parameters_to_estimate = {
-                "BM_0": 1,
+            self.parameters = {
+                "X_0": 1,
                 "growth_rate": 1
             }
 
@@ -281,7 +285,7 @@ to be initialized. The list of parameters and their initial (default) values mus
             # using a for loop:
 
             for metabolite in self.metabolites:
-                self.parameters_to_estimate.update(
+                self.parameters.update(
                     {
                         f"{metabolite}_flux" : 1,
                         f"{metabolite}_init_value" : 1
@@ -292,7 +296,9 @@ to be initialized. The list of parameters and their initial (default) values mus
         def simulate():
             pass
 
-.. note:: For a given model, the number of metabolites may vary depending on the experiment, hence the metabolite-dependent parameters can be automatically defined in this function (as illustrated here using a for loop).
+.. note:: For a given model, the number of metabolites may vary depending on
+            the experiment, hence the metabolite-dependent parameters can be
+            automatically defined in this function (as illustrated here using a for loop).
 
 The next step is to define the default bounds used for the optimization process (these bounds can be changed in the GUI). The bounds are a
 class of objects that handle the logic and checks. They are derived from the python :samp:`dict` base class, and as such
@@ -305,8 +311,8 @@ implement the same methods (e.g. :samp:`update`). Here is an example of how to i
         def __init__(self, data):
             super().__init__(data)
             self.model_name = "Tutorial model"
-            self.parameters_to_estimate = None
-            self.fixed_parameters = None
+            self.parameters = None
+            self.args = None
 
         def get_params(self):
 
@@ -314,7 +320,7 @@ implement the same methods (e.g. :samp:`update`). Here is an example of how to i
             # the parameter name and the value is a number that will
             # be the initial value for the optimization process
 
-            self.parameters_to_estimate = {
+            self.parameters = {
                 "BM_0": 1,
                 "growth_rate": 1
             }
@@ -332,7 +338,7 @@ implement the same methods (e.g. :samp:`update`). Here is an example of how to i
             # using a for loop:
 
             for metabolite in self.metabolites:
-                self.parameters_to_estimate.update(
+                self.parameters.update(
                     {
                         f"{metabolite}_flux" : 1,
                         f"{metabolite}_init_value" : 1
@@ -355,14 +361,17 @@ implement the same methods (e.g. :samp:`update`). Here is an example of how to i
 
 .. _fixed_parameters:
 
-Fixed parameters
+Extra args
 ^^^^^^^^^^^^^^^^
 
-The fixed parameters are parameters that are known and are not estimated by PhysioFit. For example, in the case of
-steady-state models that account for non enymatic degradation (see :ref:`default_steady-state_models`.), we need to provide the
-degradation constant of all unstable metabolites (these constants must be measured in an independent experiment, e.g. see Peiro et al., 2019): ::
+The extra args are parameters that are known, constant and are not estimated
+by PhysioFit. For example, in the case of steady-state models that account
+for non enymatic degradation (see :ref:`default_steady-state_models`.), we
+need to provide the degradation constant of all unstable metabolites (these
+constants must be measured in an independent experiment, e.g. see `Peiro et
+al., 2019 <https://pubmed.ncbi.nlm.nih.gov/31126940/>`_): ::
 
-    self.fixed_parameters = {"Degradation": {
+    self.args = {"Degradation Constants": {
             metabolite: 2 for metabolite in self.metabolites
             }
         }
@@ -391,13 +400,17 @@ To do this, first write out the function definition: ::
         pass
 
 As shown above, this function takes four arguments:
-    * :samp:`params_opti`: list containing the values of each parameter to estimate **in the same order as defined in the :samp:`parameters_to_estimate` dictionary** (see :ref:`parameters_to_estimate`)
+    * :samp:`params_opti`: list containing the values of each parameter to
+      estimate **in the same order as defined in the**
+      :samp:`parameters_to_estimate` **dictionary** (see
+      :ref:`parameters_to_estimate`)
     * :samp:`data_matrix`: numpy array containing the experimental data (or data with the same shape)
     * :samp:`time_vector`: numpy array containing the time points
     * :samp:`params_non_opti`: dictionary containing the fixed parameters (see :ref:`fixed_parameters`)
 
 Now you can start writing the body of the function. For sake of clarity, we recommend unpacking parameters values from the 
-list of parameters to estimate into internal variables. Th function *simulate* must return a matrix containing the simulation results, with the same shape as 
+list of parameters to estimate into internal variables. The function
+*simulate* must return a matrix containing the simulation results, with the same shape as
 the matrix containing the experimental data. To initialize the simulated matrix, you can 
 use the :samp:`empty_like` function from the numpy library: ::
 
@@ -412,18 +425,17 @@ use the :samp:`empty_like` function from the numpy library: ::
         simulated_matrix = np.empty_like(data_matrix)
 
         # Get initial params
-        x_0 = params_opti[0]
-        mu = params_opti[1]
+        x_0 = parameters[0]
+        mu = parameters[1]
 
         # Get X_0 values
         exp_mu_t = np.exp(mu * time_vector)
         simulated_matrix[:, 0] = x_0 * exp_mu_t
-        fixed_params = [value for value in params_non_opti["Degradation"].values()]
+        fixed_params = [value for value in args[("Degradation constants")].values()]
 
-        # Get parameter names and run the calculations column by column
-        for i in range(1, int(len(params_opti) / 2)):
-            q = params_opti[i * 2]
-            m_0 = params_opti[i * 2 + 1]
+        for i in range(1, int(len(parameters) / 2)):
+            q = parameters[i * 2]
+            m_0 = parameters[i * 2 + 1]
             k = fixed_params[i - 1]
             exp_k_t = np.exp(-k * time_vector)
             simulated_matrix[:, i] = q * (x_0 / (mu + k)) \
@@ -465,10 +477,10 @@ function. The system of ODEs can be provided directly within the body of the sim
         def calculate_derivative(t, state, y_BM, y_P, km, qsmax):
 
             # get substrate and biomass concentrations
-            s_t = state[0]
-            x_t = state[1]
+            x_t = state[0]
+            s_t = state[1]
 
-            # calculate fluxes
+            # calculate fluxes at time t
             qs_t = qsmax * (s_t / (km + s_t))
             mu_t = y_BM * qs_t
             qp_t = y_P * qs_t
@@ -539,6 +551,71 @@ This will return the calculated flux values and associated statistics.
 
 .. note:: The test data and calculation parameters (e.g. standard deviations) defined in the test function must correspond to those expected for the new model.
 
+**Simulate data from parameters**
+
+It is possible to simulate synthetic data using a set of predefined
+parameters to then use this data to test the model or write unit tests. This
+can be done by updating the parameters dictionary in the model with the
+desired parameters.
+The number of simulated data points is defined by the length of the input
+dataframe (for which the actual data points do not matter): ::
+
+    import pandas as pd
+    import numpy as np
+    from physiofit.base.io import IoHandler
+
+    # Generate data to get shape of desired output
+    data = pd.DataFrame(
+        {
+            "time": np.arange(6, step=0.2),
+            "X": np.arange(6, step=0.2),
+            "Glucose": np.arange(6, step=0.2),
+            "Acetate": np.arange(6, step=0.2),
+            "Glutamate": np.arange(6, step=0.2),
+        }
+    )
+
+    # Initialize model
+    io = IoHandler()
+    model = io.select_model(
+        "Steady-state batch model",
+        data
+    )
+    model.get_params()
+
+    # Update parameters
+    model.parameters.update(
+        {
+            "X_0": 0.02,
+            "growth_rate": 0.8,
+            "Glucose_q": -8,
+            "Glucose_M0": 20,
+            "Acetate_q": 3,
+            "Acetate_M0": 0.01,
+            "Glutamate_q": 2,
+            "Glutamate_M0": 0.01
+        }
+    )
+
+    sim_data = model.simulate(
+        list(model.parameters.values()),
+        model.data.drop("time", axis=1),
+        model.time_vector,
+        model.args
+    )
+    df = pd.DataFrame(
+        data=sim_data,
+        index=model.time_vector,
+        columns=model.name_vector
+    )
+    # give the index the name "time"
+    df.index.name = "time"
+    df.plot() # Visualize the simulated data
+
+The dataframe can then be used as input data for the model, and the model
+can be tested as described above.
+
+**GUI integration**
 
 To test the integration of the model into the GUI, copy the :file:`.py` file
 in the folder :file:`models` of PhysioFit directory. You can get the path towards this folder by opening a python
@@ -557,3 +634,4 @@ have a look to the error message and correct the code.
 .. note:: We would be happy to broaden the types of models shipped with PhysioFit. If you have developed a new model, it might be 
           usefull and valuable to the fluxomics community! Please, keep in touch with us to discuss on the model and see if we can include your 
           model in the built-in models shipped with PhysioFit! :)
+
