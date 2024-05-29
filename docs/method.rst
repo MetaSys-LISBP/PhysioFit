@@ -10,8 +10,9 @@ metabolite and biomass concentrations, as detailed below.
 
 Flux values provided by PhysioFit correspond the best fit. A global sensitivity analysis (Monte-Carlo approach) is
 available to evaluate the precision of the estimated fluxes (mean, median, standard deviation, 95% confidence
-intervals), plots are generated for visual inspection of the fitting quality, and a χ² test is performed to assess the
-statistical goodness of fit.
+intervals), plots are generated for visual inspection of the fitting quality, a χ² test is performed to assess the
+statistical goodness of fit and an AIC (Akaike Information Criterion) is
+calculated to compare the different models.
 
 .. _method_models:
 
