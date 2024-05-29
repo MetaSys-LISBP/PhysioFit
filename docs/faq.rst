@@ -10,31 +10,39 @@ in the :doc:`method` section.
 How many measurements should I use to calculate fluxes?
 ------------------------------------------------------------------
 
-As in any model-based fitting procedure, more data usually means more accurate and precise flux estimates. The minimal number of 
-measurements depend on the model used for flux calculation. For instance, for steady-state built-in models provided with PhysioFit, we recommend using
-at least 6 to 8 time points, which should provide reliable and meaningful estimates in most situations.
+As in any model-based fitting procedure, more data usually means more
+accurate and precise flux estimates. The minimal number of measurements
+depend on the model used for flux calculation. For instance, for
+steady-state built-in models provided with PhysioFit, we recommend using at
+least 6 to 8 time points, which should provide reliable and meaningful
+estimates in most situations.
 
-Still, the exact answer to this question strongly depends on the uptake/production/growth rates of your (micro)organism
-in the conditions you are investigating, on the sampling time interval, on the questions you are addressing, on the model used for flux calculation, and on
-many other parameters! You can make some tests by calculating fluxes from (published or theoretical) datasets similar
-to those you have in mind.
+Still, the exact answer to this question strongly depends on the
+uptake/production/growth rates of your (micro)organism in the conditions you
+are investigating, on the sampling time interval, on the questions you are
+addressing, on the model used for flux calculation, and on many other
+parameters! You can make some tests by calculating fluxes from (published or
+theoretical) datasets similar to those you have in mind.
 
 Can I calculate fluxes in case of missing values?
 ------------------------------------------------------------------
 
-Yes, fluxes can still be calculated if some measurement(s) are missing. In this case, let empty the corresponding field
-of the input data file.
+Yes, fluxes can still be calculated if some measurement(s) are missing. In
+this case, leave empty the corresponding field of the input data file.
 
 ..  _`conc units`:
 
 What units should be used for input data?
 -----------------------------------------
 
-Input data (biomass concentration, metabolites concentrations, and time) can be provided to PhysioFit using any unit.
-Still, we recommand to use units for which values are as close to unity as possible to ensure numerical stability (e.g.
-3 mM instead of 3.10\ :sup:`-3` M). Importantly, units of the estimated fluxes depend on units of time and metabolites and biomass
-concentrations. The concentration of different metabolites can be provided using different units, but a single unit
-must be used for all measurements of a given metabolite.
+Input data (biomass concentration, metabolites concentrations, and time) can
+be provided to PhysioFit using any unit. Still, we recommend using units
+for which values are as close to unity as possible to ensure numerical
+stability (e.g. 3 mM instead of 3.10\ :sup:`-3` M). Importantly, units of
+the estimated fluxes depend on units of time and metabolites and biomass
+concentrations. The concentration of different metabolites can be provided
+using different units, but a single unit must be used for all measurements
+of a given metabolite.
 
 .. seealso:: :ref:`flux units` 
 
@@ -82,7 +90,7 @@ is to use the AIC (Akaike Information Criterion). For more information, please
 refer to the section "Model comparison" from the :doc:`method` page.
 
 
-How can I check if my data have been fitted correctly?
+How can I check if my data has been fitted correctly?
 ------------------------------------------------------------------
 
 The quality of the fit can be evaluated based on:
@@ -119,7 +127,7 @@ potential biases that would be introduced by interpreting (or not) these
 flux values.
 
 In rare situations, it may also be because some parameters have to be
-tweaked to help PhysioFit fitting the measurements, which results in
+tweaked to help PhysioFit fit the measurements, which results in
 obviously aberrant fits (e.g. with flat time-course profiles for all
 metabolites). This might happen for instance if some measurements are
 provided in units far from unity (e.g. 1.10\ :sup:`-5` M instead of 10 µM). If
@@ -148,8 +156,9 @@ Please follow this simple procedure:
    * If it is related to your system or your Python installation, you will need to ask some
      help from your local system administrator or your IT department so they could
      guide you toward a clean installation. Tell them that you wanted "to use the graphical
-     user interface of PhysioFit, a Python 3.6 software" and what you did so far (installation),
-     give them the traceback and a link toward the documentation. They should know what to do.
+     user interface of PhysioFit, a Python 3.9 software" and what you did so
+     far (installation), give them the traceback and a link toward the
+     documentation. They should know what to do.
    * If you believe the problem is in PhysioFit or that your local system administrator
      told you so, then you probably have found a bug! We would greatly appreciate
      if you could open a new issue on our `issue tracker  <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_.
