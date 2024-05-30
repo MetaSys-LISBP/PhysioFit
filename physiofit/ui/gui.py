@@ -127,18 +127,15 @@ class App:
                         input_path = self._get_data_path_config_context()
                     self.config_parser.path_to_data = input_path
                     st.session_state["config_parser_data_path"] = input_path
-                #st.write(
-                #    f"File path in config parser: {self.config_parser.path_to_data}")
-                #st.write(
-                #    f"file path in session state: {st.session_state.get('config_parser_data_path')}")
-                #st.write(self.config_parser)
-                st.info(f"Input data: {self.config_parser.path_to_data}")
+
+                # Load data into io_handler
+                self.data_file = Path(self.config_parser.path_to_data)
                 self.input_datafile_name = Path(
                     self.config_parser.path_to_data).stem
-                # Load data into io_handler
                 self.io.data = self.io.read_data(
                     str(self.config_parser.path_to_data)
                 )
+                st.info(f"Input data: {self.data_file}")
             except Exception:
                 st.error(
                     "An error has occurred when reading the yaml "
@@ -381,9 +378,7 @@ class App:
         ]
         idx = None
         if self.config_parser and self.config_parser.model:
-            #st.write(f"idx: {idx}")
             try:
-                #st.write(f"model_options: {model_options}")
                 idx = model_options.index(
                     self.config_parser.model["model_name"])
             except Exception:
@@ -392,7 +387,6 @@ class App:
                     "file"
                 )
                 raise
-        #st.write(f"idx: {idx}")
 
         model_name = st.selectbox(
             label="Model",
@@ -404,7 +398,6 @@ class App:
 
         # if model_name == "Dynamic system (only substrates)":
         #    st.error("Not yet implemented...")
-        #st.write(f"Selected model: {model_name}")
         if model_name:
             # Initialize selected model
             self.model = self.io.select_model(model_name)
@@ -713,10 +706,9 @@ class App:
                 raise RuntimeError("Please provide a valid output directory")
 
             # Initialize the result export directory
-            self.io.res_path = self.io.wkdir / (self.io.wkdir.name + "_res")
-            if not clicked:
-                if not self.io.res_path.is_dir():
-                    self.io.res_path.mkdir()
+            # self.io.res_path = self.io.wkdir / (self.io.wkdir.name + "_res")
+            # if not clicked and not self.io.res_path.is_dir()::
+            #     self.io.res_path.mkdir()
 
 
 if __name__ == "__main__":
