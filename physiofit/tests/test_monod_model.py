@@ -275,7 +275,7 @@ def test_monod_model(monod_model_sds, pyfoomb_simulated_data):
     assert np.allclose(
         b=list(optimized_params.values()),
         a=[0.01, 0.4, 1, 1.5, 20, 0.12, 0],
-        rtol=1e-2,
+        rtol=1e-3,
         atol=1e-2
     )
 
@@ -304,6 +304,6 @@ def test_physiofit_simulations(parameters, placeholder_data,
     pd.testing.assert_frame_equal(
         df,
         pyfoomb_simulated_data,
-        rtol=1e-2,
+        rtol=1e-3,
         atol=1e-2
     )

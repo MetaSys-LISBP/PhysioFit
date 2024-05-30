@@ -515,50 +515,12 @@ behind this implementation can be found :ref:`here <default_dynamic_models>`.
 Test the model
 --------------
 
-Once you have completely populated your model file, you can now launch a round of simulations and optimizations in a
-programmatic way: ::
-
-    if __name__ == "__main__":
-        from physiofit.base.io import IoHandler
-        from physiofit.models.base_model import StandardDevs
-
-        test_data = pd.DataFrame(
-            {
-                "time": [0, 1, 2, 3],
-                "experiments": ["A", "A", "A", "A"],
-                "X": [0.5, 0.8, 1.2, 1.8],
-                "Glucose": [12, 11.6, 11, 10.2]
-            }
-        )
-
-        io = IoHandler()
-        model = ChildModel(data=test_data)
-        model.get_params()
-        fitter = io.initialize_fitter(
-            model.data,
-            model=model,
-            mc=True,
-            iterations=100,
-            sd=StandardDevs({"X": 1, "Glucose": 1}),
-            debug_mode=True
-        )
-        fitter.optimize()
-        fitter.monte_carlo_analysis()
-        fitter.khi2_test()
-        print(fitter.parameter_stats)
-
-This will return the calculated flux values and associated statistics.
-
-.. note:: The test data and calculation parameters (e.g. standard deviations) defined in the test function must correspond to those expected for the new model.
-
 **Simulate data from parameters**
 
-It is possible to simulate synthetic data using a set of predefined
-parameters to then use this data to test the model or write unit tests. This
-can be done by updating the parameters dictionary in the model with the
-desired parameters.
-The number of simulated data points is defined by the length of the input
-dataframe (for which the actual data points do not matter): ::
+It is possible to simulate synthetic data using the model's default
+parameters (or a set of predefined parameters) to asses the functionality of
+the model. The number of simulated data points is defined by the length of
+the input dataframe (for which the actual data points do not matter): ::
 
     import pandas as pd
     import numpy as np
@@ -581,9 +543,34 @@ dataframe (for which the actual data points do not matter): ::
         "Steady-state batch model",
         data
     )
+
+    # Get default parameters for the model
     model.get_params()
 
-    # Update parameters
+    # Simulate data
+    sim_data = model.simulate(
+        list(model.parameters.values()),
+        model.data.drop("time", axis=1),
+        model.time_vector,
+        model.args
+    )
+    # Create a pretty visualisation of the data in a dataframe
+    df = pd.DataFrame(
+        data=sim_data,
+        index=model.time_vector,
+        columns=model.name_vector
+    )
+    # Give the index the name "time" for clarity
+    df.index.name = "time"
+
+    # Visualize the simulated data
+    df.plot()
+
+The dataframe can then be used as input data for the model, and the model
+can be tested as described above. If the parameters to use for the
+simulation are not the ones given by default, you can always update the
+associated model parameters using the built-in update method: ::
+
     model.parameters.update(
         {
             "X_0": 0.02,
@@ -597,23 +584,40 @@ dataframe (for which the actual data points do not matter): ::
         }
     )
 
-    sim_data = model.simulate(
-        list(model.parameters.values()),
-        model.data.drop("time", axis=1),
-        model.time_vector,
-        model.args
-    )
-    df = pd.DataFrame(
-        data=sim_data,
-        index=model.time_vector,
-        columns=model.name_vector
-    )
-    # give the index the name "time"
-    df.index.name = "time"
-    df.plot() # Visualize the simulated data
+**Parameter estimation**
 
-The dataframe can then be used as input data for the model, and the model
-can be tested as described above.
+Once you have completely populated your model file and generated the
+synthetic data,you can now launch the estimation of parameters: ::
+
+    if __name__ == "__main__":
+        from physiofit.base.io import IoHandler
+        from physiofit.models.base_model import StandardDevs
+
+        # Use the simulated data from above
+        test_data = df.reset_index()
+
+        io = IoHandler()
+        model = ChildModel(data=test_data)
+        model.get_params()
+        fitter = io.initialize_fitter(
+            model.data,
+            model=model,
+            mc=True,
+            iterations=100,
+            sd=StandardDevs({"X": 0.2, "Glucose": 0.2, "Acetate": 0.2, "Glutamate": 0.2}),
+            debug_mode=True
+        )
+        fitter.optimize()
+        fitter.monte_carlo_analysis()
+        fitter.khi2_test()
+        print(fitter.parameter_stats)
+
+This will return the calculated flux values and associated statistics.
+comparing the estimated parameters with the initial parameters used to
+simulate the data will allow you to assess the quality of the model. This
+process can be repeated with different sets of parameters to ensure the
+robustness of the model. This code can then be used as unit tests for the
+created model.
 
 **GUI integration**
 
