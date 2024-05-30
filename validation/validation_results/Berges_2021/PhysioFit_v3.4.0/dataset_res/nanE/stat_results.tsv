@@ -1,0 +1,18 @@
+==================
+Khi² test results
+==================
+
+khi2_value               4.329840
+number_of_measurements  16.000000
+number_of_params         6.000000
+Degrees_of_freedom      10.000000
+p_val                    0.068757
+
+At level of 95% confidence, the model fits the data good enough with respect to the provided measurement SD. Value: 0.06875693711238814
+
+==================
+AIC test results
+==================
+
+AIC   37.44849
+AICc  51.44849
