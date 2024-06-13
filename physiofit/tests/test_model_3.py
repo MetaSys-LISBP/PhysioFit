@@ -124,8 +124,8 @@ def test_model_3_simulation(
     )
     model.get_params()
     model.parameters.update(parameters)
-    model.args = {"Degradation constants":
-                      {"Glucose": 0, "Acetate": 0, "Glutamine": 1}
+    model.args = {"Degradation constants": {"Glucose": 0, "Acetate": 0,
+                                            "Glutamine": 1}
                   }
     sim_data = model.simulate(
         list(model.parameters.values()),

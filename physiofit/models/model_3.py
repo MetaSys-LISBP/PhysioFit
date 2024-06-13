@@ -76,8 +76,8 @@ class ChildModel(Model):
             m_0 = parameters[i * 2 + 1]
             k = fixed_params[i - 1]
             exp_k_t = np.exp(-k * time_vector)
-            simulated_matrix[:, i] = q * (x_0 / (mu + k)) \
-                                     * (exp_mu_t - exp_k_t) \
-                                     + m_0 * exp_k_t
+            simulated_matrix[:, i] = (q * (x_0 / (mu + k)) * (exp_mu_t
+                                                              - exp_k_t) +
+                                      m_0 * exp_k_t)
 
         return simulated_matrix

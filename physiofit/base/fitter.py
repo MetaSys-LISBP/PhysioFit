@@ -413,9 +413,15 @@ class PhysioFitter:
             logger.debug(f"New matrix:\n{noisy_matrix}\n")
             logger.debug(f"Sd matrix:\n{self.sd}\n")
             logger.debug(f"time vector:\n{self.model.time_vector}\n")
+            sim_mat = self.model.simulate(
+                opt_res.x,
+                noisy_matrix,
+                self.model.time_vector,
+                self.model.args
+            )
             logger.debug(
                 "simulated matrix:"
-                f"{self.model.simulate(opt_res.x, noisy_matrix, self.model.time_vector, self.model.args)}\n"
+                f"{sim_mat}\n"
             )
             # We optimise the parameters using the noisy matrix as input
 

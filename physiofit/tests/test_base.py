@@ -59,6 +59,7 @@ def test_wrong_entry_for_model_data(base_test_data):
             "Steady-state batch model",
             "Hello world this is an error"
         )
+        return model
 
 
 def test_optimization_process(base_test_data):
