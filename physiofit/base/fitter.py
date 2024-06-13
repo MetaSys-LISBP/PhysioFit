@@ -496,6 +496,8 @@ class PhysioFitter:
 
         n = np.count_nonzero(~np.isnan(self.experimental_matrix))
         k = len(self.model.parameters) + 1  # +1 for the cost parameter
+        logger.debug(f"Number of measurements: {n}")
+        logger.debug(f"Number of parameters: {k}")
         cost = self._calculate_cost(
             self.optimize_results.x,
             self.model.simulate,
@@ -506,6 +508,7 @@ class PhysioFitter:
         )
         # Calculate AIC
         self.aic = 2 * k + n * np.log(cost)
+        logger.debug(f"AIC: {self.aic}")
         # Correct AIC for small sample sizes
         if n - k - 1 <= 0:
             raise ValueError("Not enough measurements to calculate AIC")
