@@ -85,8 +85,8 @@ class IoHandler:
             elif issubclass(type(data), BytesIO):
                 data = read_csv(data, sep="\t")
             else:
-                raise TypeError(f"Input data file is not of right type. "
-                                f"Accepted types: file-like (bytes) or string")
+                raise TypeError("Input data file is not of right type. "
+                                "Accepted types: file-like (bytes) or string")
         except Exception:
             logger.exception("There was an error while reading the data")
             raise IOError(
@@ -167,7 +167,7 @@ class IoHandler:
             raise ValueError("Second column should be 'time'")
 
         if len(data.columns) <= 3:
-            raise ValueError(f"Data does not contain any metabolite columns")
+            raise ValueError("Data does not contain any metabolite columns")
 
         for x in data.columns:
             if x != "experiments" and data[x].dtypes != np.int64 and data[
@@ -447,7 +447,7 @@ class IoHandler:
                 )
             else:
                 stat_out.write(
-                    "No AIC test results available."
+                    "\nNo AIC test results available."
                 )
 
     def _get_plot_data(self, fitter):

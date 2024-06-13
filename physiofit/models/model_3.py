@@ -14,7 +14,7 @@ class ChildModel(Model):
 
         super().__init__(data)
         self.name = ("Steady-state batch model with degradation of "
-                           "metabolites")
+                     "metabolites")
         self.vini = 1
         self.parameters = None
         self.args = None

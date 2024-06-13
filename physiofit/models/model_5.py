@@ -120,7 +120,8 @@ if __name__ == "__main__":
 
     io = IoHandler()
     data = io.read_data(
-        r"C:\Users\legregam\PycharmProjects\PhysioFit\data\KEIO_test_data\ode_test\KEIO_ROBOT6_1.tsv")
+        r"C:\Users\legregam\PycharmProjects\PhysioFit\data\KEIO_test_data"
+        r"\ode_test\KEIO_ROBOT6_1.tsv")
     data = data.sort_values("time")
 
     model = ChildModel(data)

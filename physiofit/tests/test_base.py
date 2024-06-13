@@ -10,6 +10,7 @@ import physiofit
 
 logging.getLogger("physiofit").setLevel(logging.ERROR)
 
+
 def test_physiofitter(base_test_data):
     """
     Test that the model and PhysioFitter can be safely instantiated from

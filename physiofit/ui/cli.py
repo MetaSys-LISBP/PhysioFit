@@ -209,8 +209,8 @@ def generate_config(args, data, _logger):
     if args.model is None:
         # Must be path to model.py file or name of a model
         raise ValueError(
-            f"Please select a model to generate the associated configuration "
-            f"file"
+            "Please select a model to generate the associated configuration "
+            "file"
         )
     if args.output_config is None:
         raise ValueError(

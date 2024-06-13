@@ -8,6 +8,7 @@ import physiofit
 
 logging.getLogger("physiofit").setLevel(logging.ERROR)
 
+
 @pytest.fixture
 def model_3_data():
 
@@ -82,6 +83,7 @@ def model_3_data():
                        29: 2.3009484984038036}}
     )
 
+
 def test_model_3_estimation(
         model_3_data: pd.DataFrame,
         sds: physiofit.models.base_model.StandardDevs
@@ -92,9 +94,8 @@ def test_model_3_estimation(
         data=model_3_data
     )
     model.get_params()
-    model.args = {"Degradation constants":
-        {"Glucose": 0, "Acetate": 0, "Glutamine":1}
-                  }
+    model.args = {"Degradation constants": {"Glucose": 0, "Acetate": 0,
+                                            "Glutamine": 1}}
     fitter = io.initialize_fitter(
         data=model.data,
         model=model,
@@ -108,6 +109,7 @@ def test_model_3_estimation(
         b=[0.02, 0.8, -8, 20, 3, 0.01, 2, 0.01],
         rtol=1e-3
     )
+
 
 def test_model_3_simulation(
         placeholder_data,

@@ -7,12 +7,10 @@ parameter for all test functions. The test's parameter name must be the same as
 the fixture function's name.
 """
 import numpy as np
-from numpy import array
 import pandas as pd
 import pytest
 
 from physiofit.models.base_model import StandardDevs
-from physiofit.base.io import IoHandler
 
 
 @pytest.fixture

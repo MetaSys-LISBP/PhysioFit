@@ -167,18 +167,21 @@ class StandardDevs(dict):
 
         if not isinstance(key, str):
             raise TypeError(
-                f"SD name field can only contain strings. Detected type {type(key)} for {key}"
+                "SD name field can only contain strings. "
+                f"Detected type {type(key)} for {key}"
             )
         if not isinstance(value, int) and not isinstance(value, float):
             try:
                 value = float(value)
             except Exception:
                 raise TypeError(
-                    f"SD value must be a number. Detected type: {type(value)} for {key}"
+                    "SD value must be a number. "
+                    f"Detected type: {type(value)} for {key}"
                 )
         if value <= 0:
             raise ValueError(
-                f"SD value must be superior to 0. Detected value: {value} for {key}"
+                "SD value must be superior to 0. "
+                f"Detected value: {value} for {key}"
             )
 
     def __setitem__(self, key, value):

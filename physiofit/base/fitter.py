@@ -413,9 +413,10 @@ class PhysioFitter:
             logger.debug(f"New matrix:\n{noisy_matrix}\n")
             logger.debug(f"Sd matrix:\n{self.sd}\n")
             logger.debug(f"time vector:\n{self.model.time_vector}\n")
+            log_args = (opt_res.x, noisy_matrix, self.model.time_vector,
+                        self.model.args)
             logger.debug(
-                "simulated matrix:"
-                f": {self.model.simulate(opt_res.x, noisy_matrix, self.model.time_vector, self.model.args)}\n"
+                f"simulated matrix:{self.model.simulate(log_args)}\n"
             )
             # We optimise the parameters using the noisy matrix as input
 
@@ -451,7 +452,7 @@ class PhysioFitter:
         # Compute the statistics on the list of parameters: means, sds,
         # medians and confidence interval
         self._compute_parameter_stats(opt_params_list)
-        logger.info(f"Optimized parameters statistics:")
+        logger.info("Optimized parameters statistics:")
         for key, value in self.parameter_stats.items():
             logger.info(f"{key}: {value}")
 

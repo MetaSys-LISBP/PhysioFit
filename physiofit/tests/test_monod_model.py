@@ -12,6 +12,7 @@ import physiofit
 
 logging.getLogger("physiofit").setLevel(logging.ERROR)
 
+
 @pytest.fixture
 def pyfoomb_simulated_data():
     """
