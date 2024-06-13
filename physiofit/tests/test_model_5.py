@@ -9,6 +9,7 @@ import pytest
 from numpy import array
 
 import physiofit
+import physiofit.base.io
 
 logging.getLogger("physiofit").setLevel(logging.ERROR)
 

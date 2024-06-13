@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 import physiofit
+import physiofit.base.io
 
 logging.getLogger("physiofit").setLevel(logging.ERROR)
 
