@@ -664,8 +664,9 @@ class ConfigParser:
         Check if the data path is valid
         :return: True if the path is valid, False otherwise, None if no path
         """
+        path = Path(self.path_to_data)
         if self.path_to_data:
-            return Path(self.path_to_data).is_file()
+            return path.is_file() and (path.suffix in ["tsv", "txt"])
         else:
             raise ValueError("No data path has been provided")
 
