@@ -14,7 +14,7 @@ def get_last_version():
     try:
         pf_path = Path(physiofit.__file__).parent
         # Get the version from pypi
-        response = requests.get(f'https://pypi.org/pypi/physiofit/json')
+        response = requests.get('https://pypi.org/pypi/physiofit/json')
         latest_version = response.json()['info']['version']
         with open(str(Path(pf_path, "last_version.txt")), "w") as f:
             f.write(latest_version)
