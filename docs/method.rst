@@ -10,8 +10,9 @@ metabolite and biomass concentrations, as detailed below.
 
 Flux values provided by PhysioFit correspond the best fit. A global sensitivity analysis (Monte-Carlo approach) is
 available to evaluate the precision of the estimated fluxes (mean, median, standard deviation, 95% confidence
-intervals), plots are generated for visual inspection of the fitting quality, and a χ² test is performed to assess the
-statistical goodness of fit.
+intervals), plots are generated for visual inspection of the fitting quality, a χ² test is performed to assess the
+statistical goodness of fit and an AIC (Akaike Information Criterion) is
+calculated to compare the different models.
 
 .. _method_models:
 
@@ -43,17 +44,93 @@ and the best solution is polished using the L-BFGS-B method (see
 `scipy.optimize <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_ for more information on the optimization
 process).
 
-Goodness-of-fit evaluation
-**************************
 
-PhysioFit performs a χ² test to assess the goodness of fit. Have a look at the :doc:`faq` section for 
-more details on the interpretation of the khi2 test results.
+.. _sensitivity_analysis:
 
 Sensitivity analysis
 *********************
 
-To determine the precision on the fit and on the estimated parameters (including fluxes), PhysioFit performs a Monte Carlo analysis. Briefly, PhysioFit generates several 
-datasets by adding noise to the dynamics simulated from the best fit, and calculated fluxes and other growth 
-parameters for each of these synthetic datasets. This enables PhysioFit to compute statistics (mean, median, standard deviation and 95% confidence interval) for 
-each parameter (including fluxes). We recommend always running a sensitivity analysis when using PhysioFit.
+To determine the precision on the fit and on the estimated parameters,
+PhysioFit performs a Monte Carlo analysis. Briefly,
+PhysioFit generates several
+datasets by adding noise to the dynamics simulated from the best fit, and
+calculates fluxes and other growth
+parameters for each of these synthetic datasets. This enables PhysioFit to
+compute statistics (mean, median, standard deviation and 95 % confidence
+interval) for each parameter. We recommend always running
+a sensitivity analysis when using PhysioFit.
+
+
+..  _`chi2 test`:
+
+Goodness-of-fit evaluation
+**************************
+
+PhysioFit performs a χ² test to assess the goodness of fit. A χ² test
+describes how well a model fits a set of observations. Measures of
+goodness of fit typically summarize the discrepancy between observed values
+and the values expected under the model used in PhysioFit (see
+:ref:`optimization_process`). It is calculated as the sum of differences
+between measured and simulated values, each squared and divided by the
+simulated value.
+A good fit corresponds to small differences between measured and simulated
+values, thereby the χ² value is low. In contrast, a bad fit corresponds to
+large differences between simulations and measurements, and the χ² value is
+high.
+
+The resulting χ² value can then be compared with a χ² distribution to
+determine the goodness of fit. The p-value of one-tail χ² test is calculated
+by PhysioFit from the best fit and is given in the log file (have a look to
+the :doc:`usage` section). A p-value close to 1 means poor fitting, and a
+p-value close to 0 means good fitting (keeping in mind that a p-value very
+close to 0 suggest that standard deviations might be
+overestimated). A p-value between 0 and 0.05 means the model fits the data
+good enough with respect to the standard deviations provided (at a 95%
+confidence level). PhysioFit provides an explicit message stating whether
+the flux data are satisfactorily fitted or not (at a 95% confidence interval).
+
+Model comparison and selection
+***********************************
+
+PhysioFit calculates the Aikake Information Criterion (both classical and corrected, AIC and AICc)
+to help users compare different models and select the most appropriate one for their data. The AIC and AICc values
+can be found in the statistical output file or directly in
+the graphical user interface. 
+Briefly, the AIC is a statistical metric that measures the explanatory power of a model with respect to a
+given set of data. The model with the lowest AIC value is
+thus considered the best model.
+
+The AIC is calculated as follows:
+
+.. math::
+
+    AIC = 2k + n \ln(\frac{residuum}{n})
+
+where :math:`k` is the number of parameters in the model (plus 1), :math:`n` is the
+number of data points, and :math:`residuum` is the residual sum of squares (see
+:ref:`optimization_process`). For
+datasets with a low number of measurements (typically less than 40 data points), it is recommended to use 
+the AICc (corrected AIC), which is
+calculated as follows:
+
+.. math::
+
+    AICc = AIC + \frac{2k(k+1)}{n-k-1}
+
+In practice, because the AICc approximates the AIC for large sample sizes,
+it's often advised to use AICc as the default.
+
+To identify the best model, different candidate models that differ in terms
+of structure or complexity can be used
+to fit the data and then compared based on their AIC. The model
+with the lowest AIC value is considered the best-fitting model among
+the candidates and should thus used to fit the dataset. However, it is crucial to consider the differences
+in AIC values between models, as models with low ΔAIC values (typically < 2)
+are considered to have similar support from the data. 
+
+Detailed information on the AIC can be found in the original publication
+by `Akaike (1974) <https://gwern.net/doc/statistics/decision/1998-akaike.pdf>`_, and a practical
+guide ("what it is, how and when to apply it and what it achieves") has been published by
+`Symonds and Moussali (2010) <https://doi.org/10
+.1007/s00265-010-1037-6>`_.
 

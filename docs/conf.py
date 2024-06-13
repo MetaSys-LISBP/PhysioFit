@@ -24,7 +24,6 @@ author = 'Loïc Le Grégam, Pierre Millard'
 # The full version, including alpha/beta/rc tags
 release = __version__
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -52,7 +51,6 @@ language = 'en'
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -74,11 +72,11 @@ latex_elements = {
 
     # remove blank pages (between the title page and the TOC, etc.)
     'classoptions': ',openany,oneside',
-    'babel' : '\\usepackage[english]{babel}',
+    'babel': '\\usepackage[english]{babel}',
 
     # Additional stuff for the LaTeX preamble.
     'preamble': r'''
       \usepackage{hyperref}
       \usepackage{upquote}
       '''
-      }
+}

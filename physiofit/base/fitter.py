@@ -5,6 +5,7 @@ PhysioFit software main module
 import logging
 
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 from scipy.optimize import minimize, differential_evolution
 from scipy.stats import chi2
@@ -14,17 +15,18 @@ from physiofit.models.base_model import Model
 logger = logging.getLogger(f"physiofit.{__name__}")
 
 
-
-# TODO: add estimate deg function (eq 6) with plot of best fit and measured values
+# TODO: add estimate deg function (eq 6) with plot of best fit and measured
+#  values
 
 
 class PhysioFitter:
     """
-    This class is responsible for most of Physiofit's heavy lifting. Features included are:
+    This class is responsible for most of Physiofit's heavy lifting.
+    Features included are:
 
-        * loading of data from **csv** or **tsv** file
-        * **equation system initialization** using the following analytical functions (in absence of lag and
-          degradation:
+        * loading of data from **csv** or **tsv** file * **equation system
+        initialization** using the following analytical functions (in
+        absence of lag and degradation):
 
             X(t) = X0 * exp(mu * t)
             Mi(t) = qMi * (X0 / mu) * (exp(mu * t) - 1) + Mi0
@@ -34,35 +36,39 @@ class PhysioFitter:
 
             residuum = sum((sim - meas) / sd)²
 
-        * **optimization of the initial parameters** using `scipy.optimize.minimize ('Differential evolution', with polish with 'L-BFGS-B' method) <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb>`_
-        * **sensitivity analysis, khi2 tests and plotting**
+        * **optimization of the initial parameters** using
+        `scipy.optimize.minimize ('Differential evolution', with polish with
+        'L-BFGS-B' method) <https://docs.scipy.org/doc/scipy/reference
+        /optimize.minimize-lbfgsb.html#optimize-minimize-lbfgsb>`_ *
+        **sensitivity analysis, khi2 tests and plotting**
 
     :param data: DataFrame containing data and passed by IOstream object
-    :type data: class: pandas.DataFrame
-    :param model: Model to initialize parameters and optimize
-    :type model: physiofit.models.base_model.Model
-    :param mc: Should Monte-Carlo sensitivity analysis be performed (default=True)
-    :type mc: Boolean
-    :param iterations: number of iterations for Monte-Carlo simulation (default=50)
-    :type iterations: int
-    :param sd: sd matrix used for residuum calculations. Can be:
+    :type data: class: pandas.DataFrame :param model: Model to initialize
+    parameters and optimize :type model: physiofit.models.base_model.Model
+    :param mc: Should Monte-Carlo sensitivity analysis be performed (
+    default=True) :type mc: Boolean :param iterations: number of iterations
+    for Monte-Carlo simulation (default=50) :type iterations: int :param sd:
+    sd matrix used for residuum calculations. Can be:
 
-                * a matrix with the same dimensions as the measurements matrix (but without the time column)
-                * a named vector containing sds for all the metabolites provided in the input file
-                * 0  in which case the matrix is automatically constructed from default values
-                * a dictionary with the data column headers as keys and the associated value as a scalar or list
+                * a matrix with the same dimensions as the measurements
+                matrix (but without the time column) * a named vector
+                containing sds for all the metabolites provided in the input
+                file * 0  in which case the matrix is automatically
+                constructed from default values * a dictionary with the data
+                column headers as keys and the associated value as a scalar
+                or list
 
     :type sd: int, float, list, dict or ndarray
     """
 
     def __init__(
             self,
-            data,
-            model,
-            mc=True,
-            iterations=100,
+            data: pd.DataFrame,
+            model: Model,
+            mc: bool = True,
+            iterations: int = 100,
             sd=None,
-            debug_mode=False
+            debug_mode: bool = False
     ):
 
         self.data = data
@@ -70,18 +76,26 @@ class PhysioFitter:
         self.mc = mc
         self.iterations = iterations
         self.sd = sd
-        self.debug_mode = debug_mode
+        self.debug_mode = logging.DEBUG if debug_mode else logging.INFO
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
 
-        self.simulated_matrix = None
-        self.simulated_data = None
-        self.optimize_results = None
+        self.simulated_matrix: np.ndarray | None = None
+        self.simulated_data: pd.DataFrame | None = None
+        self.large_matrix: np.ndarray | None = None
+        self.large_simulated_data: pd.DataFrame | None = None
+        self.large_time_vector: np.ndarray | None = None
+        self.optimize_results: np.ndarray | None = None
         self.simulate = None
         self.parameter_stats = None
         self.opt_params_sds = None
         self.matrices_ci = None
         self.opt_conf_ints = None
         self.khi2_res = None
+        self.aic_res = None
+        self.aic = None
+        self.aic_c = None
+
+        logger.setLevel(self.debug_mode)
 
     def verify_attrs(self):
         """Check that attributes are valid"""
@@ -146,7 +160,6 @@ class PhysioFitter:
 
         # This function can be optimized, if the input is a matrix we should
         # detect it directly
-        logger.info("Initializing sd matrix...\n")
 
         # If sd is None, we generate the default matrix
         if self.sd is None or self.sd == {}:
@@ -168,8 +181,8 @@ class PhysioFitter:
         if not isinstance(self.sd, np.ndarray) and not isinstance(self.sd,
                                                                   list):
             raise TypeError(
-                f"Cannot coerce SD to array. Please check that a list or array "
-                f"is given as input.\nCurrent input: \n{self.sd}"
+                f"Cannot coerce SD to array. Please check that a list or array"
+                f" is given as input.\nCurrent input: \n{self.sd}"
             )
         else:
             self.sd = np.array(self.sd)
@@ -187,9 +200,6 @@ class PhysioFitter:
             # If the array is not the right shape, we assume it is a vector
             # that needs to be tiled into a matrix
 
-            logger.debug(f"SD matrix: {self.sd}\n")
-            logger.debug(f"Type of SD matrix: {type(self.sd)}")
-
             if self.sd.shape != self.experimental_matrix.shape:
                 try:
                     self._build_sd_matrix()
@@ -197,10 +207,6 @@ class PhysioFitter:
                     raise
                 except RuntimeError:
                     raise
-            else:
-                logger.debug(f"sd matrix: {self.sd}\n")
-                return
-        logger.info(f"sd Matrix:\n{self.sd}\n")
 
     def _build_sd_matrix(self):
         """
@@ -249,33 +255,47 @@ class PhysioFitter:
 
         logger.info("\nRunning optimization...\n")
         bounds = self.model.bounds()
-        parameters = [param for param in self.model.parameters_to_estimate.values()]
-        logger.debug(f"Simulate function = {self.model.simulate}")
+        parameters = [
+            param for param in self.model.parameters.values()
+        ]
         self.optimize_results = self._run_optimization(
             params=parameters,
             func=self.model.simulate,
             exp_data_matrix=self.experimental_matrix,
             time_vector=self.model.time_vector,
-            non_opt_params=self.model.fixed_parameters,
+            non_opt_params=self.model.args,
             sd_matrix=self.sd,
             bounds=bounds,
             method="differential_evolution"
         )
+        logger.info(f"SD matrix: {self.sd}")
         self.parameter_stats = {
             "optimal": self.optimize_results.x
         }
-        logger.info(f"Optimization results: \n{self.optimize_results}\n")
+        logger.info(f"Optimization results: {self.optimize_results}")
         for i, param in zip(
-                self.model.parameters_to_estimate, self.optimize_results.x
+                self.model.parameters, self.optimize_results.x
         ):
-            logger.info(f"\n{i} = {param}\n")
+            logger.info(f"{i} = {param}")
         self.simulated_matrix = self.model.simulate(
-            self.optimize_results.x,
-            self.experimental_matrix,
-            self.model.time_vector,
-            self.model.fixed_parameters
+            parameters=self.optimize_results.x,
+            data_matrix=self.experimental_matrix,
+            time_vector=self.model.time_vector,
+            args=self.model.args
         )
-        logger.debug(f"simulated_matrix:\n{self.simulated_matrix}")
+        self.large_time_vector = np.arange(
+            start=0,
+            stop=max(self.model.time_vector),
+            step=(max(self.model.time_vector) / 100)
+        )
+        self.large_matrix = self.model.simulate(
+            parameters=self.optimize_results.x,
+            data_matrix=np.ones(
+                shape=(len(self.large_time_vector),
+                       self.experimental_matrix.shape[1])),
+            time_vector=self.large_time_vector,
+            args=self.model.args
+        )
         nan_sim_mat = np.copy(self.simulated_matrix)
         nan_sim_mat[np.isnan(self.experimental_matrix)] = np.nan
         self.simulated_data = DataFrame(
@@ -283,8 +303,14 @@ class PhysioFitter:
             index=self.model.time_vector,
             columns=self.model.name_vector
         )
+        self.large_simulated_data = DataFrame(
+            data=self.large_matrix,
+            index=self.large_time_vector,
+            columns=self.model.name_vector
+        )
         self.simulated_data.index.name = "Time"
-        logger.info(f"Final Simulated Data: \n{self.simulated_data}\n")
+        logger.info(f"Simulated data: \n{self.simulated_data}\n")
+        logger.debug(f"Large simulated data: \n{self.large_simulated_data}\n")
 
     @staticmethod
     def _calculate_cost(
@@ -298,7 +324,16 @@ class PhysioFitter:
 
         simulated_matrix = func(params, exp_data_matrix, time_vector,
                                 non_opt_params)
-        cost_val = np.square((simulated_matrix - exp_data_matrix) / sd_matrix)
+        # print("inside cost function")
+        # print(f"Params: {params}")
+        # print(f"Simulated matrix: {simulated_matrix}")
+        # print(f"Experimental matrix: {exp_data_matrix}")
+        cost_val = np.square(
+            np.divide(
+                np.subtract(simulated_matrix, exp_data_matrix),
+                sd_matrix
+            )
+        )
         residuum = np.nansum(cost_val)
         return residuum
 
@@ -323,15 +358,25 @@ class PhysioFitter:
             optimize_results = differential_evolution(
                 PhysioFitter._calculate_cost, bounds=bounds,
                 args=(
-                func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
+                    func,
+                    exp_data_matrix,
+                    time_vector,
+                    non_opt_params,
+                    sd_matrix
+                ),
                 polish=True, x0=np.array(params)
             )
         elif method == "L-BFGS-B":
             optimize_results = minimize(
                 PhysioFitter._calculate_cost, x0=np.array(params),
                 args=(
-                func, exp_data_matrix, time_vector, non_opt_params, sd_matrix),
-                method="L-BFGS-B", bounds=bounds, options={'maxcor': 30}
+                    func,
+                    exp_data_matrix,
+                    time_vector,
+                    non_opt_params,
+                    sd_matrix
+                ),
+                method="L-BFGS-B", bounds=bounds
             )
         else:
             raise ValueError(f"{method} is not implemented")
@@ -362,26 +407,44 @@ class PhysioFitter:
         opt_params_list = []
         matrices = []
 
-        for _ in range(self.iterations):
-            new_matrix = self._apply_noise()
-
+        for i in range(self.iterations):
+            noisy_matrix = self._apply_noise()
+            logger.debug(f"Iteration {i + 1}:\n")
+            logger.debug(f"New matrix:\n{noisy_matrix}\n")
+            logger.debug(f"Sd matrix:\n{self.sd}\n")
+            logger.debug(f"time vector:\n{self.model.time_vector}\n")
+            sim_mat = self.model.simulate(
+                opt_res.x,
+                noisy_matrix,
+                self.model.time_vector,
+                self.model.args
+            )
+            logger.debug(
+                "simulated matrix:"
+                f"{sim_mat}\n"
+            )
             # We optimise the parameters using the noisy matrix as input
-            opt_res = PhysioFitter._run_optimization(
-                opt_res.x, self.model.simulate, new_matrix, self.model.time_vector,
-                self.model.fixed_parameters, self.sd, self.model.bounds(),
+
+            mc_opt_res = PhysioFitter._run_optimization(
+                opt_res.x,
+                self.model.simulate,
+                noisy_matrix,
+                self.model.time_vector,
+                self.model.args,
+                self.sd, self.model.bounds(),
                 "L-BFGS-B"
             )
 
             # Store the new simulated matrix in list for later use
             matrices.append(
                 self.model.simulate(
-                    opt_res.x, new_matrix, self.model.time_vector,
-                    self.model.fixed_parameters
+                    mc_opt_res.x, self.large_matrix, self.large_time_vector,
+                    self.model.args
                 )
             )
 
             # Store the new optimised parameters in list for later use
-            opt_params_list.append(opt_res.x)
+            opt_params_list.append(mc_opt_res.x)
 
         # Build a 3D array from all the simulated matrices to get standard
         # deviation on each data point
@@ -394,22 +457,13 @@ class PhysioFitter:
         # Compute the statistics on the list of parameters: means, sds,
         # medians and confidence interval
         self._compute_parameter_stats(opt_params_list)
-        logger.info(f"Optimized parameters statistics:")
+        logger.info("Optimized parameters statistics:")
         for key, value in self.parameter_stats.items():
             logger.info(f"{key}: {value}")
 
-        # Apply nan mask to be coherent with the experimental matrix
-        nan_lower_ci = np.copy(self.matrices_ci['lower_ci'])
-        nan_higher_ci = np.copy(self.matrices_ci['higher_ci'])
-        nan_lower_ci[np.isnan(self.experimental_matrix)] = np.nan
-        nan_higher_ci[np.isnan(self.experimental_matrix)] = np.nan
-
-        logger.info(
-            f"Simulated matrix lower confidence interval:\n{nan_lower_ci}\n"
-        )
-        logger.info(
-            f"Simulated matrix higher confidence interval:\n{nan_higher_ci}\n"
-        )
+        # # Apply nan mask to be coherent with the experimental matrix
+        # nan_lower_ci = np.copy(self.matrices_ci['lower_ci'])
+        # nan_higher_ci = np.copy(self.matrices_ci['higher_ci'])
         return
 
     def _compute_parameter_stats(self, opt_params_list):
@@ -441,16 +495,60 @@ class PhysioFitter:
 
         # self.parameter_stats_df = DataFrame()
 
-    def khi2_test(self):
+    def aic_test(self):
+        """
+        Calculate the Akaike Information Criterion (AIC) for the model
+        """
 
+        n = np.count_nonzero(~np.isnan(self.experimental_matrix))
+        k = len(self.model.parameters) + 1  # +1 for the cost parameter
+        logger.debug(f"Number of measurements: {n}")
+        logger.debug(f"Number of parameters: {k}")
+        cost = self._calculate_cost(
+            self.optimize_results.x,
+            self.model.simulate,
+            self.experimental_matrix,
+            self.model.time_vector,
+            self.model.args,
+            self.sd
+        )
+        # Calculate AIC
+        self.aic = 2 * k + n * np.log(cost)
+        logger.debug(f"AIC: {self.aic}")
+        # Correct AIC for small sample sizes
+        if n - k - 1 <= 0:
+            raise ValueError("Not enough measurements to calculate AIC")
+        self.aic_c = self.aic + ((2 * k * (k + 1)) / (n - k - 1))
+
+        self.aic_res = pd.DataFrame.from_dict(
+            {
+                "AIC": self.aic,
+                "AICc": self.aic_c
+            }, orient="index", columns=["Values"]
+        )
+
+    def khi2_test(self):
+        """
+        This method performs a chi-squared test to evaluate the goodness of
+        fit of the model. It calculates the chi-squared statistic and the
+        p-value and logs the results.
+
+        The chi-squared test is a statistical hypothesis test that is valid to
+        perform when the test statistic is chi-squared distributed under the
+        null hypothesis.
+        """
         number_measurements = np.count_nonzero(
             ~np.isnan(self.experimental_matrix)
         )
-        number_params = len(self.model.parameters_to_estimate)
+        number_params = len(self.model.parameters)
         dof = number_measurements - number_params
         cost = self._calculate_cost(
-            self.optimize_results.x, self.model.simulate, self.experimental_matrix,
-            self.model.time_vector, self.model.fixed_parameters, self.sd
+            self.optimize_results.x,
+            self.model.simulate,
+            self.experimental_matrix,
+            self.model.time_vector,
+            self.model.args,
+            self.sd
         )
         p_val = chi2.cdf(cost, dof)
 
@@ -466,11 +564,11 @@ class PhysioFitter:
         )
 
         logger.info(f"khi2 test results:\n"
-                     f"khi2 value: {cost}\n"
-                     f"Number of measurements: {number_measurements}\n"
-                     f"Number of parameters to fit: {number_params}\n"
-                     f"Degrees of freedom: {dof}\n"
-                     f"p-value = {p_val}\n"
+                    f"khi2 value: {cost}\n"
+                    f"Number of measurements: {number_measurements}\n"
+                    f"Number of parameters to fit: {number_params}\n"
+                    f"Degrees of freedom: {dof}\n"
+                    f"p-value = {p_val}\n"
                     )
 
         if p_val < 0.95:
@@ -510,8 +608,9 @@ class PhysioFitter:
         parameters. SDs are obtained from the sd matrix
         """
 
-        new_matrix = np.array([
+        noisy_matrix = np.array([
             PhysioFitter._add_noise(self.simulated_matrix[idx, :], sd)
             for idx, sd in enumerate(self.sd)
         ])
-        return new_matrix
+        noisy_matrix[noisy_matrix < 0] = 0
+        return noisy_matrix

@@ -14,12 +14,13 @@ def get_last_version():
     try:
         pf_path = Path(physiofit.__file__).parent
         # Get the version from pypi
-        response = requests.get(f'https://pypi.org/pypi/physiofit/json')
+        response = requests.get('https://pypi.org/pypi/physiofit/json')
         latest_version = response.json()['info']['version']
         with open(str(Path(pf_path, "last_version.txt")), "w") as f:
             f.write(latest_version)
     except Exception:
         pass
+
 
 def main():
     """The main routine"""
@@ -32,6 +33,7 @@ def main():
         path_to_app = Path(physiofit.__file__).parent
         path_to_app = path_to_app / "ui/gui.py"
         run(["streamlit", "run", str(path_to_app)])
+
 
 if __name__ == "__main__":
     sys.exit(main())

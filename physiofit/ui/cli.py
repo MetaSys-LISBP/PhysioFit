@@ -3,11 +3,12 @@ Module containing the Command-Line Interface control logic.
 
 The Command-Line Interface has two goals:
 
-    i) Have a local CLI that can be used to launch jobs in a concise and quick manner, without use of the Graphical
-    User Interface. This can help when testing many different parameter sets, and also permits easy pipelining of the
-    tool, as described below.
-    ii) Have a version compatible with an integration onto the Galaxy W4M platform to be used in automated flux
-    calculation workflows
+    i) Have a local CLI that can be used to launch jobs in a concise and quick
+    manner, without use of the Graphical User Interface. This can help when
+    testing many different parameter sets, and also permits easy pipelining
+    of the tool, as described below.
+    ii) Have a version compatible with an integration onto the Galaxy W4M
+    platform to be used in automated flux calculation workflows
 
 """
 import argparse
@@ -19,7 +20,9 @@ import pandas as pd
 
 from physiofit.base.io import IoHandler, StandardDevs, ConfigParser
 
-logger = logging.getLogger(f"physiofit")
+logger = logging.getLogger("physiofit")
+logger.setLevel(logging.DEBUG)
+
 
 def args_parse():
     """
@@ -43,7 +46,8 @@ def args_parse():
     )
     parser.add_argument(
         "-m", "--model", type=str,
-        help="Which model should be chosen. Useful only if generating related config file"
+        help="Which model should be chosen. Useful only if generating "
+             "related config file"
     )
 
     # Parse developer arguments
@@ -88,11 +92,23 @@ def args_parse():
 
     return parser
 
-def run(data, args, logger, experiments):
 
-    io = IoHandler()
+def run(data, args, experiments):
+    """
+    Run the optimization process
+    :param data: Dataframe containing the main dataset
+    :type data: pandas.DataFrame
+    :param args: Arguments from the user input
+    :type args: argparse.Namespace
+    :param experiments: List of experiments to process
+    :type experiments: list
+    """
+
     for exp in experiments:
-        exp_data = data.loc[exp, :].sort_values("time").copy()
+        io = IoHandler()
+        logger.info(f"Processing experiment: {exp}")
+        exp_data = data.loc[exp, :].sort_values("time")
+        exp_data = exp_data.reset_index().drop("experiments", axis=1).copy()
         logger.info(f"Input Data: \n{exp_data}")
         if args.galaxy:
             io.wkdir = Path('.')
@@ -121,12 +137,19 @@ def run(data, args, logger, experiments):
         if fitter.mc:
             fitter.monte_carlo_analysis()
         fitter.khi2_test()
+        try:
+            fitter.aic_test()
+        except ValueError:
+            logger.warning(
+                "Not enough measurements to calculate AIC"
+            )
+            fitter.aic, fitter.aic_c = "NA"
         df = pd.DataFrame.from_dict(
             fitter.parameter_stats,
             orient="columns"
         )
         df.index = [
-            f"{exp} {param}" for param in fitter.model.parameters_to_estimate.keys()
+            f"{exp} {param}" for param in fitter.model.parameters.keys()
         ]
         if not io.multiple_experiments:
             io.multiple_experiments = []
@@ -141,35 +164,23 @@ def run(data, args, logger, experiments):
         io.output_pdf(fitter, str(res_path))
         io.figures = []
     if args.output_zip:
-        # logger.info(io.home_path)
-        # logger.info(io.home_path / io.home_path.name / "_res")
-        # logger.info(args.output_zip)
-        dir = res_path.parents[0]
-        # for line in dir.rglob("*"):
-        #     print(line)
-        generate_zips(str(dir), args.output_zip, logger)
+        output_dir = res_path.parents[0]
+        generate_zips(str(output_dir), args.output_zip)
     logger.debug(f"Dataframes to concatenate:\n{io.multiple_experiments}")
 
-    # shutil.make_archive(
-    #     args.output_zip,
-    #     format='zip',
-    #     root_dir=str(io.home_path / (io.home_path.name + "_res"))
-    #     )
     if args.galaxy:
         io.output_recap(export_path=args.output_recap, galaxy=args.galaxy)
     else:
         io.output_recap(export_path=str(res_path.parent), galaxy=False)
 
-def generate_zips(path_to_data_folder, output_path, logger):
+
+def generate_zips(path_to_data_folder, output_path):
     """Generate output zip file containing results
 
-    Args:
-        path_to_data_folder (str): path to folder containing directories & files to zip
-        output_path (str): path to export archive to
-        logger (Logging.logger): main logger
-
-    Returns:
-        None:
+    :param path_to_data_folder: Path to the data folder
+    :type path_to_data_folder: str
+    :param output_path: Path to the output zip file
+    :type output_path: str
     """
     from zipfile import ZipFile
     directory = Path(path_to_data_folder)
@@ -179,17 +190,27 @@ def generate_zips(path_to_data_folder, output_path, logger):
             archive.write(
                 file_path,
                 arcname=file_path.relative_to(directory)
-        )
-    return 0
+            )
+    return
 
-def generate_config(args, data, logger):
 
-    logger.info("Launching in configuration file generator mode")
+def generate_config(args, data, _logger):
+    """"
+    Generate a configuration file for the selected model
+    :param args: Arguments from the user input
+    :type args: argparse.Namespace
+    :param data: Dataframe containing the main dataset
+    :type data: pandas.DataFrame
+    :param _logger: Logger object
+    :type _logger: logging.Logger
+    """
+    _logger.info("Launching in configuration file generator mode")
     # Run checks
     if args.model is None:
         # Must be path to model.py file or name of a model
         raise ValueError(
-            f"Please select a model to generate the associated configuration file"
+            "Please select a model to generate the associated configuration "
+            "file"
         )
     if args.output_config is None:
         raise ValueError(
@@ -206,7 +227,7 @@ def generate_config(args, data, logger):
             model = io.select_model(args.model, data)
             model.get_params()
     except Exception:
-        logger.error("There was an error while initialising the model")
+        _logger.error("There was an error while initialising the model")
         raise
 
     # Build config parser and export configuration file
@@ -219,21 +240,39 @@ def generate_config(args, data, logger):
         iterations=100
     )
     configparser.export_config(args.output_config)
-    logger.info(f"Finished exporting the configuration file to {args.output_config}")
+    _logger.info(
+        f"Finished exporting the configuration file to {args.output_config}")
     sys.exit()
 
-def process(args):
 
+def _build_logger(mode):
+    """
+    Build the logger object
+    :param mode: Debug mode
+    :type mode: bool
+    """
+    _logger = logging.getLogger("physiofit")
     cli_handle = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - '
+                                  '%(message)s')
     cli_handle.setFormatter(formatter)
-    if args.debug_mode:
+    if mode:
         cli_handle.setLevel(logging.DEBUG)
     else:
         cli_handle.setLevel(logging.INFO)
-    logger.addHandler(cli_handle)
+    _logger.addHandler(cli_handle)
+    return _logger
 
 
+def process(args):
+    """
+    Process the arguments
+    :param args: Arguments from the user input
+    :type args: argparse.Namespace
+    :return: None
+    """
+    _logger = _build_logger(args.debug_mode)
+    _logger.info("Starting Physiofit CLI")
     if args.list:
         IoHandler.get_model_list()
         sys.exit()
@@ -245,35 +284,41 @@ def process(args):
     path_to_data = Path(args.data)
     if not path_to_data.is_file():
         raise ValueError(
-            f"The data path is not correct. Please check and try again. Input data path: \n{args.data}"
+            f"The data path is not correct. Please check and try again. "
+            f"Input data path: \n{args.data}"
         )
     # Ensure that the input file is a tsv if we are local
     if not args.galaxy:
-        if not path_to_data.suffix in [".tsv", ".txt"]:
+        if path_to_data.suffix not in [".tsv", ".txt"]:
             raise TypeError(
-                f"The input data must be in tsv/txt format. Detected format: {path_to_data.suffix}"
+                f"The input data must be in tsv/txt format. Detected format:"
+                f" {path_to_data.suffix}"
             )
     else:
         if not path_to_data.suffix == ".dat":
             raise TypeError(
-                f"The input data must be in dat format (galaxy data format). Detected format: {path_to_data.suffix}"
+                f"The input data must be in dat format (galaxy data "
+                f"format). Detected format: {path_to_data.suffix}"
             )
 
     # Read & check data
     data = IoHandler.read_data(str(path_to_data))
 
-    # If no configuration file is present we assume the user wants to generate a default one
+    # If no configuration file is present we assume the user wants to
+    # generate a default one
     if args.config is None:
-        generate_config(args, data, logger)
+        generate_config(args, data, _logger)
 
     # If configuration file is present we launch the optimization
     experiments = list(data["experiments"].unique())
     data = data.set_index("experiments")
-    run(data, args, logger, experiments)
-    logger.info("Done!")
+    run(data, args, experiments)
+    _logger.info("Done!")
     sys.exit()
 
+
 def main():
+    """Main routine for the CLI interface"""
     parser = args_parse()
     args = parser.parse_args()
     process(args)

@@ -8,30 +8,31 @@ from scipy.integrate import solve_ivp
 
 from physiofit.models.base_model import Model, Bounds
 
+
 class ChildModel(Model):
 
     def __init__(self, data):
 
         super().__init__(data)
-        self.model_name = "Dynamic Monod model (1 substrate, 1 product)"
+        self.name = "Dynamic Monod model (1 substrate, 1 product)"
         self.vini = 1
-        self.parameters_to_estimate = None
+        self.parameters = None
 
     def get_params(self):
 
-        self.parameters_to_estimate = {
+        self.parameters = {
             "X_0": self.vini,
             "y_BM": self.vini
         }
 
         self.bounds = Bounds(
-            X_0=(1e-3, 10),
-            y_BM=(1e-3, 3)
+            X_0=(1e-3, 1),
+            y_BM=(1e-3, 1)
         )
 
         for metabolite in self.metabolites:
             if metabolite.startswith("S_"):
-                self.parameters_to_estimate.update(
+                self.parameters.update(
                     {
                         f"{metabolite}_km": self.vini,
                         f"{metabolite}_qsmax": self.vini,
@@ -41,15 +42,15 @@ class ChildModel(Model):
                 self.bounds.update(
                     {
                         f"{metabolite}_km": (1e-6, 100),
-                        f"{metabolite}_qsmax": (1e-6, 100),
+                        f"{metabolite}_qsmax": (1e-6, 20),
                         f"{metabolite}_s_0": (1e-6, 100)
                     }
                 )
                 break
-                
+
         for metabolite in self.metabolites:
             if metabolite.startswith("P_"):
-                self.parameters_to_estimate.update(
+                self.parameters.update(
                     {
                         f"{metabolite}_y_P": self.vini,
                         f"{metabolite}_p_0": 100
@@ -58,45 +59,36 @@ class ChildModel(Model):
                 )
                 self.bounds.update(
                     {
-                        f"{metabolite}_y_P": (1e-6, 100),
+                        f"{metabolite}_y_P": (1e-6, 2),
                         f"{metabolite}_p_0": (1e-6, 100)
                     }
                 )
                 break
 
-        if len(self.parameters_to_estimate) != 7:
+        if len(self.parameters) != 7:
             raise ValueError(
-                "This model expects 2 metabolites in the data file (1 substrate with name starting with 'S_' and 1 "
-                "product with name starting with 'P_')."
+                "This model expects 2 metabolites in the data file (1 "
+                "substrate with name starting with 'S_' and 1 product with "
+                "name starting with 'P_')."
             )
-
 
     @staticmethod
     def simulate(
-            params_opti: list,
+            parameters: list,
             data_matrix: np.ndarray,
             time_vector: np.ndarray,
-            params_non_opti: dict
+            args: dict
     ):
 
         # Get parameters
-        x_0 = params_opti[0]
-        y_BM = params_opti[1]
-        km = params_opti[2]
-        qsmax = params_opti[3]
-        s_0 = params_opti[4]
-        y_P = params_opti[5]
-        p_0 = params_opti[6]
-        params = (y_BM, y_P, km, qsmax)
+        x_0, y_BM, km, qsmax, s_0, y_P, p_0 = parameters
 
         # initialize variables at t=0
         state = [x_0, s_0, p_0]
-        
+
         def calculate_derivative(t, state, y_BM, y_P, km, qsmax):
-            
             # get substrate and biomass concentrations
-            s_t = state[0]
-            x_t = state[1]
+            x_t, s_t = state[0], state[1]
 
             # calculate fluxes
             qs_t = qsmax * (s_t / (km + s_t))
@@ -114,25 +106,27 @@ class ChildModel(Model):
         sol = solve_ivp(
             fun=calculate_derivative,
             t_span=(np.min(time_vector), np.max(time_vector)),
-            y0 = state,
-            args=params,
+            y0=state,
+            args=(y_BM, y_P, km, qsmax),
             method="LSODA",
-            t_eval = list(time_vector)
+            t_eval=list(time_vector)
         )
 
         return sol.y.T
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     from physiofit.base.io import IoHandler
 
     io = IoHandler()
-    data = io.read_data(r"C:\Users\legregam\PycharmProjects\PhysioFit\data\KEIO_test_data\ode_test\KEIO_ROBOT6_1.tsv")
+    data = io.read_data(
+        r"C:\Users\legregam\PycharmProjects\PhysioFit\data\KEIO_test_data"
+        r"\ode_test\KEIO_ROBOT6_1.tsv")
     data = data.sort_values("time")
 
     model = ChildModel(data)
     model.get_params()
-    params = [param for param in model.parameters_to_estimate.values()]
+    params = [param for param in model.parameters.values()]
     sol = ChildModel.simulate(
         params,
         model.data,

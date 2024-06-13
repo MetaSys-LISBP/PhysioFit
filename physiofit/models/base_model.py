@@ -23,30 +23,32 @@ class Model(ABC):
         self.data = data
         self.time_vector = self.data.time.to_numpy()
         if "time" in self.data.columns and "experiments" in self.data.columns:
-            self.name_vector = self.data.drop(["time", "experiments"], axis=1).columns.to_list()
+            self.name_vector = self.data.drop(["time", "experiments"],
+                                              axis=1).columns.to_list()
         elif "time" in self.data.columns:
-            self.name_vector = self.data.drop(["time"], axis=1).columns.to_list()
+            self.name_vector = self.data.drop(["time"],
+                                              axis=1).columns.to_list()
         else:
             raise ValueError(
-                "Couldn't get column names from data. Is data loaded in properly and well formatted?"
+                "Couldn't get column names from data. Is data loaded in "
+                "properly and well formatted?"
             )
         self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
         self.metabolites = self.name_vector[1:]
-        self.model_name = None
-        self.parameters_to_estimate = None
-        self.fixed_parameters = None
+        self.name = None
+        self.parameters = None
+        self.args = None
         self.bounds = None
 
-
     def __repr__(self):
-        return f"Selected model: {self.model_name}\n" \
+        return f"Selected model: {self.name}\n" \
                f"Model data: \n{self.data}\n" \
                f"Experimental matrix: \n{self.experimental_matrix}\n" \
                f"Time vector: {self.time_vector}\n" \
                f"Name vector: {self.name_vector}\n" \
                f"Biomass & Metabolites: {self.metabolites}\n" \
-               f"Parameters to estimate: {self.parameters_to_estimate}\n" \
-               f"Fixed parameters: {self.fixed_parameters}\n" \
+               f"Parameters to estimate: {self.parameters}\n" \
+               f"Fixed parameters: {self.args}\n" \
                f"Bounds: {self.bounds}\n"
 
     def __setattr__(self, key, value):
@@ -54,12 +56,13 @@ class Model(ABC):
             self.__dict__["data"] = value
             self.time_vector = self.data.time.to_numpy()
             self.name_vector = self.data.drop("time", axis=1).columns.to_list()
-            self.experimental_matrix = self.data.drop("time", axis=1).to_numpy()
+            self.experimental_matrix = self.data.drop("time",
+                                                      axis=1).to_numpy()
             self.metabolites = self.name_vector[1:]
         else:
             self.__dict__[key] = value
 
-    @ abstractmethod
+    @abstractmethod
     def get_params(self):
         """
 
@@ -74,10 +77,10 @@ class Model(ABC):
     @staticmethod
     @abstractmethod
     def simulate(
-            params_opti: list,
-            data_matrix: np.ndarray,
+            parameters: list,
+            data_matrix: np.ndarray | pd.DataFrame,
             time_vector: np.ndarray,
-            params_non_opti: dict | list
+            args: dict | list
     ):
         pass
 
@@ -164,18 +167,21 @@ class StandardDevs(dict):
 
         if not isinstance(key, str):
             raise TypeError(
-                f"SD name field can only contain strings. Detected type {type(key)} for {key}"
+                "SD name field can only contain strings. "
+                f"Detected type {type(key)} for {key}"
             )
         if not isinstance(value, int) and not isinstance(value, float):
             try:
                 value = float(value)
             except Exception:
                 raise TypeError(
-                    f"SD value must be a number. Detected type: {type(value)} for {key}"
+                    "SD value must be a number. "
+                    f"Detected type: {type(value)} for {key}"
                 )
         if value <= 0:
             raise ValueError(
-                f"SD value must be superior to 0. Detected value: {value} for {key}"
+                "SD value must be superior to 0. "
+                f"Detected value: {value} for {key}"
             )
 
     def __setitem__(self, key, value):
@@ -190,6 +196,7 @@ class StandardDevs(dict):
             return self._vector
         self._vector = np.array([value for value in self.values])
         return self._vector
+
 
 class ModelError(Exception):
     pass
