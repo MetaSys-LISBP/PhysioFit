@@ -519,12 +519,14 @@ class App:
                                 st.write("Parameter Value")
                                 for key, value in self.model.args[
                                      param].items():
+                                    st.write(key, value)
                                     st.text_input(
                                         label="label",  # Unused
                                         label_visibility="collapsed",
                                         value=value if self.config_parser is
                                         None else
-                                        self.config_parser.model["args"][key],
+                                        self.config_parser.model["args"][
+                                            param][key],
                                         key=f"Fixed_{param}_value_{key}"
                                     )
 
