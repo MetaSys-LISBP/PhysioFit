@@ -169,6 +169,11 @@ I have develop a new model, can you include it in PhysioFit distribution?
 If you have developed a new flux model, we would be happy to include it in PhysioFit! Open a new issue on our `issue tracker  <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_, 
 and let's discuss about your model and how we could include it! :)
 
+How using PhysioFit programmatically?
+--------------------------------------------------------------------------
+
+Examples of how to use PhysioFit programmatically can be found in the section :ref:`testing_the_model`, which offers demonstrations on running simulations and flux calculations.
+
 I would like a new feature.
 ------------------------------------------------------------------
 
