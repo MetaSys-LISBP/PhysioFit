@@ -47,6 +47,26 @@ Here after the available options with their full names are enumerated and detail
    :prog: physiofit
    :nodescription:
 
+
+Online use
+----------
+
+PhysioFit is available for use online on the `Workflow4Metabolomics Galaxy
+instance <https://workflow4metabolomics.usegalaxy.fr/>`_ (W4M). The tool can
+be found in the "Isotopic Studies" section. PhysioFit on W4M leverages the
+configuration file feature to allow users to run the tool without having to
+input parameters through the Graphical User Interface. To run the tool, load
+the dataset and the configuration file, and click on "Run". It's as simple
+as that.
+
+W4M also enables the creation of automated workflows, enabling users to
+build their own data processing pipelines. PhysioFit was designed to make
+this process as straightforward as possible, by limiting interaction with
+the GUI and by using the configuration file to set up run parameters. For
+more information on using and building workflows on the W4M platform, please
+check the `galaxy training network <https://training.galaxyproject.org/>`_.
+
+
 Library
 -------
 
