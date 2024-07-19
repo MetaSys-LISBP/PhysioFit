@@ -162,6 +162,16 @@ Please follow this simple procedure:
    * If you believe the problem is in PhysioFit or that your local system administrator
      told you so, then you probably have found a bug! We would greatly appreciate
      if you could open a new issue on our `issue tracker  <https://github.com/MetaSys-LISBP/PhysioFit/issues>`_.
+
+I have trouble finding PhysioFit on the Workflow4Metabolomics Galaxy instance
+------------------------------------------------------------------------------
+
+To help users navigate through the Workflow4Metabolomics Galaxy instance, we
+have prepared a short tutorial on how to find and use PhysioFit. You can find
+it in the :doc:`quickstart` section.
+If you still have trouble finding PhysioFit, a search bar is available on the
+top left of the page. You can type "PhysioFit" in the search bar and click on
+the result to access the tool.
      
 I have develop a new model, can you include it in PhysioFit distribution?
 --------------------------------------------------------------------------
