@@ -316,9 +316,9 @@ class IoHandler:
 
         if not self.figures:
             self.plot_data(fitter)
-
+        export_path = Path(export_path)
         try:
-            with PdfPages(rf"{export_path}\plots.pdf") as pdf:
+            with PdfPages(export_path / "plots.pdf") as pdf:
                 for fig in self.figures:
                     pdf.savefig(fig[1])
         except Exception as e:
@@ -330,12 +330,13 @@ class IoHandler:
         :return: None
         """
 
+        export_path = Path(export_path)
         if not self.figures:
             self.plot_data(fitter)
 
         try:
             for fig in self.figures:
-                fig[1].savefig(rf"{export_path}\{fig[0]}.svg")
+                fig[1].savefig(export_path / f"{fig[0]}.svg")
         except Exception:
             raise RuntimeError("Unknown error while generating output")
 
@@ -390,8 +391,9 @@ class IoHandler:
             stat_path = export_path[0]
             flux_path = export_path[1]
         else:
-            flux_path = fr"{export_path}\flux_results.tsv"
-            stat_path = fr"{export_path}\stat_results.tsv"
+            export_path = Path(export_path)
+            flux_path = export_path / "flux_results.tsv"
+            stat_path = export_path / "stat_results.tsv"
 
         # Get optimization results as dataframe
         opt_data = DataFrame.from_dict(fitter.parameter_stats,
