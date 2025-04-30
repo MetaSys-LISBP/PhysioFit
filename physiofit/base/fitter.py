@@ -409,20 +409,20 @@ class PhysioFitter:
 
         for i in range(self.iterations):
             noisy_matrix = self._apply_noise()
-            logger.debug(f"Iteration {i + 1}:\n")
-            logger.debug(f"New matrix:\n{noisy_matrix}\n")
-            logger.debug(f"Sd matrix:\n{self.sd}\n")
-            logger.debug(f"time vector:\n{self.model.time_vector}\n")
+            # logger.debug(f"Iteration {i + 1}:\n")
+            # logger.debug(f"New matrix:\n{noisy_matrix}\n")
+            # logger.debug(f"Sd matrix:\n{self.sd}\n")
+            # logger.debug(f"time vector:\n{self.model.time_vector}\n")
             sim_mat = self.model.simulate(
                 opt_res.x,
                 noisy_matrix,
                 self.model.time_vector,
                 self.model.args
             )
-            logger.debug(
-                "simulated matrix:"
-                f"{sim_mat}\n"
-            )
+            # logger.debug(
+            #     "simulated matrix:"
+            #     f"{sim_mat}\n"
+            # )
             # We optimise the parameters using the noisy matrix as input
 
             mc_opt_res = PhysioFitter._run_optimization(

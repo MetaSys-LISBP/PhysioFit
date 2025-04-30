@@ -48,8 +48,8 @@ Here after the available options with their full names are enumerated and detail
    :nodescription:
 
 
-Online use
-----------
+Online use (W4M)
+----------------
 
 PhysioFit is available for use online on the `Workflow4Metabolomics Galaxy
 instance <https://workflow4metabolomics.usegalaxy.fr/>`_ (W4M). The tool can
@@ -59,12 +59,12 @@ input parameters through the Graphical User Interface. To run the tool, load
 the dataset and the configuration file, and click on "Run". It's as simple
 as that.
 
-W4M also enables the creation of automated workflows, enabling users to
+W4M also enables the creation of automated workflows, allowing users to
 build their own data processing pipelines. PhysioFit was designed to make
 this process as straightforward as possible, by limiting interaction with
 the GUI and by using the configuration file to set up run parameters. For
 more information on using and building workflows on the W4M platform, please
-check the `galaxy training network <https://training.galaxyproject.org/>`_.
+have a look to the `Galaxy training network <https://training.galaxyproject.org/>`_.
 
 
 Library
