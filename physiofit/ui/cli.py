@@ -104,8 +104,8 @@ def run(data, args, experiments):
     :type experiments: list
     """
 
+    io = IoHandler()
     for exp in experiments:
-        io = IoHandler()
         logger.info(f"Processing experiment: {exp}")
         exp_data = data.loc[exp, :].sort_values("time")
         exp_data = exp_data.reset_index().drop("experiments", axis=1).copy()
@@ -159,9 +159,9 @@ def run(data, args, experiments):
         if not res_path.is_dir():
             res_path.mkdir(parents=True)
         logger.info(f"Results:\n{df}")
-        io.output_report(fitter, str(res_path))
-        io.output_plots(fitter, str(res_path))
-        io.output_pdf(fitter, str(res_path))
+        io.output_report(fitter, res_path)
+        io.output_plots(fitter, res_path)
+        io.output_pdf(fitter, res_path)
         io.figures = []
     if args.output_zip:
         output_dir = res_path.parents[0]
