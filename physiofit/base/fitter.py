@@ -504,6 +504,9 @@ class PhysioFitter:
         k = len(self.model.parameters) + 1  # +1 for the cost parameter
         logger.debug(f"Number of measurements: {n}")
         logger.debug(f"Number of parameters: {k}")
+        if n - k - 1 <= 0:
+            self.aic = self.aic_c = "NA"
+            raise ValueError("Not enough measurements to calculate AIC")
         cost = self._calculate_cost(
             self.optimize_results.x,
             self.model.simulate,
@@ -516,8 +519,6 @@ class PhysioFitter:
         self.aic = 2 * k + n * np.log(cost)
         logger.debug(f"AIC: {self.aic}")
         # Correct AIC for small sample sizes
-        if n - k - 1 <= 0:
-            raise ValueError("Not enough measurements to calculate AIC")
         self.aic_c = self.aic + ((2 * k * (k + 1)) / (n - k - 1))
 
         self.aic_res = pd.DataFrame.from_dict(

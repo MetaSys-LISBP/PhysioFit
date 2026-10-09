@@ -110,6 +110,10 @@ class IoHandler:
         for model in self.models:
             if model.name == name:
                 return model
+        available = ", ".join(sorted({model.name for model in self.models}))
+        raise ValueError(
+            f"Unknown model '{name}'. Available models: {available}"
+        )
 
     @staticmethod
     def read_model(

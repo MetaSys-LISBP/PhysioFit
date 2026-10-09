@@ -143,7 +143,6 @@ def run(data, args, experiments):
             logger.warning(
                 "Not enough measurements to calculate AIC"
             )
-            fitter.aic, fitter.aic_c = "NA"
         df = pd.DataFrame.from_dict(
             fitter.parameter_stats,
             orient="columns"

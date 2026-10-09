@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import physiofit
+import physiofit.base.io
 
 logging.getLogger("physiofit").setLevel(logging.ERROR)
 
@@ -118,3 +119,39 @@ def test_that_simulated_and_experimental_matrices_are_close(base_test_data):
         rtol=1e-3,
         equal_nan=True
     )
+
+
+def test_aic_with_too_few_measurements():
+    """
+    With fewer measurements than the small-sample correction needs, the AIC
+    test raises and both AIC values are set to "NA"
+    """
+
+    data = pd.DataFrame(
+        {
+            "time": [0.0, 1.0, 2.0],
+            "X": [0.1, 0.2, 0.4],
+            "Glucose": [10.0, 9.0, 7.0],
+        }
+    )
+    io = physiofit.base.io.IoHandler()
+    model = io.select_model("Steady-state batch model", data)
+    model.get_params()
+    fitter = io.initialize_fitter(
+        model.data,
+        model=model,
+        sd=0.2,
+        debug_mode=False
+    )
+    fitter.optimize()
+    with pytest.raises(ValueError, match="Not enough measurements"):
+        fitter.aic_test()
+    assert fitter.aic == "NA"
+    assert fitter.aic_c == "NA"
+    assert fitter.aic_res is None
+
+
+def test_select_unknown_model(base_test_data):
+    io = physiofit.base.io.IoHandler()
+    with pytest.raises(ValueError, match="Steady-state batch model"):
+        io.select_model("Unknown model", base_test_data)
